@@ -1,0 +1,7 @@
+{
+  "name": "###ECHO - Autonomous AI Agent",
+  "description": "An autonomous AI agent that transforms natural language into executed reality. ECHO ACTS, EXECUTES, and DELIVERS results with ruthless efficiency.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
