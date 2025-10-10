@@ -23,6 +23,12 @@ import { PlusIcon } from './icons/PlusIcon';
 import { BrainIcon } from './icons/BrainIcon';
 import { TagIcon } from './icons/TagIcon';
 import { ArchiveBoxIcon } from './icons/ArchiveBoxIcon';
+import { AppDeployments } from './AppDeployments';
+import { RocketIcon } from './icons/RocketIcon';
+import { CommandLineIcon } from './icons/CommandLineIcon';
+import { AgentsIcon } from './icons/AgentsIcon';
+import { PlugIcon } from './icons/PlugIcon';
+import { CpuChipIcon } from './icons/CpuChipIcon';
 
 
 interface MasterConfigurationPanelProps {
@@ -46,7 +52,7 @@ const initialServices: Service[] = [
     
     // Developer & Data Tools
     { id: 'github', name: 'GitHub', icon: <GithubIcon className="w-6 h-6 fill-current" />, inputs: [{ id: 'apiKey', label: 'Personal Access Token', type: 'password', placeholder: 'ghp_...' }, { id: 'apiUrl', label: 'Enterprise API URL (Optional)', type: 'text', placeholder: 'https://api.github.com' }], status: 'Not Connected' },
-    { id: 'supabase', name: 'Supabase', icon: <SupabaseIcon className="w-6 h-6" />, inputs: [{ id: 'apiUrl', label: 'Project URL', type: 'text', placeholder: 'https://....supabase.co' }, { id: 'apiKey', label: 'Anon Key', type: 'password', placeholder: 'eyJ...' }], status: 'Not Connected' },
+    { id: 'supabase', name: 'Supabase', icon: <SupabaseIcon className="w-6 h-6" />, inputs: [{ id: 'apiUrl', label: 'Project URL', type: 'text', placeholder: 'https://....supabase.co' }, { id: 'apiKey', label: 'Anon Key', type: 'password', placeholder: 'eyJ...' }], status: 'Connected' },
     { id: 'mongodb', name: 'MongoDB Atlas', icon: <GenericApiIcon className="w-6 h-6" />, inputs: [{ id: 'orgId', label: 'Organization ID', type: 'text', placeholder: '...' }, { id: 'publicKey', label: 'Public API Key', type: 'text', placeholder: '...' }, { id: 'privateKey', label: 'Private API Key', type: 'password', placeholder: '...' }], status: 'Not Connected' },
     
     // Search & Agent Tools
@@ -63,9 +69,12 @@ const mockMemories: MemoryItem[] = [
     { id: 'mem-4', content: 'User asked for concise summaries in previous interactions.', timestamp: new Date(Date.now() - 3 * 86400000).toISOString(), isArchived: true },
 ];
 
-const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+const Section: React.FC<{ title: string; icon?: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
     <div className="border-b border-white/10 pb-6 mb-6">
-        <h3 className="text-sm font-semibold text-[#00D4FF] tracking-widest uppercase mb-4">{title}</h3>
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-[#00D4FF] tracking-widest uppercase mb-4">
+            {icon}
+            <span>{title}</span>
+        </h3>
         {children}
     </div>
 );
@@ -176,7 +185,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                         </button>
                     </header>
                     <div className="p-6 flex-grow overflow-y-auto">
-                        <Section title="System Instructions">
+                        <Section title="System Instructions" icon={<CommandLineIcon className="w-5 h-5" />}>
                             <textarea
                                 value={systemInstruction}
                                 onChange={(e) => setSystemInstruction(e.target.value)}
@@ -188,8 +197,12 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                 Save Instructions
                             </button>
                         </Section>
+
+                        <Section title="App Deployments" icon={<RocketIcon className="w-5 h-5" />}>
+                            <AppDeployments />
+                        </Section>
                         
-                        <Section title="My Agents">
+                        <Section title="My Agents" icon={<AgentsIcon className="w-5 h-5" />}>
                              <div className="space-y-2">
                                 {customAgents.map(agent => (
                                     <div key={agent.id} className="flex items-center justify-between bg-white/5 p-3 rounded-lg">
@@ -217,7 +230,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                             </button>
                         </Section>
 
-                        <Section title="Memory Management">
+                        <Section title="Memory Management" icon={<BrainIcon className="w-5 h-5" />}>
                             <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
                                 {memories.map(memory => (
                                     <div key={memory.id} className={`bg-white/5 p-3 rounded-lg transition-opacity ${memory.isArchived ? 'opacity-50' : 'opacity-100'}`}>
@@ -248,7 +261,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                             </button>
                         </Section>
 
-                         <Section title="Service Connections">
+                         <Section title="Service Connections" icon={<PlugIcon className="w-5 h-5" />}>
                             <div className="space-y-2">
                                 {services.map(service => (
                                     <div key={service.id} className="flex items-center justify-between bg-white/5 p-3 rounded-lg">
@@ -272,7 +285,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                             </div>
                         </Section>
 
-                        <Section title="Core Agents">
+                        <Section title="Core Agents" icon={<CpuChipIcon className="w-5 h-5" />}>
                             <div className="flex flex-col gap-3">
                                 <AgentCard icon={<WebHawkIcon className="w-6 h-6" />} name="WebHawk" description="Autonomous web research agent." enabled={true} />
                                 <AgentCard icon={<CodeForgeIcon className="w-6 h-6" />} name="CodeForge" description="Generates and debugs code." enabled={true} />

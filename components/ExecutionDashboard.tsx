@@ -414,6 +414,23 @@ export const ExecutionDashboard: React.FC = () => {
                                         </div>
                                     </div>
                                 )}
+                                
+                                {selectedTask.maxRetries > 0 && (
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wider">Retries</h4>
+                                        <div className="flex items-center gap-3 bg-black/40 border border-white/10 rounded-lg p-3">
+                                            <span className="font-mono text-orange-400">{selectedTask.retryCount} / {selectedTask.maxRetries}</span>
+                                            <div className="w-full bg-white/10 rounded-full h-2">
+                                                <motion.div
+                                                    className="bg-orange-500 h-2 rounded-full"
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${(selectedTask.retryCount / selectedTask.maxRetries) * 100}%` }}
+                                                    transition={{ duration: 0.5 }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {selectedTask.dependencies.length > 0 && (
                                     <div>
@@ -422,9 +439,13 @@ export const ExecutionDashboard: React.FC = () => {
                                             {selectedTask.dependencies.map(depId => {
                                                 const depTask = tasks.find(t => t.id === depId);
                                                 return depTask ? (
-                                                    <span key={depId} className="bg-white/10 text-gray-300 text-xs font-medium px-2.5 py-1 rounded-full">
+                                                    <button 
+                                                        key={depId} 
+                                                        onClick={() => setSelectedTaskId(depId)}
+                                                        className="bg-white/10 text-gray-300 text-xs font-medium px-2.5 py-1 rounded-full hover:bg-white/20 hover:text-white transition-colors cursor-pointer"
+                                                    >
                                                         {depTask.title}
-                                                    </span>
+                                                    </button>
                                                 ) : null;
                                             })}
                                         </div>

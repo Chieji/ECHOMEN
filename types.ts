@@ -55,3 +55,13 @@ export interface MemoryItem {
   label?: string;
   isArchived?: boolean;
 }
+
+export interface AppDeployment {
+  id: string;
+  name: string;
+  slug: string;
+  createdAt: string;
+  status: 'deploying' | 'ready' | 'error';
+  url: string;
+  logs: LogEntry[];
+}
