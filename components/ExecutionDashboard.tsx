@@ -370,68 +370,63 @@ export const ExecutionDashboard: React.FC = () => {
                 {selectedTask && (
                      <motion.div
                         layoutId={`task-container-${selectedTask.id}`}
-                        className="fixed inset-0 z-50 flex items-center justify-center"
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4"
                         initial={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
                         animate={{ backdropFilter: 'blur(16px)', backgroundColor: 'rgba(0,0,0,0.6)' }}
                         exit={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
                         onClick={() => setSelectedTaskId(null)}
                      >
                         <motion.div 
-                            className="w-full max-w-2xl bg-[#0F0F0F] border-2 border-[#FF6B00] rounded-xl p-6 shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
+                            className="w-full max-w-2xl bg-[#0F0F0F] border-2 border-[#FF6B00] rounded-xl shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div className="flex-shrink-0">
+                            <div className="flex-shrink-0 p-6 pb-4 border-b border-white/10">
                                 <div className="flex justify-between items-center mb-4">
                                     <h3 className="text-xl font-bold text-white">{selectedTask.title}</h3>
                                     <button onClick={() => setSelectedTaskId(null)} className="text-gray-500 hover:text-white transition-colors">
                                         <CloseIcon className="w-6 h-6" />
                                     </button>
                                 </div>
-                                <div className="flex items-center gap-4 mb-4 text-sm flex-wrap">
+                                <div className="flex items-center gap-4 text-sm flex-wrap">
                                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusConfig[selectedTask.status].color}`}>{selectedTask.status}</span>
                                     <span className="text-gray-400 flex items-center gap-1.5">{roleIcons[selectedTask.agent.role]} {selectedTask.agent.role}: {selectedTask.agent.name}</span>
-                                    <span className="text-gray-400 font-mono">ETA: {selectedTask.estimatedTime}</span>
                                 </div>
                             </div>
-                            <div className="flex-grow overflow-y-auto pr-2 space-y-4">
-                                <div className="font-mono text-sm p-4 bg-black/40 border border-white/10 rounded-lg text-gray-300">
-                                    <p className="whitespace-pre-wrap">{selectedTask.details}</p>
+                            <div className="flex-grow overflow-y-auto p-6 space-y-6">
+                                <div>
+                                    <h4 className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wider">Details</h4>
+                                    <div className="font-mono text-sm p-4 bg-black/40 border border-white/10 rounded-lg text-gray-300">
+                                        <p className="whitespace-pre-wrap">{selectedTask.details}</p>
+                                    </div>
                                 </div>
-                                
-                                {selectedTask.reviewHistory.length > 0 && (
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                     <div>
-                                        <h4 className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wider">Review History</h4>
-                                        <div className="space-y-2">
-                                            {selectedTask.reviewHistory.map((review, index) => (
-                                                <div key={index} className={`p-3 rounded-lg border ${review.status === 'Approved' ? 'bg-green-500/10 border-green-500/20' : 'bg-yellow-500/10 border-yellow-500/20'}`}>
-                                                    <div className="flex justify-between items-center text-xs mb-1">
-                                                        <p className="font-semibold text-white">Reviewer: {review.reviewer}</p>
-                                                        <p className={`${review.status === 'Approved' ? 'text-green-400' : 'text-yellow-400'} font-bold`}>{review.status}</p>
-                                                    </div>
-                                                    <p className="text-sm text-gray-300 italic">"{review.comments}"</p>
-                                                </div>
-                                            ))}
+                                        <h4 className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wider">Estimated Time</h4>
+                                        <div className="bg-black/40 border border-white/10 rounded-lg p-3 h-full flex flex-col justify-center">
+                                            <p className="font-mono text-xl text-white">{selectedTask.estimatedTime}</p>
                                         </div>
                                     </div>
-                                )}
-                                
-                                {selectedTask.maxRetries > 0 && (
-                                    <div>
-                                        <h4 className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wider">Retries</h4>
-                                        <div className="flex items-center gap-3 bg-black/40 border border-white/10 rounded-lg p-3">
-                                            <span className="font-mono text-orange-400">{selectedTask.retryCount} / {selectedTask.maxRetries}</span>
-                                            <div className="w-full bg-white/10 rounded-full h-2">
-                                                <motion.div
-                                                    className="bg-orange-500 h-2 rounded-full"
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${(selectedTask.retryCount / selectedTask.maxRetries) * 100}%` }}
-                                                    transition={{ duration: 0.5 }}
-                                                />
+                                    {selectedTask.maxRetries > 0 && (
+                                        <div>
+                                            <h4 className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wider">Retries</h4>
+                                            <div className="bg-black/40 border border-white/10 rounded-lg p-3 h-full flex items-center">
+                                                <div className="w-full flex items-center gap-3">
+                                                  <span className="font-mono text-orange-400">{selectedTask.retryCount} / {selectedTask.maxRetries}</span>
+                                                  <div className="w-full bg-white/10 rounded-full h-2">
+                                                      <motion.div
+                                                          className="bg-orange-500 h-2 rounded-full"
+                                                          initial={{ width: 0 }}
+                                                          animate={{ width: `${(selectedTask.retryCount / selectedTask.maxRetries) * 100}%` }}
+                                                          transition={{ duration: 0.5 }}
+                                                      />
+                                                  </div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
-
+                                    )}
+                                </div>
+                                
                                 {selectedTask.dependencies.length > 0 && (
                                     <div>
                                         <h4 className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wider">Dependencies</h4>
@@ -451,6 +446,24 @@ export const ExecutionDashboard: React.FC = () => {
                                         </div>
                                     </div>
                                 )}
+                                
+                                {selectedTask.reviewHistory.length > 0 && (
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wider">Review History</h4>
+                                        <div className="space-y-2">
+                                            {selectedTask.reviewHistory.map((review, index) => (
+                                                <div key={index} className={`p-3 rounded-lg border ${review.status === 'Approved' ? 'bg-green-500/10 border-green-500/20' : 'bg-yellow-500/10 border-yellow-500/20'}`}>
+                                                    <div className="flex justify-between items-center text-xs mb-1">
+                                                        <p className="font-semibold text-white">Reviewer: {review.reviewer}</p>
+                                                        <p className={`${review.status === 'Approved' ? 'text-green-400' : 'text-yellow-400'} font-bold`}>{review.status}</p>
+                                                    </div>
+                                                    <p className="text-sm text-gray-300 italic">"{review.comments}"</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                
                                 {selectedTask.logs && selectedTask.logs.length > 0 && (
                                     <div>
                                         <h4 className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wider">Execution Logs</h4>
