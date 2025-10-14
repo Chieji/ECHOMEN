@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { AgentMode } from '../types';
 import { MobileControlBar } from './MobileControlBar';
+import { SendIcon } from './icons/SendIcon';
 
 interface CommandCenterProps {
-    onSettingsClick: () => void;
+    agentMode: AgentMode;
+    setAgentMode: (mode: AgentMode) => void;
+    onSendCommand: (prompt: string, isWebToolActive: boolean) => void;
 }
 
-export const CommandCenter: React.FC<CommandCenterProps> = ({ onSettingsClick }) => {
-    const [agentMode, setAgentMode] = useState<AgentMode>(AgentMode.ACTION);
+export const CommandCenter: React.FC<CommandCenterProps> = ({ agentMode, setAgentMode, onSendCommand }) => {
     const [inputValue, setInputValue] = useState('');
+    const [isWebToolActive, setIsWebToolActive] = useState(false);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setInputValue(e.target.value);
@@ -17,29 +20,60 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ onSettingsClick })
         e.target.style.height = `${e.target.scrollHeight}px`;
     };
 
-    const inputPlaceholder = agentMode === AgentMode.ACTION 
+    const handleSend = () => {
+        if (inputValue.trim()) {
+            onSendCommand(inputValue, isWebToolActive);
+            setInputValue('');
+            setIsWebToolActive(false); // Reset web tool state after sending
+        }
+    };
+    
+    const handleWebToolToggle = () => setIsWebToolActive(prev => !prev);
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+        }
+    };
+
+    const inputPlaceholder = isWebToolActive
+        ? "Enter a URL and task for the web agent..."
+        : agentMode === AgentMode.ACTION 
         ? "Describe the action or task for the AI agents..." 
         : "Chat with the AI assistant...";
 
     const borderColor = agentMode === AgentMode.ACTION ? 'border-[#00D4FF]/50' : 'border-[#8B5CF6]/50';
+    const buttonBg = agentMode === AgentMode.ACTION ? 'bg-[#00D4FF] hover:bg-[#00b8e6]' : 'bg-[#8B5CF6] hover:bg-[#7c4ee3]';
+    const buttonText = agentMode === AgentMode.ACTION ? 'dark:text-black text-white' : 'text-white';
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-40">
             <div className="max-w-3xl mx-auto px-4 pb-4">
-                <div className={`bg-[#121212]/80 backdrop-blur-xl border ${borderColor} rounded-2xl shadow-2xl shadow-black/50 overflow-hidden`}>
-                    <div className="p-4">
+                <div className={`bg-zinc-100/80 dark:bg-[#121212]/80 backdrop-blur-xl border ${borderColor} rounded-2xl shadow-2xl shadow-black/50 overflow-hidden`}>
+                    <div className="p-4 flex items-end gap-3">
                         <textarea
                             value={inputValue}
                             onChange={handleInputChange}
+                            onKeyDown={handleKeyDown}
                             placeholder={inputPlaceholder}
                             rows={1}
-                            className={`w-full bg-transparent text-gray-200 placeholder-gray-500 resize-none focus:outline-none focus:ring-0 transition-colors duration-300`}
+                            className={`w-full bg-transparent text-zinc-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none focus:ring-0 transition-colors duration-300 max-h-48`}
                         />
+                         <button 
+                            onClick={handleSend}
+                            disabled={!inputValue.trim()}
+                            className={`${buttonBg} ${buttonText} rounded-full w-10 h-10 flex-shrink-0 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
+                            aria-label="Send command"
+                        >
+                            <SendIcon className="w-5 h-5" />
+                        </button>
                     </div>
                     <MobileControlBar 
                         agentMode={agentMode} 
                         setAgentMode={setAgentMode} 
-                        onSettingsClick={onSettingsClick} 
+                        isWebToolActive={isWebToolActive}
+                        onWebToolClick={handleWebToolToggle}
                     />
                 </div>
             </div>

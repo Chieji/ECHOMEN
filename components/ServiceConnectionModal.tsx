@@ -1,23 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloseIcon } from './icons/CloseIcon';
-
-type InputType = 'text' | 'password';
-
-export interface ServiceInput {
-    id: string;
-    label: string;
-    type: InputType;
-    placeholder: string;
-}
-
-export interface Service {
-    id: string;
-    name: string;
-    icon: React.ReactNode;
-    inputs: ServiceInput[];
-    status: 'Connected' | 'Not Connected';
-}
+// FIX: Import Service from the central types file as it's used across the app.
+import { Service } from '../types';
 
 interface ServiceConnectionModalProps {
     service: Service | null;

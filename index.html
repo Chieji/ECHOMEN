@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
@@ -23,12 +23,22 @@
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "framer-motion": "https://aistudiocdn.com/framer-motion@^11.3.1"
+    "framer-motion": "https://aistudiocdn.com/framer-motion@^11.3.1",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^0.14.0"
   }
 }
 </script>
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {},
+      },
+      plugins: [],
+    }
+  </script>
 </head>
-  <body class="bg-[#0A0A0A]">
+  <body class="bg-white dark:bg-[#0A0A0A]">
     <div id="root"></div>
   </body>
 </html>

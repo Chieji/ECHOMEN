@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CloseIcon } from './icons/CloseIcon';
 import { CustomAgent } from '../types';
 import { AgentsIcon } from './icons/AgentsIcon';
+import { AgentIcon, PREDEFINED_ICONS } from './AgentIcon';
 
 interface AgentCreationModalProps {
     agent: CustomAgent | null;
@@ -14,14 +15,17 @@ interface AgentCreationModalProps {
 export const AgentCreationModal: React.FC<AgentCreationModalProps> = ({ agent, isOpen, onClose, onSave }) => {
     const [name, setName] = useState('');
     const [instructions, setInstructions] = useState('');
+    const [icon, setIcon] = useState('');
 
     useEffect(() => {
         if (agent) {
             setName(agent.name);
             setInstructions(agent.instructions);
+            setIcon(agent.icon || '');
         } else {
             setName('');
             setInstructions('');
+            setIcon('');
         }
     }, [agent, isOpen]);
 
@@ -32,6 +36,7 @@ export const AgentCreationModal: React.FC<AgentCreationModalProps> = ({ agent, i
             id: agent?.id || `agent-${Date.now()}`,
             name,
             instructions,
+            icon,
         };
         onSave(agentData);
     };
@@ -44,21 +49,21 @@ export const AgentCreationModal: React.FC<AgentCreationModalProps> = ({ agent, i
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    className="fixed inset-0 z-50 flex items-center justify-center"
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
                     initial={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
                     animate={{ backdropFilter: 'blur(16px)', backgroundColor: 'rgba(0,0,0,0.6)' }}
                     exit={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
                     onClick={onClose}
                 >
                     <motion.div
-                        className="w-full max-w-lg bg-[#141414] border-2 border-[#00D4FF]/50 rounded-xl p-6 shadow-2xl shadow-black/50 flex flex-col"
+                        className="w-full max-w-lg bg-[#141414] border-2 border-[#00D4FF]/50 rounded-xl shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <header className="flex justify-between items-center mb-6">
+                        <header className="flex-shrink-0 flex justify-between items-center mb-6 p-6 pb-0">
                             <div className="flex items-center gap-3">
                                 <div className="text-[#00D4FF]"><AgentsIcon className="w-6 h-6" /></div>
                                 <h3 className="text-xl font-bold text-white">{title}</h3>
@@ -68,7 +73,7 @@ export const AgentCreationModal: React.FC<AgentCreationModalProps> = ({ agent, i
                             </button>
                         </header>
 
-                        <div className="space-y-4">
+                        <div className="flex-grow overflow-y-auto p-6 space-y-4">
                             <div>
                                 <label htmlFor="agentName" className="block text-sm font-medium text-gray-400 mb-1">Agent Name</label>
                                 <input
@@ -80,6 +85,36 @@ export const AgentCreationModal: React.FC<AgentCreationModalProps> = ({ agent, i
                                     className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/50"
                                 />
                             </div>
+                            
+                            <div className="flex gap-4">
+                                <div className="w-2/3">
+                                    <label htmlFor="agentIconUrl" className="block text-sm font-medium text-gray-400 mb-1">Agent Icon</label>
+                                    <div className="grid grid-cols-5 gap-2 mb-2">
+                                        {Object.keys(PREDEFINED_ICONS).map(iconName => (
+                                            <button 
+                                                key={iconName}
+                                                onClick={() => setIcon(iconName)}
+                                                className={`p-2 rounded-lg transition-colors ${icon === iconName ? 'bg-[#00D4FF]/30 ring-2 ring-[#00D4FF]' : 'bg-black/40 hover:bg-black/80'}`}
+                                            >
+                                                <AgentIcon icon={iconName} className="w-6 h-6 mx-auto text-gray-300" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <input
+                                        type="text"
+                                        id="agentIconUrl"
+                                        value={icon.startsWith('http') ? icon : ''}
+                                        onChange={(e) => setIcon(e.target.value)}
+                                        placeholder="Or paste image URL..."
+                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/50 text-sm"
+                                    />
+                                </div>
+                                <div className="w-1/3 flex flex-col items-center justify-center bg-black/40 rounded-lg p-2">
+                                     <span className="text-sm text-gray-400 mb-2">Preview</span>
+                                     <AgentIcon icon={icon} className="w-16 h-16 text-[#00D4FF]" />
+                                </div>
+                            </div>
+                            
                             <div>
                                 <label htmlFor="agentInstructions" className="block text-sm font-medium text-gray-400 mb-1">Agent Instructions</label>
                                 <textarea
@@ -93,7 +128,7 @@ export const AgentCreationModal: React.FC<AgentCreationModalProps> = ({ agent, i
                             </div>
                         </div>
 
-                        <footer className="mt-8 flex justify-end">
+                        <footer className="flex-shrink-0 mt-2 p-6 pt-0 flex justify-end">
                             <button
                                 onClick={handleSave}
                                 disabled={!name.trim() || !instructions.trim()}
