@@ -16,14 +16,15 @@ import { StopIcon } from './icons/StopIcon';
 
 const statusConfig = {
     Done: { color: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 dark:bg-green-500/20 dark:border-green-500/30', glow: '' },
-    Executing: { color: 'bg-cyan-600/10 text-cyan-700 dark:bg-[#00D4FF]/20 dark:text-[#00D4FF] border-cyan-600/20 dark:border-[#00D4FF]/30', glow: 'shadow-[0_0_15px_rgba(0,212,255,0.8)] animate-pulse' },
+    Executing: { color: 'bg-cyan-500/20 text-cyan-500 dark:text-cyan-400 border-cyan-500/70 dark:border-cyan-400/70', glow: 'shadow-[0_0_12px_rgba(56,189,248,0.5),0_0_24px_rgba(56,189,248,0.3)] animate-pulse' },
     Queued: { color: 'bg-zinc-500/10 text-zinc-600 dark:text-gray-400 border-zinc-500/20 dark:bg-gray-500/20 dark:border-gray-500/30', glow: '' },
-    Error: { color: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 dark:bg-red-500/20 dark:border-red-500/30', glow: 'shadow-[0_0_15px_rgba(239,68,68,0.8)] animate-pulse' },
-    'Pending Review': { color: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20 dark:bg-yellow-500/20 dark:border-yellow-500/30', glow: 'shadow-[0_0_15px_rgba(234,179,8,0.7)] animate-pulse' },
-    Revising: { color: 'bg-orange-600/10 text-orange-700 dark:text-[#FF6B00] border-orange-600/20 dark:bg-[#FF6B00]/20 dark:border-[#FF6B00]/30', glow: 'shadow-[0_0_15px_rgba(255,107,0,0.8)] animate-pulse' },
-    Delegating: { color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 dark:bg-purple-500/20 dark:border-purple-500/30', glow: 'shadow-[0_0_15px_rgba(168,85,247,0.8)] animate-pulse' },
+    Error: { color: 'bg-red-500/20 text-red-500 dark:text-red-400 border-red-500/70 dark:border-red-400/70', glow: 'shadow-[0_0_15px_rgba(239,68,68,0.7),0_0_30px_rgba(239,68,68,0.4)]' },
+    'Pending Review': { color: 'bg-yellow-500/20 text-yellow-500 dark:text-yellow-400 border-yellow-500/70 dark:border-yellow-400/70', glow: 'shadow-[0_0_12px_rgba(234,179,8,0.6),0_0_24px_rgba(234,179,8,0.3)]' },
+    Revising: { color: 'bg-orange-500/20 text-orange-500 dark:text-orange-400 border-orange-500/70 dark:border-orange-400/70', glow: 'shadow-[0_0_12px_rgba(249,115,22,0.6),0_0_24px_rgba(249,115,22,0.3)]' },
+    Delegating: { color: 'bg-purple-500/20 text-purple-500 dark:text-purple-400 border-purple-500/70 dark:border-purple-400/70', glow: 'shadow-[0_0_12px_rgba(168,85,247,0.5),0_0_24px_rgba(168,85,247,0.3)]' },
     Cancelled: { color: 'bg-zinc-500/10 text-zinc-600 dark:text-gray-500 border-zinc-500/20 dark:bg-gray-600/20 dark:border-gray-600/30', glow: '' },
 };
+
 
 const roleIcons = {
     Planner: <PlannerIcon className="w-4 h-4" />,
@@ -54,13 +55,13 @@ const TaskItem = React.forwardRef<HTMLDivElement, {
     let highlightClass = '';
     switch(highlight) {
         case 'selected':
-            highlightClass = 'border-2 border-[#FF6B00] shadow-[0_0_15px_rgba(255,107,0,0.9)]';
+            highlightClass = 'border-2 border-[#FF6B00] shadow-[0_0_20px_rgba(255,107,0,0.6)]';
             break;
         case 'dependency':
-            highlightClass = 'border-2 border-cyan-400 dark:border-[#00D4FF] shadow-[0_0_15px_rgba(0,212,255,0.9)]';
+            highlightClass = 'border-2 border-cyan-400 dark:border-[#00D4FF] shadow-[0_0_20px_rgba(0,212,255,0.6)]';
             break;
         case 'dependent':
-            highlightClass = 'border-2 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.9)]';
+            highlightClass = 'border-2 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.6)]';
             break;
     }
 

@@ -31,20 +31,20 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSuggestionClick }) => {
 
     const suggestions = [
         {
-            title: "Draft an email",
-            prompt: "Draft a professional email to my team about the new project timeline."
+            title: "Automate a task",
+            prompt: "Create a Python script to scan a directory for .log files and delete ones older than 30 days."
         },
         {
-            title: "Write a script",
-            prompt: "Write a Python script to organize files in my downloads folder by file type."
+            title: "Brainstorm ideas",
+            prompt: "Brainstorm three names for a new tech podcast about AI, and suggest a tagline for each."
         },
         {
-            title: "Research a topic",
-            prompt: "What are the latest advancements in autonomous AI agents?"
+            title: "Explain a concept",
+            prompt: "Explain the concept of the ReAct (Reason+Act) framework for AI agents like you are explaining it to a 12-year-old."
         },
         {
-            title: "Create a plan",
-            prompt: "Create a step-by-step plan to launch a new weekly podcast."
+            title: "Set up a project",
+            prompt: "Set up a new project: create a directory named 'my-new-app', inside it create 'index.html', 'style.css', and 'script.js' files."
         },
     ];
 

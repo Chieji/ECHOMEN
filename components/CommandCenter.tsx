@@ -51,7 +51,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ agentMode, setAgen
     return (
         <div className="fixed bottom-0 left-0 right-0 z-40">
             <div className="max-w-3xl mx-auto px-4 pb-4">
-                <div className={`bg-white/50 dark:bg-[#121212]/50 backdrop-blur-3xl border ${borderColor} rounded-2xl shadow-2xl shadow-black/30 overflow-hidden`}>
+                <div className={`bg-white/60 dark:bg-[#121212]/60 backdrop-blur-3xl border-2 ${borderColor} rounded-2xl shadow-lg shadow-black/20 overflow-hidden`}>
                     <div className="p-4 flex items-end gap-3">
                         <textarea
                             value={inputValue}
