@@ -44,14 +44,14 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ agentMode, setAgen
         ? "Describe the action or task for the AI agents..." 
         : "Chat with the AI assistant...";
 
-    const borderColor = agentMode === AgentMode.ACTION ? 'border-[#00D4FF]/50' : 'border-[#8B5CF6]/50';
-    const buttonBg = agentMode === AgentMode.ACTION ? 'bg-[#00D4FF] hover:bg-[#00b8e6]' : 'bg-[#8B5CF6] hover:bg-[#7c4ee3]';
-    const buttonText = agentMode === AgentMode.ACTION ? 'dark:text-black text-white' : 'text-white';
+    const borderColor = agentMode === AgentMode.ACTION ? 'border-cyan-600/50 dark:border-[#00D4FF]/50' : 'border-[#8B5CF6]/50';
+    const buttonBg = agentMode === AgentMode.ACTION ? 'bg-cyan-600 hover:bg-cyan-700 dark:bg-[#00D4FF] dark:hover:bg-[#00b8e6]' : 'bg-[#8B5CF6] hover:bg-[#7c4ee3]';
+    const buttonText = agentMode === AgentMode.ACTION ? 'text-white dark:text-black' : 'text-white';
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-40">
             <div className="max-w-3xl mx-auto px-4 pb-4">
-                <div className={`bg-zinc-100/80 dark:bg-[#121212]/80 backdrop-blur-xl border ${borderColor} rounded-2xl shadow-2xl shadow-black/50 overflow-hidden`}>
+                <div className={`bg-white/80 dark:bg-[#121212]/80 backdrop-blur-xl border ${borderColor} rounded-2xl shadow-2xl shadow-black/50 overflow-hidden`}>
                     <div className="p-4 flex items-end gap-3">
                         <textarea
                             value={inputValue}

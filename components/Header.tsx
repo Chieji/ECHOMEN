@@ -16,9 +16,9 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onSettingsClick, onHistoryClick, onArtifactsClick, tasks, agentStatus }) => {
     return (
-        <header className="fixed top-0 left-0 right-0 bg-white/50 dark:bg-[#0A0A0A]/50 backdrop-blur-lg border-b border-black/10 dark:border-white/10 p-4 flex justify-between items-center z-50">
+        <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-[#0A0A0A]/80 backdrop-blur-lg border-b border-black/10 dark:border-white/10 p-4 flex justify-between items-center z-50">
             <div className="flex items-center gap-3">
-                <LogoIcon className="w-8 h-8 text-[#00D4FF]" />
+                <LogoIcon className="w-8 h-8 text-cyan-600 dark:text-[#00D4FF]" />
                 <h1 className="text-xl font-bold tracking-wider text-zinc-800 dark:text-gray-100">ECHO</h1>
                 
                 <div className="h-6 w-px bg-black/20 dark:bg-white/20 ml-2"></div>
@@ -38,7 +38,7 @@ export const Header: React.FC<HeaderProps> = ({ onSettingsClick, onHistoryClick,
                 <img
                     src="https://picsum.photos/100/100"
                     alt="User Avatar"
-                    className="w-9 h-9 rounded-full border-2 border-[#00D4FF]/50"
+                    className="w-9 h-9 rounded-full border-2 border-cyan-600/50 dark:border-[#00D4FF]/50"
                 />
             </div>
         </header>

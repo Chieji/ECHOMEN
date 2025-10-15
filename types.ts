@@ -13,7 +13,7 @@ export interface Message {
     type?: 'chat' | 'system';
 }
 
-export type TaskStatus = 'Done' | 'Executing' | 'Queued' | 'Error' | 'Pending Review' | 'Revising' | 'Delegating';
+export type TaskStatus = 'Done' | 'Executing' | 'Queued' | 'Error' | 'Pending Review' | 'Revising' | 'Delegating' | 'Cancelled';
 
 export interface LogEntry {
     timestamp: string;

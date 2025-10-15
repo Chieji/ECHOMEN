@@ -14,7 +14,7 @@ export const SystemStatusIndicator: React.FC<SystemStatusIndicatorProps> = ({ ta
             case AgentStatus.RUNNING:
                 return {
                     statusText: `${activeTasks} Active Task${activeTasks !== 1 ? 's' : ''}`,
-                    statusColor: 'text-[#00D4FF]',
+                    statusColor: 'text-cyan-600 dark:text-[#00D4FF]',
                     pulse: true,
                     activeTaskCount: activeTasks,
                 };

@@ -11,16 +11,18 @@ import { LiveTerminal } from './LiveTerminal';
 import { BrainIcon } from './icons/BrainIcon';
 import { PlugIcon } from './icons/PlugIcon';
 import { WebHawkIcon } from './icons/WebHawkIcon';
+import { StopIcon } from './icons/StopIcon';
 
 
 const statusConfig = {
-    Done: { color: 'bg-green-500/20 text-green-500 dark:text-green-400 border-green-500/30', glow: 'shadow-[0_0_8px_rgba(34,197,94,0.5)]' },
-    Executing: { color: 'bg-[#00D4FF]/20 text-[#00D4FF] border-[#00D4FF]/30', glow: 'shadow-[0_0_12px_rgba(0,212,255,0.7)] animate-pulse' },
-    Queued: { color: 'bg-gray-500/20 text-gray-500 dark:text-gray-400 border-gray-500/30', glow: '' },
-    Error: { color: 'bg-red-500/20 text-red-500 dark:text-red-400 border-red-500/30', glow: 'shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse' },
-    'Pending Review': { color: 'bg-yellow-500/20 text-yellow-500 dark:text-yellow-400 border-yellow-500/30', glow: 'shadow-[0_0_10px_rgba(234,179,8,0.6)] animate-pulse' },
-    Revising: { color: 'bg-[#FF6B00]/20 text-[#FF6B00] border-[#FF6B00]/30', glow: 'shadow-[0_0_12px_rgba(255,107,0,0.7)] animate-pulse' },
-    Delegating: { color: 'bg-purple-500/20 text-purple-400 border-purple-500/30', glow: 'shadow-[0_0_12px_rgba(168,85,247,0.7)] animate-pulse' },
+    Done: { color: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 dark:bg-green-500/20 dark:border-green-500/30', glow: 'shadow-[0_0_8px_rgba(34,197,94,0.5)]' },
+    Executing: { color: 'bg-cyan-600/10 text-cyan-700 dark:bg-[#00D4FF]/20 dark:text-[#00D4FF] border-cyan-600/20 dark:border-[#00D4FF]/30', glow: 'shadow-[0_0_12px_rgba(8,145,178,0.5)] dark:shadow-[0_0_12px_rgba(0,212,255,0.7)] animate-pulse' },
+    Queued: { color: 'bg-zinc-500/10 text-zinc-600 dark:text-gray-400 border-zinc-500/20 dark:bg-gray-500/20 dark:border-gray-500/30', glow: '' },
+    Error: { color: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 dark:bg-red-500/20 dark:border-red-500/30', glow: 'shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse' },
+    'Pending Review': { color: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20 dark:bg-yellow-500/20 dark:border-yellow-500/30', glow: 'shadow-[0_0_10px_rgba(234,179,8,0.6)] animate-pulse' },
+    Revising: { color: 'bg-orange-600/10 text-orange-700 dark:text-[#FF6B00] border-orange-600/20 dark:bg-[#FF6B00]/20 dark:border-[#FF6B00]/30', glow: 'shadow-[0_0_12px_rgba(255,107,0,0.7)] animate-pulse' },
+    Delegating: { color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 dark:bg-purple-500/20 dark:border-purple-500/30', glow: 'shadow-[0_0_12px_rgba(168,85,247,0.7)] animate-pulse' },
+    Cancelled: { color: 'bg-zinc-500/10 text-zinc-600 dark:text-gray-500 border-zinc-500/20 dark:bg-gray-600/20 dark:border-gray-600/30', glow: '' },
 };
 
 const roleIcons = {
@@ -37,7 +39,6 @@ const TaskItem = React.forwardRef<HTMLDivElement, {
     isDimmed: boolean;
 }>(({ task, onClick, highlight, isDimmed }, ref) => {
     const config = statusConfig[task.status];
-    // FIX: Pass initial value to useRef to fix "Expected 1 arguments, but got 0" error.
     const prevStatusRef = useRef<TaskStatus | undefined>(undefined);
     const [animateComplete, setAnimateComplete] = useState(false);
 
@@ -52,15 +53,15 @@ const TaskItem = React.forwardRef<HTMLDivElement, {
     
     let highlightClass = '';
     if (highlight === 'selected') highlightClass = 'border-2 border-[#FF6B00]';
-    if (highlight === 'dependency') highlightClass = 'border-2 border-[#00D4FF]';
-    if (highlight === 'dependent') highlightClass = 'border-2 border-[#8B5CF6]';
+    if (highlight === 'dependency') highlightClass = 'border-2 border-cyan-500 dark:border-[#00D4FF]';
+    if (highlight === 'dependent') highlightClass = 'border-2 border-purple-500';
 
     return (
         <motion.div
             ref={ref}
             layoutId={`task-container-${task.id}`}
             onClick={onClick}
-            className={`bg-zinc-200/30 dark:bg-black/40 backdrop-blur-sm border ${config.color} ${highlightClass} rounded-lg p-3 flex-shrink-0 w-64 cursor-pointer transition-all duration-300 ${isDimmed ? 'opacity-40' : 'opacity-100'} ${highlight === 'none' ? config.glow : ''}`}
+            className={`bg-white dark:bg-black/40 backdrop-blur-sm border ${config.color} ${highlightClass} rounded-lg p-3 flex-shrink-0 w-64 cursor-pointer transition-all duration-300 ${isDimmed ? 'opacity-40' : 'opacity-100'} ${highlight === 'none' ? config.glow : ''}`}
             whileHover={{ scale: isDimmed ? 1 : 1.03, y: isDimmed ? 0 : -4, opacity: 1 }}
             animate={animateComplete ? { scale: [1, 1.05, 1] } : {}}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -93,16 +94,17 @@ const logStatusColors = {
     SUCCESS: 'text-green-500 dark:text-green-400',
     ERROR: 'text-red-500 dark:text-red-400',
     WARN: 'text-yellow-500 dark:text-yellow-400',
-    INFO: 'text-[#00D4FF]',
+    INFO: 'text-cyan-600 dark:text-[#00D4FF]',
 }
 
 interface ExecutionDashboardProps {
     tasks: Task[];
     liveLogs: LogEntry[];
+    onCancelTask: (taskId: string) => void;
 }
 
 
-export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, liveLogs }) => {
+export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, liveLogs, onCancelTask }) => {
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     const [relatedTaskIds, setRelatedTaskIds] = useState<{ dependencies: string[], dependents: string[] }>({ dependencies: [], dependents: [] });
     const [lines, setLines] = useState<Line[]>([]);
@@ -167,15 +169,16 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
     }, [tasks]);
 
     const selectedTask = tasks.find(t => t.id === selectedTaskId);
+    const isCancellable = selectedTask && !['Done', 'Error', 'Cancelled'].includes(selectedTask.status);
 
     return (
         <div className="w-full max-w-7xl mx-auto px-4 flex-grow flex flex-col gap-8">
             <div>
-                <h2 className="text-lg font-bold text-[#00D4FF] tracking-widest uppercase">Agent Brain</h2>
+                <h2 className="text-lg font-bold text-cyan-600 dark:text-[#00D4FF] tracking-widest uppercase">Agent Brain</h2>
                 <AgentOrchestration tasks={tasks} />
             </div>
             <div>
-                 <h2 className="text-lg font-bold text-[#00D4FF] tracking-widest uppercase">Task Pipeline</h2>
+                 <h2 className="text-lg font-bold text-cyan-600 dark:text-[#00D4FF] tracking-widest uppercase">Task Pipeline</h2>
                  <div ref={pipelineRef} className="relative mt-2 flex gap-4 overflow-x-auto pb-4 p-2 -m-2">
                     <svg className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{ zIndex: -1 }}>
                         <defs>
@@ -251,7 +254,7 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                         onClick={() => setSelectedTaskId(null)}
                      >
                         <motion.div 
-                            className="w-full max-w-2xl bg-zinc-100 dark:bg-[#0F0F0F] border-2 border-[#FF6B00] rounded-xl shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
+                            className="w-full max-w-2xl bg-white dark:bg-[#0F0F0F] border-2 border-[#FF6B00] rounded-xl shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="flex-shrink-0 p-6 pb-4 border-b border-black/10 dark:border-white/10">
@@ -261,9 +264,23 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                                         <CloseIcon className="w-6 h-6" />
                                     </button>
                                 </div>
-                                <div className="flex items-center gap-4 text-sm flex-wrap">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusConfig[selectedTask.status].color}`}>{selectedTask.status}</span>
-                                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5">{roleIcons[selectedTask.agent.role]} {selectedTask.agent.role}: {selectedTask.agent.name}</span>
+                                <div className="flex items-center justify-between gap-4 text-sm flex-wrap">
+                                    <div className="flex items-center gap-4">
+                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusConfig[selectedTask.status].color}`}>{selectedTask.status}</span>
+                                        <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5">{roleIcons[selectedTask.agent.role]} {selectedTask.agent.role}: {selectedTask.agent.name}</span>
+                                    </div>
+                                    {isCancellable && (
+                                        <button
+                                            onClick={() => {
+                                                onCancelTask(selectedTask.id);
+                                                setSelectedTaskId(null);
+                                            }}
+                                            className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 font-bold text-xs py-1.5 px-3 rounded-md transition-colors"
+                                        >
+                                            <StopIcon className="w-4 h-4" />
+                                            <span>Cancel Task</span>
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex-grow overflow-y-auto p-6 space-y-6">
@@ -286,7 +303,7 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                                                     </div>
                                                     <p className="text-sm italic text-gray-600 dark:text-gray-300 pl-7 pb-2">"{step.thought}"</p>
                                                     
-                                                    <div className="flex items-center gap-2 text-[#00D4FF]">
+                                                    <div className="flex items-center gap-2 text-cyan-600 dark:text-[#00D4FF]">
                                                         <PlugIcon className="w-5 h-5" />
                                                         <h5 className="font-bold">Action</h5>
                                                     </div>
@@ -346,7 +363,7 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
             </AnimatePresence>
              
              <div>
-                <h2 className="text-lg font-bold text-[#00D4FF] tracking-widest uppercase mb-2">Live Terminal</h2>
+                <h2 className="text-lg font-bold text-cyan-600 dark:text-[#00D4FF] tracking-widest uppercase mb-2">Live Terminal</h2>
                 <LiveTerminal logs={liveLogs} />
             </div>
         </div>

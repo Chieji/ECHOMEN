@@ -19,7 +19,7 @@ export const ExecutionStatusBar: React.FC<ExecutionStatusBarProps> = ({ tasks, a
                 const executingTask = tasks.find(t => t.status === 'Executing');
                 return {
                     statusText: executingTask ? `Executing: ${executingTask.title}` : 'Agent is running...',
-                    Icon: <SpinnerIcon className="w-5 h-5 animate-spin text-[#00D4FF]" />,
+                    Icon: <SpinnerIcon className="w-5 h-5 animate-spin text-cyan-600 dark:text-[#00D4FF]" />,
                 };
             case AgentStatus.SYNTHESIZING:
                 return {
@@ -55,7 +55,7 @@ export const ExecutionStatusBar: React.FC<ExecutionStatusBarProps> = ({ tasks, a
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="fixed bottom-28 md:bottom-24 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-3xl z-30"
         >
-            <div className="bg-zinc-100/80 dark:bg-[#121212]/80 backdrop-blur-xl border border-[#00D4FF]/50 rounded-lg shadow-2xl shadow-black/50 p-3 flex items-center justify-between">
+            <div className="bg-white/80 dark:bg-[#121212]/80 backdrop-blur-xl border border-cyan-600/50 dark:border-[#00D4FF]/50 rounded-lg shadow-2xl shadow-black/50 p-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     {Icon}
                     <p className="text-sm font-semibold text-zinc-800 dark:text-gray-200">{statusText}</p>

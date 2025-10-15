@@ -80,7 +80,7 @@ const advancedWorkflows = [
 
 const Section: React.FC<{ title: string; icon?: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
     <div className="border-b border-black/10 dark:border-white/10 pb-6 mb-6">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-[#00D4FF] tracking-widest uppercase mb-4">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-cyan-600 dark:text-[#00D4FF] tracking-widest uppercase mb-4">
             {icon}
             <span>{title}</span>
         </h3>
@@ -137,11 +137,11 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
             if (savedAgentsJSON) {
                 savedAgents = JSON.parse(savedAgentsJSON);
             } else {
-                savedAgents = [{ id: 'agent-1', name: 'PR Review Agent', instructions: 'You are an expert code reviewer. Analyze the provided code diff and provide concise, actionable feedback focusing on best practices, potential bugs, and clarity.', icon: 'Pencil' }];
+                savedAgents = [{ id: 'agent-1', name: 'PR Review Agent', instructions: 'You are an expert code reviewer. Analyze the provided code diff and provide concise, actionable feedback focusing on best practices, potential bugs, and clarity.', icon: 'Pencil', description: 'Specializes in GitHub PR reviews.' }];
             }
         } catch (error) {
             console.error("Failed to parse custom agents from localStorage", error);
-            savedAgents = [{ id: 'agent-1', name: 'PR Review Agent', instructions: 'You are an expert code reviewer. Analyze the provided code diff and provide concise, actionable feedback focusing on best practices, potential bugs, and clarity.', icon: 'Pencil' }];
+            savedAgents = [{ id: 'agent-1', name: 'PR Review Agent', instructions: 'You are an expert code reviewer. Analyze the provided code diff and provide concise, actionable feedback focusing on best practices, potential bugs, and clarity.', icon: 'Pencil', description: 'Specializes in GitHub PR reviews.' }];
         }
         return [...coreAgents, ...savedAgents];
     });
@@ -245,11 +245,13 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
     };
 
     const handleSaveAgent = (agent: CustomAgent) => {
-        if (editingAgent) {
-            setAgents(prev => prev.map(a => a.id === agent.id ? agent : a));
-        } else {
-            setAgents(prev => [...prev, { ...agent, id: `agent-${Date.now()}` }]);
-        }
+        setAgents(prev => {
+            const existing = prev.find(a => a.id === agent.id);
+            if (existing) {
+                return prev.map(a => a.id === agent.id ? agent : a);
+            }
+            return [...prev, agent];
+        });
         setIsAgentModalOpen(false);
         setEditingAgent(null);
     };
@@ -319,7 +321,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                 onClick={onClose}
             >
                 <motion.div
-                    className="w-full max-w-md h-full bg-zinc-100 dark:bg-[#0F0F0F] border-l-2 border-[#FF6B00]/50 shadow-2xl flex flex-col"
+                    className="w-full max-w-md h-full bg-white dark:bg-[#0F0F0F] border-l-2 border-[#FF6B00]/50 shadow-2xl flex flex-col"
                     initial={{ x: '100%' }}
                     animate={{ x: '0%' }}
                     exit={{ x: '100%' }}
@@ -349,7 +351,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                 onChange={(e) => setSystemInstruction(e.target.value)}
                                 placeholder="Define the AI's core behavior, personality, and constraints..."
                                 rows={4}
-                                className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/50 text-sm"
+                                className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50 text-sm"
                             />
                             <button className="mt-3 w-full bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-zinc-800 dark:text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm">
                                 Save Instructions
@@ -363,9 +365,9 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                     value={newTodoText}
                                     onChange={(e) => setNewTodoText(e.target.value)}
                                     placeholder="Add a new objective..."
-                                    className="flex-grow bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-1.5 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#00D4FF]/50 text-sm"
+                                    className="flex-grow bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-1.5 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50 text-sm"
                                 />
-                                <button type="submit" className="bg-[#00D4FF] hover:bg-[#00b8e6] text-black rounded-lg px-3 py-1.5 flex-shrink-0">
+                                <button type="submit" className="bg-cyan-600 hover:bg-cyan-700 text-white dark:bg-[#00D4FF] dark:hover:bg-[#00b8e6] dark:text-black rounded-lg px-3 py-1.5 flex-shrink-0">
                                     <PlusIcon className="w-5 h-5" />
                                 </button>
                             </form>
@@ -385,7 +387,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                                 type="checkbox" 
                                                 checked={todo.isCompleted}
                                                 onChange={() => handleToggleTodo(todo.id)}
-                                                className="w-5 h-5 rounded bg-zinc-300 dark:bg-zinc-700 border-zinc-400 dark:border-zinc-600 text-[#00D4FF] focus:ring-[#00D4FF]/50"
+                                                className="w-5 h-5 rounded bg-zinc-300 dark:bg-zinc-700 border-zinc-400 dark:border-zinc-600 text-cyan-600 dark:text-[#00D4FF] focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
                                             />
                                             <p className={`text-sm text-zinc-800 dark:text-white ${todo.isCompleted ? 'line-through opacity-50' : ''}`}>
                                                 {todo.text}
@@ -452,31 +454,34 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                         <Section title="Agent Management" icon={<AgentsIcon className="w-5 h-5" />}>
                              <div className="space-y-2">
                                 {agents.map(agent => (
-                                    <div key={agent.id} className="flex items-center justify-between bg-black/5 dark:bg-white/5 p-3 rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <div className="text-[#00D4FF]">
-                                                <AgentIcon icon={agent.icon} className="w-6 h-6" />
+                                    <div key={agent.id} className={`bg-black/5 dark:bg-white/5 p-3 rounded-lg transition-opacity ${!agent.enabled ? 'opacity-50' : ''}`}>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3 flex-grow overflow-hidden">
+                                                <div className="text-cyan-600 dark:text-[#00D4FF] flex-shrink-0">
+                                                    <AgentIcon icon={agent.icon} className="w-6 h-6" />
+                                                </div>
+                                                <div className="flex-grow overflow-hidden">
+                                                    <p className="font-semibold text-zinc-800 dark:text-white truncate">{agent.name}</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{agent.description || 'No description'}</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="font-semibold text-zinc-800 dark:text-white">{agent.name}</p>
-                                                {agent.description && <p className="text-xs text-gray-500 dark:text-gray-400">{agent.description}</p>}
+                                            <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+                                                {!agent.isCore && (
+                                                    <>
+                                                        <button onClick={() => handleOpenAgentModal(agent)} className="text-gray-500 dark:text-gray-400 hover:text-cyan-600 dark:hover:text-[#00D4FF]" title="Edit Agent">
+                                                            <PencilIcon className="w-4 h-4" />
+                                                        </button>
+                                                        <button onClick={() => handleDeleteAgent(agent.id)} className="text-gray-500 dark:text-gray-400 hover:text-red-500" title="Delete Agent">
+                                                            <TrashIcon className="w-4 h-4" />
+                                                        </button>
+                                                    </>
+                                                )}
+                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                    <input type="checkbox" checked={agent.enabled} onChange={() => handleToggleAgent(agent.id)} className="sr-only peer" />
+                                                    <div className="w-11 h-6 bg-gray-400 dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-cyan-600/50 dark:peer-focus:ring-[#00D4FF]/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600 dark:peer-checked:bg-[#00D4FF]"></div>
+                                                </label>
                                             </div>
                                         </div>
-                                        {agent.isCore ? (
-                                            <label className="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" checked={agent.enabled} onChange={() => handleToggleAgent(agent.id)} className="sr-only peer" />
-                                                <div className="w-11 h-6 bg-gray-400 dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-[#00D4FF]/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00D4FF]"></div>
-                                            </label>
-                                        ) : (
-                                            <div className="flex items-center gap-3">
-                                                <button onClick={() => handleOpenAgentModal(agent)} className="text-gray-500 dark:text-gray-400 hover:text-[#00D4FF]">
-                                                    <PencilIcon className="w-4 h-4" />
-                                                </button>
-                                                <button onClick={() => handleDeleteAgent(agent.id)} className="text-gray-500 dark:text-gray-400 hover:text-red-500">
-                                                    <TrashIcon className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        )}
                                     </div>
                                 ))}
                              </div>
@@ -497,7 +502,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                             id={`agent-pref-${role}`}
                                             value={agentPreferences[role] || ''}
                                             onChange={(e) => handlePreferenceChange(role, e.target.value)}
-                                            className="bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-1 text-zinc-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-[#00D4FF]/50 text-sm w-48"
+                                            className="bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-1 text-zinc-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50 text-sm w-48"
                                         >
                                             <option value="">Default</option>
                                             {availableAgentNames.map(name => (
@@ -523,7 +528,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                             </span>
                                             <button 
                                                 onClick={() => setSelectedService(service)}
-                                                className="text-sm font-semibold text-[#00D4FF] hover:text-black dark:hover:text-white transition-colors"
+                                                className="text-sm font-semibold text-cyan-600 dark:text-[#00D4FF] hover:text-black dark:hover:text-white transition-colors"
                                             >
                                                 Manage
                                             </button>

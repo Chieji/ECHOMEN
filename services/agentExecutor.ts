@@ -27,27 +27,26 @@ export class AgentExecutor {
         this.isStopped = false;
         this.tasks = [...initialTasks];
         
-        while (this.tasks.some(t => t.status !== 'Done' && t.status !== 'Error') && !this.isStopped) {
+        while (this.tasks.some(t => t.status === 'Queued') && !this.isStopped) {
             const currentTask = this.findNextTask();
             if (currentTask) {
                 const success = await this.executeTask(currentTask);
-                if (!success) {
+                if (!success && !this.isStopped) {
                     this.callbacks.onFail(`Execution halted: Task "${currentTask.title}" failed after all retries.`);
                     return;
                 }
             } else {
-                if (this.tasks.some(t => t.status === 'Delegating')) {
-                    await new Promise(resolve => setTimeout(resolve, 500)); // Wait for delegated tasks to complete
+                if (this.tasks.some(t => t.status === 'Delegating' || t.status === 'Executing')) {
+                    await new Promise(resolve => setTimeout(resolve, 500)); 
                 } else {
-                    // No runnable tasks and nothing is delegating. We're either done or deadlocked.
-                    break; // Exit the loop
+                    break;
                 }
             }
         }
 
         if (this.isStopped) return;
 
-        if (this.tasks.every(t => t.status === 'Done')) {
+        if (this.tasks.every(t => t.status === 'Done' || t.status === 'Cancelled')) {
             const isFromPlaybook = initialTasks[0]?.id.startsWith('playbook-');
             if(!isFromPlaybook) {
                 this.callbacks.onFinish();
@@ -55,32 +54,80 @@ export class AgentExecutor {
                  this.callbacks.onLog({ status: 'SUCCESS', message: 'ECHO: Playbook executed successfully.' });
             }
         } else {
-             const remainingTasks = this.tasks.filter(t => t.status === 'Queued').length;
+             const remainingTasks = this.tasks.filter(t => t.status === 'Queued' || t.status === 'Pending Review').length;
              if (remainingTasks > 0) {
-                this.callbacks.onFail(`Could not complete all tasks. ${remainingTasks} tasks remain queued.`);
+                this.callbacks.onFail(`Could not complete all tasks. ${remainingTasks} tasks remain unresolved.`);
+             } else if (!this.tasks.some(t => t.status === 'Error')) {
+                // If no tasks are queued and none have errored, it must be a success.
+                this.callbacks.onFinish();
              }
         }
     }
 
     public stop() {
         this.isStopped = true;
+        this.tasks.forEach(t => {
+            if (t.status === 'Executing' || t.status === 'Queued' || t.status === 'Pending Review' || t.status === 'Delegating') {
+                this.updateTask(t, { status: 'Cancelled' });
+            }
+        });
+        this.callbacks.onTasksUpdate([...this.tasks]);
+    }
+    
+    public cancelTask(taskId: string) {
+        const taskToCancel = this.tasks.find(t => t.id === taskId);
+        if (!taskToCancel) return;
+
+        const cancelledIds: string[] = [];
+
+        const recursivelyCancel = (id: string) => {
+            const task = this.tasks.find(t => t.id === id);
+            if (task && task.status !== 'Cancelled') {
+                this.updateTask(task, { status: 'Cancelled' });
+                this.callbacks.onLog({ status: 'WARN', message: `[System] Task "${task.title}" cancelled by user.` });
+                cancelledIds.push(id);
+
+                // Find and cancel all tasks that depend on this one
+                const dependents = this.tasks.filter(t => t.dependencies.includes(id));
+                dependents.forEach(dep => recursivelyCancel(dep.id));
+            }
+        };
+
+        recursivelyCancel(taskId);
+        this.callbacks.onTasksUpdate([...this.tasks]);
     }
     
     private findNextTask(): Task | undefined {
         return this.tasks.find(task => 
             task.status === 'Queued' && 
-            task.dependencies.every(depId => 
-                this.tasks.find(t => t.id === depId)?.status === 'Done'
-            )
+            task.dependencies.every(depId => {
+                const dep = this.tasks.find(t => t.id === depId);
+                return dep?.status === 'Done';
+            })
         );
     }
 
     private updateTask(task: Task, updates: Partial<Task>): Task {
-        const updatedTask = { ...task, ...updates };
-        this.tasks = this.tasks.map(t => t.id === task.id ? updatedTask : t);
-        this.callbacks.onTaskUpdate(updatedTask);
-        return updatedTask;
+        let wasUpdated = false;
+        const updatedTasks = this.tasks.map(t => {
+            if (t.id === task.id) {
+                wasUpdated = true;
+                return { ...t, ...updates };
+            }
+            return t;
+        });
+
+        if (wasUpdated) {
+            this.tasks = updatedTasks;
+            const updatedTask = this.tasks.find(t => t.id === task.id);
+            if(updatedTask) {
+                this.callbacks.onTaskUpdate(updatedTask);
+                return updatedTask;
+            }
+        }
+        return { ...task, ...updates };
     }
+
 
     private reactivateDelegatorIfAny(completedTask: Task) {
         if (!completedTask.delegatorTaskId) {
@@ -97,22 +144,26 @@ export class AgentExecutor {
             
             const observation = `Delegated task '${completedTask.title}' has been completed by the child agent. Review its work (e.g., read created files) and decide the next action.`;
             
-            // Pop the last sub-step (the delegation call) and update its observation
-            const lastSubStep = parentTask.subSteps.pop();
+            const lastSubStep = parentTask.subSteps ? parentTask.subSteps[parentTask.subSteps.length - 1] : undefined;
+
             if (lastSubStep) {
                 lastSubStep.observation = observation;
-                parentTask.subSteps.push(lastSubStep);
+                 this.updateTask(parentTask, {
+                    status: 'Executing', // Go straight back to executing
+                    subSteps: [...parentTask.subSteps]
+                });
+            } else {
+                 this.updateTask(parentTask, { status: 'Executing' });
             }
-            
-            // Reactivate the parent task by putting it back in the queue.
-            this.updateTask(parentTask, {
-                status: 'Queued',
-                subSteps: parentTask.subSteps
-            });
         }
     }
     
     private async executeTask(task: Task): Promise<boolean> {
+        // Double-check status before executing
+        if (this.tasks.find(t => t.id === task.id)?.status !== 'Queued') {
+            return true; // Already processed by another async path (e.g., cancellation)
+        }
+        
         let currentTask = this.updateTask(task, { status: 'Executing' });
         this.callbacks.onLog({ status: 'INFO', message: `[${currentTask.agent.name}] Starting task: ${currentTask.title}` });
 
@@ -120,12 +171,11 @@ export class AgentExecutor {
             if (currentTask.agent.role === 'Executor' && currentTask.agent.name === 'God Mode') {
                 await this.runReActLoop(currentTask);
             } else {
-                // For non-God Mode executors, including spawned ones, run a simplified execution.
                 await this.simulateSimpleExecution(currentTask);
             }
 
             const finalTaskState = this.tasks.find(t => t.id === task.id);
-            if (finalTaskState && finalTaskState.status !== 'Delegating') {
+             if (finalTaskState && finalTaskState.status === 'Executing') {
                  const doneTask = this.updateTask(finalTaskState, { status: 'Done' });
                  this.callbacks.onLog({ status: 'SUCCESS', message: `[${task.agent.name}] Finished task: ${task.title}` });
                  this.reactivateDelegatorIfAny(doneTask);
@@ -141,7 +191,8 @@ export class AgentExecutor {
                     status: 'WARN', 
                     message: `[${task.agent.name}] Task '${task.title}' failed. Retrying (${newRetryCount}/${task.maxRetries}). Error: ${errorMessage}` 
                 });
-                return true; 
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait a second before retry
+                return this.executeTask(this.tasks.find(t => t.id === task.id));
             } else {
                 this.updateTask(task, { status: 'Error' });
                 this.callbacks.onLog({ 
@@ -155,8 +206,12 @@ export class AgentExecutor {
 
     private async runReActLoop(task: Task) {
         let subSteps: SubStep[] = task.subSteps || [];
-        for (let i = 0; i < MAX_SUB_STEPS; i++) {
-            if (this.isStopped) return;
+        
+        // This loop now continues from where it left off if it was delegating.
+        while (subSteps.length < MAX_SUB_STEPS) {
+             if (this.isStopped || this.tasks.find(t => t.id === task.id)?.status !== 'Executing') {
+                return;
+            }
 
             const nextStep = await determineNextStep(task, subSteps);
 
@@ -191,23 +246,22 @@ export class AgentExecutor {
                     status: 'Queued',
                     agent: { role: 'Executor', name: newAgent.name },
                     estimatedTime: '~5m',
-                    dependencies: [], // Runs in parallel, unblocking the main pipeline temporarily
-                    delegatorTaskId: task.id, // Links back to the parent
+                    dependencies: [],
+                    delegatorTaskId: task.id,
                     logs: [],
                     reviewHistory: [],
                     retryCount: 0,
                     maxRetries: 3,
                 };
 
-                this.updateTask(task, { status: 'Delegating' });
+                const currentSubStep: SubStep = { thought, toolCall, observation: `Paused to delegate task.` };
+                subSteps.push(currentSubStep);
+
+                this.updateTask(task, { status: 'Delegating', subSteps: [...subSteps] });
+                
                 this.tasks.push(newTask);
                 this.callbacks.onTasksUpdate([...this.tasks]);
                 this.callbacks.onLog({ status: 'INFO', message: `[God Mode] Pausing and delegating task to new agent '${newAgent.name}'.` });
-                
-                // Add the current thought/action to substeps before pausing
-                const currentSubStep: SubStep = { thought, toolCall, observation: `Paused to delegate task.` };
-                subSteps.push(currentSubStep);
-                this.updateTask(task, { subSteps: [...subSteps] });
                 
                 return; 
             }
@@ -244,7 +298,7 @@ export class AgentExecutor {
                     try {
                         this.callbacks.onLog({ status: 'INFO', message: `[${task.agent.name}] Using tool: ${toolCall.name} with args: ${JSON.stringify(toolCall.args)}` });
                         const result = await toolImplementation(toolCall.args);
-                        observation = typeof result === 'object' ? JSON.stringify(result) : String(result);
+                        observation = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
                         this.callbacks.onLog({ status: 'SUCCESS', message: `[Tool] ${toolCall.name} returned: ${observation.substring(0, 100)}...` });
                     } catch (e) {
                         const toolError = e instanceof Error ? e.message : String(e);
@@ -264,14 +318,14 @@ export class AgentExecutor {
             this.updateTask(task, { subSteps: [...subSteps] });
         }
         
-        throw new Error(`Max steps (${MAX_SUB_STEPS}) reached for task "${task.title}".`);
+        this.callbacks.onLog({ status: 'WARN', message: `[${task.agent.name}] Task "${task.title}" reached max steps (${MAX_SUB_STEPS}) and will now be finalized.` });
     }
 
     private async simulateSimpleExecution(task: Task) {
-        if (this.isStopped) return;
+        if (this.isStopped || this.tasks.find(t => t.id === task.id)?.status !== 'Executing') return;
         this.callbacks.onLog({ status: 'INFO', message: `[${task.agent.name}] Processing...` });
-        await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
-        if (this.isStopped) return;
+        await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 2000));
+        if (this.isStopped || this.tasks.find(t => t.id === task.id)?.status !== 'Executing') return;
         this.callbacks.onLog({ status: 'SUCCESS', message: `[${task.agent.name}] Processing complete.` });
     }
 }

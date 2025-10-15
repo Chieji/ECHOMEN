@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Task } from '../types';
 import { PlannerIcon } from './icons/PlannerIcon';
@@ -6,6 +6,8 @@ import { ExecutorIcon } from './icons/ExecutorIcon';
 import { ReviewerIcon } from './icons/ReviewerIcon';
 import { SynthesizerIcon } from './icons/SynthesizerIcon';
 import { CpuChipIcon } from './icons/CpuChipIcon';
+import { CheckCircleIcon } from './icons/CheckCircleIcon';
+import { ExclamationTriangleIcon } from './icons/ExclamationTriangleIcon';
 
 interface AgentOrchestrationProps {
     tasks: Task[];
@@ -13,6 +15,7 @@ interface AgentOrchestrationProps {
 
 type AgentRole = 'Planner' | 'Executor' | 'Reviewer' | 'Synthesizer';
 type NodeRole = AgentRole | 'Core';
+type NodeStatus = 'idle' | 'pending' | 'executing' | 'success' | 'error';
 
 const nodePositions: Record<NodeRole, { top: string; left: string; x: number; y: number; }> = {
     Core: { top: '50%', left: '50%', x: 50, y: 50 },
@@ -22,7 +25,6 @@ const nodePositions: Record<NodeRole, { top: string; left: string; x: number; y:
     Synthesizer: { top: '90%', left: '50%', x: 50, y: 90 },
 };
 
-
 const roleIcons: Record<NodeRole, React.ReactNode> = {
     Core: <CpuChipIcon className="w-10 h-10" />,
     Planner: <PlannerIcon className="w-8 h-8" />,
@@ -31,18 +33,24 @@ const roleIcons: Record<NodeRole, React.ReactNode> = {
     Synthesizer: <SynthesizerIcon className="w-8 h-8" />,
 };
 
-interface AnimationState {
-    key: string;
-    from: AgentRole;
-    to: AgentRole;
-    color: string;
-}
+const statusConfig: Record<NodeStatus, { color: string; glow: string; textColor: string; icon?: React.ReactNode }> = {
+    idle: { color: 'border-white/20', glow: '', textColor: 'text-gray-500' },
+    pending: { color: 'border-yellow-500/80', glow: 'shadow-[0_0_12px_rgba(234,179,8,0.6)] animate-pulse', textColor: 'text-yellow-400' },
+    executing: { color: 'border-[#00D4FF]', glow: 'shadow-[0_0_15px_rgba(0,212,255,0.7)] animate-pulse', textColor: 'text-[#00D4FF]' },
+    success: { color: 'border-green-500', glow: 'shadow-[0_0_10px_rgba(34,197,94,0.6)]', textColor: 'text-green-400', icon: <CheckCircleIcon className="w-5 h-5 absolute -top-1 -right-1 text-green-400 bg-[#121212] rounded-full" /> },
+    error: { color: 'border-red-500', glow: 'shadow-[0_0_10px_rgba(239,68,68,0.6)]', textColor: 'text-red-400', icon: <ExclamationTriangleIcon className="w-5 h-5 absolute -top-1 -right-1 text-red-400 bg-[#121212] rounded-full" /> },
+};
 
-const AgentNode: React.FC<{ role: NodeRole, isActive: boolean }> = ({ role, isActive }) => {
+
+const AgentNode: React.FC<{ role: NodeRole, status: NodeStatus }> = ({ role, status }) => {
     const isCore = role === 'Core';
-    const activeColor = isCore ? 'border-[#00D4FF]' : 'border-[#FF6B00]';
-    const activeGlow = isCore ? 'shadow-[0_0_15px_rgba(0,212,255,0.7)]' : 'shadow-[0_0_15px_rgba(255,107,0,0.8)]';
-    const textColor = isCore ? 'text-[#00D4FF]' : 'text-[#FF6B00]';
+    const config = statusConfig[status];
+    
+    const coreStatus = status === 'executing' 
+        ? { color: 'border-[#00D4FF]', glow: 'shadow-[0_0_15px_rgba(0,212,255,0.7)]', textColor: 'text-[#00D4FF]' }
+        : { color: 'border-white/20', glow: '', textColor: 'text-gray-400' };
+
+    const finalConfig = isCore ? coreStatus : config;
 
     return (
         <div
@@ -53,71 +61,86 @@ const AgentNode: React.FC<{ role: NodeRole, isActive: boolean }> = ({ role, isAc
                 transform: `translate(-50%, -50%)`,
             }}
         >
-            <div className={`relative ${isCore ? 'w-20 h-20' : 'w-16 h-16'} bg-black/50 border-2 rounded-full flex items-center justify-center transition-all duration-300 ${isActive ? `${activeColor} ${activeGlow}` : 'border-white/20'}`}>
-                <div className={`${isActive ? textColor : 'text-gray-400'}`}>{roleIcons[role]}</div>
+            <div className={`relative ${isCore ? 'w-20 h-20' : 'w-16 h-16'} bg-black/50 border-2 rounded-full flex items-center justify-center transition-all duration-300 ${finalConfig.color} ${finalConfig.glow}`}>
+                <div className={`${finalConfig.textColor}`}>{roleIcons[role]}</div>
+                {finalConfig.icon}
             </div>
-            <p className={`mt-2 text-xs font-bold tracking-wider uppercase ${isActive ? textColor : 'text-gray-500'}`}>{role}</p>
+            <p className={`mt-2 text-xs font-bold tracking-wider uppercase ${finalConfig.textColor}`}>{role}</p>
         </div>
     );
 };
 
 export const AgentOrchestration: React.FC<AgentOrchestrationProps> = ({ tasks }) => {
-    const [animation, setAnimation] = useState<AnimationState | null>(null);
+    const { agentStatuses, links } = useMemo(() => {
+        const statuses: Record<AgentRole, NodeStatus> = {
+            Planner: 'idle',
+            Executor: 'idle',
+            Reviewer: 'idle',
+            Synthesizer: 'idle',
+        };
 
-    const activeAgents = useMemo(() => {
-        const agents = new Set<NodeRole>();
-        const activeTask = tasks.find(t => ['Executing', 'Pending Review', 'Revising'].includes(t.status));
+        const agentTasks: Record<AgentRole, Task[]> = {
+            Planner: [], Executor: [], Reviewer: [], Synthesizer: []
+        };
 
-        if (activeTask) {
-            agents.add('Core');
-            agents.add(activeTask.agent.role);
-            
-            const prevRole = (activeTask.status === 'Revising' ? 'Reviewer' : 
-                              activeTask.dependencies.length > 0 ? tasks.find(t => t.id === activeTask.dependencies[0])?.agent.role : 'Planner') || 'Planner';
-            agents.add(prevRole);
+        if (tasks.length === 0) {
+            return { agentStatuses: statuses, links: [] };
+        }
+
+        tasks.forEach(task => {
+            agentTasks[task.agent.role].push(task);
+        });
+
+        for (const role in agentTasks) {
+            const roleKey = role as AgentRole;
+            const tasksForRole = agentTasks[roleKey];
+            if (tasksForRole.length === 0) {
+                statuses[roleKey] = 'idle';
+                continue;
+            }
+            if (tasksForRole.some(t => t.status === 'Error')) {
+                statuses[roleKey] = 'error';
+            } else if (tasksForRole.some(t => ['Executing', 'Revising', 'Pending Review', 'Delegating'].includes(t.status))) {
+                statuses[roleKey] = 'executing';
+            } else if (tasksForRole.every(t => t.status === 'Done')) {
+                statuses[roleKey] = 'success';
+            } else {
+                statuses[roleKey] = 'pending';
+            }
         }
         
-        return Array.from(agents);
-    }, [tasks]);
+        const newLinks: { key: string; from: NodeRole; to: NodeRole; status: 'active' | 'completed' | 'pending' }[] = [];
+        const executingTask = tasks.find(t => ['Executing', 'Revising'].includes(t.status));
 
-    useEffect(() => {
-        const activeTask = tasks.find(t => ['Executing', 'Pending Review', 'Revising'].includes(t.status));
-
-        if (activeTask) {
-            let fromRole: AgentRole;
-            const depId = activeTask.dependencies[0];
-            const depTask = tasks.find(t => t.id === depId);
-
-            if (activeTask.status === 'Revising') {
-                fromRole = 'Reviewer';
-            } else {
-                fromRole = depTask?.agent.role || 'Planner';
+        tasks.forEach(task => {
+            const toRole = task.agent.role;
+            if (task.dependencies.length === 0 && (task.status === 'Executing' || task.status === 'Queued')) {
+                newLinks.push({ key: `core-${task.id}`, from: 'Core', to: toRole, status: task.status === 'Executing' ? 'active' : 'pending' });
             }
-
-            const toRole = activeTask.agent.role;
-            let color = '#00D4FF';
-            if (toRole === 'Reviewer') color = '#FBBF24';
-            if (fromRole === 'Reviewer') color = '#F97316';
-
-            setAnimation({ key: `${activeTask.id}-${activeTask.status}`, from: fromRole, to: toRole, color });
-
-        } else {
-             const lastDoneTask = tasks.filter(t => t.status === 'Done').sort((a, b) => new Date(b.logs[b.logs.length-1]?.timestamp || 0).getTime() - new Date(a.logs[a.logs.length-1]?.timestamp || 0).getTime())[0];
-             if(lastDoneTask && lastDoneTask.agent.role !== 'Synthesizer' && tasks.some(t => t.status === 'Queued' && t.dependencies.includes(lastDoneTask.id))) {
-                 const nextTask = tasks.find(t => t.status === 'Queued' && t.dependencies.includes(lastDoneTask.id));
-                 if (nextTask) {
-                    setAnimation({ key: `${lastDoneTask.id}-done`, from: lastDoneTask.agent.role, to: nextTask.agent.role, color: '#22C55E' });
-                 }
-             } else {
-                  setAnimation(null);
-             }
-        }
-
+            task.dependencies.forEach(depId => {
+                const depTask = tasks.find(t => t.id === depId);
+                if (depTask) {
+                    const fromRole = depTask.agent.role;
+                    let status: 'active' | 'completed' | 'pending' = 'pending';
+                    if (depTask.status === 'Done' && (task.status === 'Queued' || ['Executing', 'Revising'].includes(task.status))) {
+                        status = task.status === 'Queued' ? 'completed' : 'active';
+                    }
+                    newLinks.push({ key: `${depTask.id}-${task.id}`, from: fromRole, to: toRole, status });
+                }
+            });
+        });
+        
+        return { agentStatuses: statuses, links: newLinks };
     }, [tasks]);
 
-    const getPath = (from: AgentRole, to: AgentRole) => {
+    const getPath = (from: NodeRole, to: NodeRole) => {
         const p1 = nodePositions[from];
         const p2 = nodePositions[to];
+        // For direct lines from Core, no curve is needed.
+        if (from === 'Core' || p1.x === p2.x || p1.y === p2.y) {
+            return `M ${p1.x},${p1.y} L ${p2.x},${p2.y}`;
+        }
+        // Curve paths through the core for inter-agent communication
         const core = nodePositions['Core'];
         return `M ${p1.x},${p1.y} Q ${core.x},${core.y} ${p2.x},${p2.y}`;
     };
@@ -129,43 +152,60 @@ export const AgentOrchestration: React.FC<AgentOrchestrationProps> = ({ tasks })
                     <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
                         <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="0.5"/>
                     </pattern>
-                    <radialGradient id="pulse-gradient" cx="50%" cy="50%" r="50%">
-                        <stop offset="0%" stopColor="white" />
-                        <stop offset="100%" stopOpacity="0" />
-                    </radialGradient>
                 </defs>
                 <rect width="100" height="100" fill="url(#grid)" />
-                
-                {/* Static Paths */}
-                {(['Planner', 'Executor', 'Reviewer', 'Synthesizer'] as AgentRole[]).map(role => (
-                    <path key={`path-to-${role}`} d={`M ${nodePositions['Core'].x},${nodePositions['Core'].y} L ${nodePositions[role].x},${nodePositions[role].y}`} stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
-                ))}
-                 <path d={`M ${nodePositions['Reviewer'].x},${nodePositions['Reviewer'].y} Q 50,75 ${nodePositions['Executor'].x},${nodePositions['Executor'].y}`} stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" fill="none" />
-
             </svg>
             
             <div className="relative w-full h-full">
-                {(['Core', 'Planner', 'Executor', 'Reviewer', 'Synthesizer'] as NodeRole[]).map(role => (
-                    <AgentNode key={role} role={role} isActive={activeAgents.includes(role)} />
-                ))}
-
-                <svg className="absolute top-0 left-0 w-full h-full overflow-visible" width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100">
+                 <svg className="absolute top-0 left-0 w-full h-full overflow-visible" width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100">
                     <AnimatePresence>
-                        {animation && (
-                            <motion.path
-                                key={animation.key}
-                                d={getPath(animation.from, animation.to)}
-                                fill="none"
-                                stroke={animation.color}
-                                strokeWidth="1"
-                                initial={{ pathLength: 0, opacity: 0 }}
-                                animate={{ pathLength: 1, opacity: [0, 0.8, 0] }}
-                                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                                style={{ filter: `drop-shadow(0 0 3px ${animation.color})` }}
-                            />
-                        )}
+                        {links.map(link => {
+                             const pathConfig = {
+                                active: { color: '#00D4FF', width: 1, dash: "0" },
+                                completed: { color: '#22C55E', width: 0.7, dash: "0" },
+                                pending: { color: 'rgba(255,255,255,0.3)', width: 0.5, dash: "2 2" },
+                            }[link.status];
+
+                            return (
+                                <motion.path
+                                    key={link.key}
+                                    d={getPath(link.from, link.to)}
+                                    fill="none"
+                                    stroke={pathConfig.color}
+                                    strokeWidth={pathConfig.width}
+                                    strokeDasharray={pathConfig.dash}
+                                    initial={{ pathLength: 0 }}
+                                    animate={{ pathLength: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.5 }}
+                                    style={link.status === 'active' ? { filter: `drop-shadow(0 0 3px ${pathConfig.color})` } : {}}
+                                />
+                            );
+                        })}
                     </AnimatePresence>
+                     <AnimatePresence>
+                        {links.filter(l => l.status === 'active').map(link => (
+                             <motion.circle
+                                key={`${link.key}-pulse`}
+                                r="1"
+                                fill={statusConfig.executing.color}
+                                style={{ filter: `drop-shadow(0 0 5px ${statusConfig.executing.color})` }}
+                              >
+                                <animateMotion
+                                  dur="1.5s"
+                                  repeatCount="indefinite"
+                                  path={getPath(link.from, link.to)}
+                                  rotate="auto"
+                                />
+                              </motion.circle>
+                        ))}
+                     </AnimatePresence>
                 </svg>
+
+                <AgentNode role="Core" status={Object.values(agentStatuses).some(s => s === 'executing') ? 'executing' : 'idle'} />
+                {(['Planner', 'Executor', 'Reviewer', 'Synthesizer'] as AgentRole[]).map(role => (
+                    <AgentNode key={role} role={role} status={agentStatuses[role]} />
+                ))}
             </div>
         </div>
     );

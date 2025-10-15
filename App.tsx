@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Header } from './components/Header';
 import { CommandCenter } from './components/CommandCenter';
 import { ExecutionDashboard } from './components/ExecutionDashboard';
@@ -21,13 +20,15 @@ const App: React.FC = () => {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [liveLogs, setLiveLogs] = useState<LogEntry[]>([]);
     const [artifacts, setArtifacts] = useState<Artifact[]>([]);
-    const [agents, setAgents] = useState<CustomAgent[]>([]); // New state for agents
+    const [agents, setAgents] = useState<CustomAgent[]>([]);
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-    const { messages, addMessage, clearMemory } = useMemory([]);
+    const { messages, addMessage, editMessage, clearMemory } = useMemory([]);
     const [agentMode, setAgentMode] = useState<AgentMode>(AgentMode.ACTION);
     const [agentStatus, setAgentStatus] = useState<AgentStatus>(AgentStatus.IDLE);
     const [currentPrompt, setCurrentPrompt] = useState<string>('');
     const [commandCenterInput, setCommandCenterInput] = useState<string>('');
+    
+    const executorRef = useRef<AgentExecutor | null>(null);
 
     useEffect(() => {
         if (theme === 'dark') {
@@ -76,16 +77,15 @@ const App: React.FC = () => {
         });
         addLog({ status: 'SUCCESS', message: `[System] New specialist agent spawned: "${newAgent.name}"` });
     };
+    
+    const handleCancelTask = (taskId: string) => {
+        if (executorRef.current) {
+            executorRef.current.cancelTask(taskId);
+        }
+    };
 
     const handleSendCommand = async (prompt: string, isWebToolActive: boolean) => {
         if (agentMode === AgentMode.CHAT) {
-            if (messages.length === 0) {
-                addMessage({
-                    sender: 'agent',
-                    text: 'This is a temporary chat. History will not be saved.',
-                    type: 'system',
-                });
-            }
             addMessage({ sender: 'user', text: prompt });
             const agentResponse = await getChatResponse(prompt);
             addMessage({ sender: 'agent', text: agentResponse });
@@ -95,13 +95,12 @@ const App: React.FC = () => {
         setTasks([]);
         setLiveLogs([]);
         setArtifacts([]);
-        setCurrentPrompt(prompt); // Save original prompt for synthesis
+        setCurrentPrompt(prompt);
         setAgentStatus(AgentStatus.RUNNING);
 
         addLog({ status: 'INFO', message: `User command received: "${prompt}"` });
 
         try {
-            // Step 1: Clarify and correct the user's prompt
             addLog({ status: 'INFO', message: '[Planner] Analyzing and clarifying prompt...' });
             const correctedPrompt = await clarifyAndCorrectPrompt(prompt);
             if (prompt !== correctedPrompt) {
@@ -116,7 +115,6 @@ const App: React.FC = () => {
 
             addLog({ status: 'INFO', message: '[Planner] Deconstructing the request...' });
             
-            // Step 2: Create the initial plan based on the corrected prompt
             const initialTasks = await createInitialPlan(finalPrompt);
             setTasks(initialTasks);
             
@@ -126,17 +124,16 @@ const App: React.FC = () => {
                  addLog({ status: 'SUCCESS', message: '[Planner] Initial task pipeline generated.' });
             }
 
-            // Step 3: Execute the plan
             const executor = new AgentExecutor({
                 onTaskUpdate: (updatedTask) => {
                     setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
                 },
-                onTasksUpdate: (updatedTasks) => { // New callback for full list updates
+                onTasksUpdate: (updatedTasks) => {
                     setTasks(updatedTasks);
                 },
                 onLog: addLog,
                 onArtifactCreated: handleCreateArtifact,
-                onAgentCreated: handleAgentCreated, // Pass the new handler
+                onAgentCreated: handleAgentCreated,
                 onFinish: () => {
                     addLog({ status: 'SUCCESS', message: 'ECHO: All tasks completed successfully.' });
                     setAgentStatus(AgentStatus.FINISHED);
@@ -146,7 +143,7 @@ const App: React.FC = () => {
                     setAgentStatus(AgentStatus.ERROR);
                 }
             });
-
+            executorRef.current = executor;
             await executor.run(initialTasks, finalPrompt);
 
         } catch (error) {
@@ -175,8 +172,7 @@ const App: React.FC = () => {
                 } finally {
                     setAgentStatus(AgentStatus.IDLE);
                 }
-            } else if (agentStatus === AgentStatus.FINISHED) {
-                // If it was a playbook or no tasks, just go back to idle.
+            } else if (agentStatus === AgentStatus.FINISHED || agentStatus === AgentStatus.ERROR) {
                 setAgentStatus(AgentStatus.IDLE);
             }
         }
@@ -185,11 +181,11 @@ const App: React.FC = () => {
 
 
     const handleStopExecution = () => {
-        // In a real scenario, this would signal the executor to gracefully stop.
-        // For now, we'll just update the UI state.
+        if (executorRef.current) {
+            executorRef.current.stop();
+        }
         addLog({ status: 'WARN', message: 'User initiated stop command. Halting all tasks.' });
         setAgentStatus(AgentStatus.IDLE);
-        setTasks(tasks => tasks.map(t => ['Executing', 'Queued', 'Revising', 'Pending Review', 'Delegating'].includes(t.status) ? {...t, status: 'Error'} : t));
     };
 
     const pageVariants = {
@@ -205,7 +201,7 @@ const App: React.FC = () => {
     };
 
     return (
-        <div className="bg-white dark:bg-[#0A0A0A] text-zinc-800 dark:text-gray-200 min-h-screen font-sans flex flex-col">
+        <div className="bg-zinc-100 dark:bg-[#0A0A0A] text-zinc-900 dark:text-gray-200 min-h-screen font-sans flex flex-col">
             <Header 
                 onSettingsClick={handleSettingsClick} 
                 onHistoryClick={handleHistoryClick} 
@@ -229,6 +225,7 @@ const App: React.FC = () => {
                             <ExecutionDashboard 
                                 tasks={tasks}
                                 liveLogs={liveLogs}
+                                onCancelTask={handleCancelTask}
                             />
                         </motion.div>
                     ) : (
@@ -241,14 +238,18 @@ const App: React.FC = () => {
                             transition={pageTransition}
                             className="flex-grow flex flex-col"
                         >
-                           <ChatInterface messages={messages} onSuggestionClick={handleSuggestionClick} />
+                           <ChatInterface 
+                                messages={messages} 
+                                onSuggestionClick={handleSuggestionClick}
+                                onEditMessage={editMessage}
+                           />
                         </motion.div>
                     )}
                 </AnimatePresence>
             </main>
 
             <AnimatePresence>
-                {agentMode === AgentMode.ACTION && (
+                {agentMode === AgentMode.ACTION && tasks.length > 0 && (
                     <ExecutionStatusBar tasks={tasks} agentStatus={agentStatus} onStopExecution={handleStopExecution} />
                 )}
             </AnimatePresence>
@@ -258,7 +259,7 @@ const App: React.FC = () => {
                 setAgentMode={setAgentMode}
                 onSendCommand={(prompt, isWebToolActive) => {
                     handleSendCommand(prompt, isWebToolActive);
-                    setCommandCenterInput(''); // Clear input after sending
+                    setCommandCenterInput('');
                 }} 
                 onClearChat={clearMemory}
                 inputValue={commandCenterInput}
@@ -271,9 +272,6 @@ const App: React.FC = () => {
                         onClose={handleSettingsClose}
                         theme={theme}
                         setTheme={setTheme}
-                        // Pass agents state and handler to settings panel
-                        agents={agents}
-                        setAgents={setAgents}
                     />
                 )}
             </AnimatePresence>
@@ -290,7 +288,6 @@ const App: React.FC = () => {
                 {isArtifactsOpen && (
                     <ArtifactsPanel
                         artifacts={artifacts}
-                        // FIX: Changed handleClose to handleArtifactsClose to fix "Cannot find name 'handleClose'" error.
                         onClose={handleArtifactsClose}
                     />
                 )}

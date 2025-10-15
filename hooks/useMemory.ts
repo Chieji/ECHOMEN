@@ -13,9 +13,17 @@ export const useMemory = (initialMessages: Message[] = []) => {
         setMessages(prevMessages => [...prevMessages, newMessage]);
     }, []);
     
+    const editMessage = useCallback((messageId: string, newText: string) => {
+        setMessages(prevMessages =>
+            prevMessages.map(msg =>
+                msg.id === messageId ? { ...msg, text: newText } : msg
+            )
+        );
+    }, []);
+
     const clearMemory = useCallback(() => {
         setMessages([]);
     }, []);
 
-    return { messages, addMessage, clearMemory };
+    return { messages, addMessage, editMessage, clearMemory };
 };
