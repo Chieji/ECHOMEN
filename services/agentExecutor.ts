@@ -127,6 +127,23 @@ export class AgentExecutor {
                     content: toolCall.args.content
                 });
                 observation = `Artifact "${toolCall.args.title}" created successfully.`;
+            } else if (toolCall.name === 'executeCode') {
+                const { language, code } = toolCall.args;
+                try {
+                    const result = await availableTools.executeCode({ language, code });
+                    this.callbacks.onArtifactCreated({
+                        taskId: task.id,
+                        title: `Execution Result: ${language}`,
+                        type: 'live-preview',
+                        content: JSON.stringify({ code, result })
+                    });
+                    observation = `Code executed successfully. Result: ${result.substring(0, 200)}...`;
+                } catch (e) {
+                     const toolError = e instanceof Error ? e.message : String(e);
+                     observation = `Error executing code: ${toolError}`;
+                     this.callbacks.onLog({ status: 'ERROR', message: `[Tool] ${observation}` });
+                     throw new Error(observation);
+                }
             } else {
                  const toolImplementation = availableTools[toolCall.name];
 

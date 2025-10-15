@@ -39,6 +39,55 @@ const CodeArtifact: React.FC<{ artifact: Artifact }> = ({ artifact }) => {
     );
 };
 
+const LivePreviewArtifact: React.FC<{ artifact: Artifact }> = ({ artifact }) => {
+    const [copied, setCopied] = useState(false);
+    const { code, result } = JSON.parse(artifact.content);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(code);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+        <div className="bg-black/20 dark:bg-black/40 rounded-lg border border-black/10 dark:border-white/10 overflow-hidden">
+            <div className="flex justify-between items-center p-3 bg-black/10 dark:bg-black/20 border-b border-black/10 dark:border-white/10">
+                <h4 className="font-semibold text-zinc-800 dark:text-gray-200">{artifact.title}</h4>
+            </div>
+            <div className="p-4">
+                <h5 className="text-sm font-semibold mb-2 text-gray-400">Live Preview</h5>
+                <iframe
+                    srcDoc={code}
+                    title="Live Preview"
+                    sandbox="allow-scripts"
+                    className="w-full h-48 rounded-md bg-white border border-black/10 dark:border-white/10"
+                />
+            </div>
+             <div className="p-4 border-t border-black/10 dark:border-white/10">
+                <h5 className="text-sm font-semibold mb-2 text-gray-400">Execution Result</h5>
+                <pre className="p-3 text-xs font-mono text-zinc-700 dark:text-gray-300 overflow-x-auto bg-black/20 rounded-md">
+                    <code>{result}</code>
+                </pre>
+            </div>
+            <div className="p-4 border-t border-black/10 dark:border-white/10">
+                 <div className="flex justify-between items-center mb-2">
+                    <h5 className="text-sm font-semibold text-gray-400">Source Code</h5>
+                    <button
+                        onClick={handleCopy}
+                        className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-md transition-colors ${copied ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-gray-300 hover:bg-white/20'}`}
+                    >
+                        {copied ? <ClipboardCheckIcon className="w-4 h-4" /> : <DocumentTextIcon className="w-4 h-4" />}
+                        {copied ? 'Copied!' : 'Copy Code'}
+                    </button>
+                </div>
+                <pre className="p-3 text-xs font-mono text-zinc-700 dark:text-gray-300 overflow-x-auto bg-black/20 rounded-md max-h-48">
+                    <code>{code}</code>
+                </pre>
+            </div>
+        </div>
+    );
+};
+
 
 export const ArtifactsPanel: React.FC<ArtifactsPanelProps> = ({ artifacts, onClose }) => {
     return (
@@ -78,6 +127,8 @@ export const ArtifactsPanel: React.FC<ArtifactsPanelProps> = ({ artifacts, onClo
                         <div className="space-y-6">
                             {artifacts.map(artifact => {
                                 switch (artifact.type) {
+                                    case 'live-preview':
+                                        return <LivePreviewArtifact key={artifact.id} artifact={artifact} />;
                                     case 'code':
                                     case 'markdown': // Render markdown as code for now
                                         return <CodeArtifact key={artifact.id} artifact={artifact} />;

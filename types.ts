@@ -124,7 +124,7 @@ export interface Service {
     status: 'Connected' | 'Not Connected';
 }
 
-export type ArtifactType = 'code' | 'markdown' | 'log';
+export type ArtifactType = 'code' | 'markdown' | 'log' | 'live-preview';
 
 export interface Artifact {
     id: string;
