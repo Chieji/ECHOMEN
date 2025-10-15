@@ -21,10 +21,11 @@ const App: React.FC = () => {
     const [liveLogs, setLiveLogs] = useState<LogEntry[]>([]);
     const [artifacts, setArtifacts] = useState<Artifact[]>([]);
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-    const { messages, addMessage } = useMemory([]);
+    const { messages, addMessage, clearMemory } = useMemory([]);
     const [agentMode, setAgentMode] = useState<AgentMode>(AgentMode.ACTION);
     const [agentStatus, setAgentStatus] = useState<AgentStatus>(AgentStatus.IDLE);
     const [currentPrompt, setCurrentPrompt] = useState<string>('');
+    const [commandCenterInput, setCommandCenterInput] = useState<string>('');
 
     useEffect(() => {
         if (theme === 'dark') {
@@ -33,6 +34,10 @@ const App: React.FC = () => {
             document.documentElement.classList.remove('dark');
         }
     }, [theme]);
+    
+    const handleSuggestionClick = (prompt: string) => {
+        setCommandCenterInput(prompt);
+    };
 
     const handleSettingsClick = () => setIsSettingsOpen(true);
     const handleSettingsClose = () => setIsSettingsOpen(false);
@@ -58,6 +63,13 @@ const App: React.FC = () => {
 
     const handleSendCommand = async (prompt: string, isWebToolActive: boolean) => {
         if (agentMode === AgentMode.CHAT) {
+            if (messages.length === 0) {
+                addMessage({
+                    sender: 'agent',
+                    text: 'This is a temporary chat. History will not be saved.',
+                    type: 'system',
+                });
+            }
             addMessage({ sender: 'user', text: prompt });
             const agentResponse = await getChatResponse(prompt);
             addMessage({ sender: 'agent', text: agentResponse });
@@ -209,7 +221,7 @@ const App: React.FC = () => {
                             transition={pageTransition}
                             className="flex-grow flex flex-col"
                         >
-                           <ChatInterface messages={messages} />
+                           <ChatInterface messages={messages} onSuggestionClick={handleSuggestionClick} />
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -224,7 +236,13 @@ const App: React.FC = () => {
             <CommandCenter 
                 agentMode={agentMode}
                 setAgentMode={setAgentMode}
-                onSendCommand={handleSendCommand} 
+                onSendCommand={(prompt, isWebToolActive) => {
+                    handleSendCommand(prompt, isWebToolActive);
+                    setCommandCenterInput(''); // Clear input after sending
+                }} 
+                onClearChat={clearMemory}
+                inputValue={commandCenterInput}
+                onInputChange={setCommandCenterInput}
             />
             
             <AnimatePresence>

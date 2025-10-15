@@ -31,10 +31,12 @@ const roleIcons = {
     Synthesizer: <SynthesizerIcon className="w-4 h-4" />,
 };
 
-type HistoryItem = (Task & { type: 'task' }) | (Message & { type: 'message' });
+// FIX: Renamed discriminant property to `historyType` to avoid conflict with `Message.type`.
+type HistoryItem = (Task & { historyType: 'task' }) | (Message & { historyType: 'message' });
 
 const HistoryItemCard: React.FC<{ item: HistoryItem }> = ({ item }) => {
-    if (item.type === 'task') {
+    // FIX: Use `historyType` for discriminating the union.
+    if (item.historyType === 'task') {
         const config = statusConfig[item.status];
         return (
             <div className="bg-black/5 dark:bg-white/5 p-4 rounded-lg border border-black/10 dark:border-white/10">
@@ -51,36 +53,40 @@ const HistoryItemCard: React.FC<{ item: HistoryItem }> = ({ item }) => {
                 </p>
             </div>
         );
+    } else {
+        // FIX: Added an else block to ensure proper type narrowing for `Message`.
+        return (
+             <div className="flex gap-3">
+                <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${item.sender === 'user' ? 'bg-orange-500' : 'bg-cyan-500'}`}>
+                    {item.sender === 'agent' && <ChatIcon className="w-5 h-5 text-black" />}
+                </div>
+                <div className={`p-3 rounded-xl max-w-sm w-full ${item.sender === 'user' ? 'bg-orange-500/10' : 'bg-cyan-500/10'}`}>
+                    <p className="text-sm text-zinc-700 dark:text-zinc-200 whitespace-pre-wrap">{item.text}</p>
+                     <p className="text-xs text-right text-gray-500 dark:text-gray-400 mt-2">
+                        {new Date(item.timestamp).toLocaleTimeString()}
+                    </p>
+                </div>
+            </div>
+        );
     }
-
-    return (
-         <div className="flex gap-3">
-            <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${item.sender === 'user' ? 'bg-orange-500' : 'bg-cyan-500'}`}>
-                {item.sender === 'agent' && <ChatIcon className="w-5 h-5 text-black" />}
-            </div>
-            <div className={`p-3 rounded-xl max-w-sm w-full ${item.sender === 'user' ? 'bg-orange-500/10' : 'bg-cyan-500/10'}`}>
-                <p className="text-sm text-zinc-700 dark:text-zinc-200 whitespace-pre-wrap">{item.text}</p>
-                 <p className="text-xs text-right text-gray-500 dark:text-gray-400 mt-2">
-                    {new Date(item.timestamp).toLocaleTimeString()}
-                </p>
-            </div>
-        </div>
-    );
 };
 
 export const HistoryPanel: React.FC<HistoryPanelProps> = ({ tasks, messages, onClose }) => {
     // In a real app, filtering state would be managed here with useState
+    // FIX: Use `historyType` when creating the combined array to avoid type conflicts.
     const historyItems: HistoryItem[] = [
-        ...tasks.map(t => ({ ...t, type: 'task' as const })),
-        ...messages.map(m => ({ ...m, type: 'message' as const }))
+        ...tasks.map(t => ({ ...t, historyType: 'task' as const })),
+        ...messages.map(m => ({ ...m, historyType: 'message' as const }))
     ].sort((a, b) => {
-        const timeA = new Date(a.type === 'task' ? a.logs[0]?.timestamp || 0 : a.timestamp).getTime();
-        const timeB = new Date(b.type === 'task' ? b.logs[0]?.timestamp || 0 : b.timestamp).getTime();
+        // FIX: Use `historyType` to correctly access timestamp properties for sorting.
+        const timeA = new Date(a.historyType === 'task' ? a.logs[0]?.timestamp || 0 : a.timestamp).getTime();
+        const timeB = new Date(b.historyType === 'task' ? b.logs[0]?.timestamp || 0 : b.timestamp).getTime();
         return timeB - timeA;
     });
 
     const groupedItems = historyItems.reduce((acc, item) => {
-        const date = new Date(item.type === 'task' ? item.logs[0]?.timestamp || 0 : item.timestamp).toDateString();
+        // FIX: Use `historyType` for grouping items by date.
+        const date = new Date(item.historyType === 'task' ? item.logs[0]?.timestamp || 0 : item.timestamp).toDateString();
         if (!acc[date]) {
             acc[date] = [];
         }

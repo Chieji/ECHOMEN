@@ -28,11 +28,10 @@ export class AgentExecutor {
         while (currentTask) {
             const success = await this.executeTask(currentTask);
             if (!success) {
-                // If a task definitively fails after retries, we stop.
-                if (this.tasks.some(t => t.status === 'Error')) {
-                    this.callbacks.onFail("Execution halted due to a task failure after all retries.");
-                }
-                return;
+                // If a task fails after all retries, its status will be 'Error'.
+                // The executeTask method returns false to signal this definitive failure.
+                this.callbacks.onFail(`Execution halted: Task "${currentTask.title}" failed after all retries.`);
+                return; // Stop execution.
             }
             currentTask = this.findNextTask();
         }

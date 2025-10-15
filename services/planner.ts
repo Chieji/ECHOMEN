@@ -23,6 +23,43 @@ const structuredPlanSchema = {
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 let chat: Chat | null = null;
 
+const WELCOME_TRIGGERS = ['what can you do', 'help', 'explain yourself', 'what is this', 'hello', 'hi', 'what are you', 'who are you'];
+
+const ECHO_EXPLANATION = `Hello! I am **ECHO**, an autonomous AI agent. My core philosophy is **Action over Conversation**. I'm designed to turn your thoughts into executed reality.
+
+Here's a breakdown of what I can do:
+
+### Modes of Operation
+You can switch between two modes using the controls at the bottom:
+
+**1. 💬 Chat Mode (Current Mode)**
+*   This is our direct line. You can ask me questions, brainstorm ideas, get complex topics explained, or even get help debugging code.
+*   **No actions are taken here.** It's a safe space for conversation and information gathering.
+
+**2. ⚡ Action Mode**
+*   This is where the magic happens. You give me a high-level goal, and I execute it.
+*   **How it works:**
+    *   **You:** "Build a simple React component for a user profile card."
+    *   **Planner Agent:** I'll break that down into a logical task pipeline (e.g., \`Create file\`, \`Write component code\`, \`Create CSS file\`, \`Add styles\`). You'll see this pipeline appear on your screen.
+    *   **Executor Agent:** My \`God Mode\` agent executes each task, using tools like a file system and shell commands. You can watch its every thought and action in the **Live Terminal**.
+    *   **Artifacts:** The final output (like the code for your component) will appear in the **Artifacts panel** (viewable via the archive icon in the header).
+
+### 🧠 The Agent System
+ECHO is not a single AI; it's an orchestrator of specialized agents.
+*   In the **Settings Panel** (gear icon), you can manage my core agents (\`WebHawk\` for web research, \`CodeForge\` for coding) and even **create your own custom agents** with specific instructions and personalities!
+*   You can also assign preferred agents to core roles like Planning and Execution.
+
+### 📚 Learning with Playbooks
+I am designed to learn.
+*   After a successful task in Action Mode, my **Synthesizer** agent analyzes the plan and saves it as a **"Playbook"**.
+*   The next time you ask for a similar task, I can use that playbook to execute it faster and more reliably. You can view and manage learned playbooks in the Settings Panel.
+
+---
+
+My goal is to be your ultimate tool for creation and execution. Give it a try! Switch to **Action Mode** and tell me to \`list all files in the current directory\`.
+
+Your thoughts. My echo. Infinite possibility.`;
+
 export const clarifyAndCorrectPrompt = async (prompt: string): Promise<string> => {
     const systemInstruction = `You are an AI assistant that refines user prompts. Your goal is to correct any spelling or grammar mistakes, clarify ambiguities, and rephrase the prompt into a clear, actionable command for another AI agent. Do not add any conversational fluff. Only return the refined prompt. If the prompt is already clear and well-defined, return it as-is.
 
@@ -271,6 +308,12 @@ What is your next action?
 };
 
 export const getChatResponse = async (prompt: string): Promise<string> => {
+    // Check for welcome triggers
+    const lowerCasePrompt = prompt.toLowerCase().trim().replace(/[.,?_]/g, "");
+    if (WELCOME_TRIGGERS.some(trigger => lowerCasePrompt.includes(trigger))) {
+        return ECHO_EXPLANATION;
+    }
+
     if (!chat) {
         chat = ai.chats.create({
             model: 'gemini-2.5-flash',

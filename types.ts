@@ -10,6 +10,7 @@ export interface Message {
     text: string;
     sender: 'user' | 'agent';
     timestamp: string;
+    type?: 'chat' | 'system';
 }
 
 export type TaskStatus = 'Done' | 'Executing' | 'Queued' | 'Error' | 'Pending Review' | 'Revising';

@@ -7,14 +7,16 @@ interface CommandCenterProps {
     agentMode: AgentMode;
     setAgentMode: (mode: AgentMode) => void;
     onSendCommand: (prompt: string, isWebToolActive: boolean) => void;
+    onClearChat: () => void;
+    inputValue: string;
+    onInputChange: (value: string) => void;
 }
 
-export const CommandCenter: React.FC<CommandCenterProps> = ({ agentMode, setAgentMode, onSendCommand }) => {
-    const [inputValue, setInputValue] = useState('');
+export const CommandCenter: React.FC<CommandCenterProps> = ({ agentMode, setAgentMode, onSendCommand, onClearChat, inputValue, onInputChange }) => {
     const [isWebToolActive, setIsWebToolActive] = useState(false);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setInputValue(e.target.value);
+        onInputChange(e.target.value);
         // Auto-resize textarea
         e.target.style.height = 'auto';
         e.target.style.height = `${e.target.scrollHeight}px`;
@@ -23,7 +25,6 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ agentMode, setAgen
     const handleSend = () => {
         if (inputValue.trim()) {
             onSendCommand(inputValue, isWebToolActive);
-            setInputValue('');
             setIsWebToolActive(false); // Reset web tool state after sending
         }
     };
@@ -74,6 +75,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ agentMode, setAgen
                         setAgentMode={setAgentMode} 
                         isWebToolActive={isWebToolActive}
                         onWebToolClick={handleWebToolToggle}
+                        onClearChat={onClearChat}
                     />
                 </div>
             </div>

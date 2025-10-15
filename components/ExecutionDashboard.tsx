@@ -1,7 +1,7 @@
 import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloseIcon } from './icons/CloseIcon';
-import { Task, LogEntry } from '../types';
+import { Task, LogEntry, TaskStatus } from '../types';
 import { PlannerIcon } from './icons/PlannerIcon';
 import { ExecutorIcon } from './icons/ExecutorIcon';
 import { ReviewerIcon } from './icons/ReviewerIcon';
@@ -36,6 +36,18 @@ const TaskItem = React.forwardRef<HTMLDivElement, {
     isDimmed: boolean;
 }>(({ task, onClick, highlight, isDimmed }, ref) => {
     const config = statusConfig[task.status];
+    // FIX: Pass initial value to useRef to fix "Expected 1 arguments, but got 0" error.
+    const prevStatusRef = useRef<TaskStatus | undefined>(undefined);
+    const [animateComplete, setAnimateComplete] = useState(false);
+
+    useEffect(() => {
+        if (prevStatusRef.current && prevStatusRef.current !== 'Done' && task.status === 'Done') {
+            setAnimateComplete(true);
+            const timer = setTimeout(() => setAnimateComplete(false), 600);
+            return () => clearTimeout(timer);
+        }
+        prevStatusRef.current = task.status;
+    }, [task.status]);
     
     let highlightClass = '';
     if (highlight === 'selected') highlightClass = 'border-2 border-[#FF6B00]';
@@ -49,6 +61,7 @@ const TaskItem = React.forwardRef<HTMLDivElement, {
             onClick={onClick}
             className={`bg-zinc-200/30 dark:bg-black/40 backdrop-blur-sm border ${config.color} ${highlightClass} rounded-lg p-3 flex-shrink-0 w-64 cursor-pointer transition-all duration-300 ${isDimmed ? 'opacity-40' : 'opacity-100'} ${highlight === 'none' ? config.glow : ''}`}
             whileHover={{ scale: isDimmed ? 1 : 1.03, y: isDimmed ? 0 : -4, opacity: 1 }}
+            animate={animateComplete ? { scale: [1, 1.05, 1] } : {}}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
         >
             <div className="flex justify-between items-start">
@@ -219,7 +232,7 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                                 task={task}
                                 highlight={highlight}
                                 isDimmed={isDimmed}
-                                onClick={() => setSelectedTaskId(task.id)}
+                                onClick={() => setSelectedTaskId(task.id === selectedTaskId ? null : task.id)}
                             />
                         )
                     })}

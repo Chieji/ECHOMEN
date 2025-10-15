@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloseIcon } from './icons/CloseIcon';
 // FIX: Import Service from the central types file as it's used across the app.
@@ -14,6 +14,8 @@ interface ServiceConnectionModalProps {
 
 export const ServiceConnectionModal: React.FC<ServiceConnectionModalProps> = ({ service, isOpen, onClose, onSave, onDisconnect }) => {
     const [formState, setFormState] = useState<{ [key: string]: string }>({});
+    const [errors, setErrors] = useState<{ [key: string]: string | null }>({});
+    const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
 
     useEffect(() => {
         if (service) {
@@ -22,28 +24,90 @@ export const ServiceConnectionModal: React.FC<ServiceConnectionModalProps> = ({ 
                 return acc;
             }, {} as { [key: string]: string });
             setFormState(initialState);
+            setErrors({});
+            setTouched({});
         }
     }, [service]);
 
-    if (!service) return null;
+    const validateInput = (id: string, value: string): string | null => {
+        if (!value || value.trim() === '') {
+            return 'This field is required.';
+        }
+        if (id.toLowerCase().includes('key')) {
+            if (value.trim().length < 10) {
+                return 'API Key must be at least 10 characters long.';
+            }
+        }
+        if (id.toLowerCase().includes('url')) {
+            if (!/^(https?:\/\/)/.test(value)) {
+                return 'URL must start with http:// or https://';
+            }
+            if (!value.includes('.')) {
+                return 'Please enter a valid URL.';
+            }
+        }
+        return null;
+    };
+
+    const isSaveDisabled = useMemo(() => {
+        if (!service) return true;
+        for (const input of service.inputs) {
+            const value = formState[input.id] || '';
+            if (validateInput(input.id, value)) {
+                return true;
+            }
+        }
+        return false;
+    }, [formState, service]);
+
 
     const handleInputChange = (id: string, value: string) => {
         setFormState(prev => ({ ...prev, [id]: value }));
+        if (touched[id]) {
+            setErrors(prev => ({ ...prev, [id]: validateInput(id, value) }));
+        }
+    };
+    
+    const handleBlur = (id: string) => {
+        setTouched(prev => ({ ...prev, [id]: true }));
+        setErrors(prev => ({ ...prev, [id]: validateInput(id, formState[id] || '') }));
     };
 
     const handleSave = () => {
-        onSave(service.id, formState);
+        if (isSaveDisabled) return;
+
+        let hasErrors = false;
+        const newErrors: { [key: string]: string | null } = {};
+        const newTouched: { [key: string]: boolean } = {};
+
+        service.inputs.forEach(input => {
+            const errorMessage = validateInput(input.id, formState[input.id] || '');
+            newErrors[input.id] = errorMessage;
+            newTouched[input.id] = true;
+            if (errorMessage) {
+                hasErrors = true;
+            }
+        });
+
+        setErrors(newErrors);
+        setTouched(newTouched);
+
+        if (!hasErrors) {
+            onSave(service.id, formState);
+        }
     };
 
     const handleDisconnect = () => {
         onDisconnect(service.id);
     }
+    
+    if (!service) return null;
 
     return (
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    className="fixed inset-0 z-50 flex items-center justify-center"
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
                     initial={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
                     animate={{ backdropFilter: 'blur(16px)', backgroundColor: 'rgba(0,0,0,0.6)' }}
                     exit={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
@@ -71,30 +135,54 @@ export const ServiceConnectionModal: React.FC<ServiceConnectionModalProps> = ({ 
                             {service.inputs.map(input => (
                                 <div key={input.id}>
                                     <label htmlFor={input.id} className="block text-sm font-medium text-gray-400 mb-1">{input.label}</label>
-                                    <input
-                                        type={input.type}
-                                        id={input.id}
-                                        value={formState[input.id] || ''}
-                                        onChange={(e) => handleInputChange(input.id, e.target.value)}
-                                        placeholder={input.placeholder}
-                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/50"
-                                    />
+                                    <div className="relative">
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                                            <span 
+                                                className={`w-2 h-2 rounded-full transition-colors ${
+                                                    errors[input.id] && touched[input.id]
+                                                        ? 'bg-red-500' 
+                                                        : formState[input.id] && !errors[input.id] 
+                                                        ? 'bg-green-500' 
+                                                        : 'bg-gray-500'
+                                                }`}
+                                            />
+                                        </div>
+                                        <input
+                                            type={input.type}
+                                            id={input.id}
+                                            value={formState[input.id] || ''}
+                                            onChange={(e) => handleInputChange(input.id, e.target.value)}
+                                            onBlur={() => handleBlur(input.id)}
+                                            placeholder={input.placeholder}
+                                            className={`w-full bg-black/40 border rounded-lg px-3 py-2 pl-8 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 transition-colors ${
+                                                errors[input.id] && touched[input.id] 
+                                                ? 'border-red-500/50 focus:ring-red-500/50' 
+                                                : 'border-white/10 focus:ring-[#8B5CF6]/50'
+                                            }`}
+                                        />
+                                    </div>
+                                    {errors[input.id] && touched[input.id] && (
+                                        <p className="mt-1 text-xs text-red-400">{errors[input.id]}</p>
+                                    )}
                                 </div>
                             ))}
                         </div>
 
                         <footer className="mt-8 flex justify-between items-center">
-                            <button
-                                onClick={handleDisconnect}
-                                className="text-sm font-semibold text-red-500 hover:text-red-400 transition-colors"
-                            >
-                                Disconnect
-                            </button>
+                             {service.status === 'Connected' ? (
+                                <button
+                                    onClick={handleDisconnect}
+                                    className="text-sm font-semibold text-red-500 hover:text-red-400 transition-colors"
+                                >
+                                    Disconnect
+                                </button>
+                            ) : <div></div>}
                             <button
                                 onClick={handleSave}
-                                className="bg-[#8B5CF6] hover:bg-[#7c4ee3] text-white font-bold py-2 px-6 rounded-lg transition-colors"
+                                disabled={isSaveDisabled}
+                                className="bg-[#8B5CF6] hover:bg-[#7c4ee3] text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Save Connection
+                                {service.status === 'Connected' ? 'Save Changes' : 'Save Connection'}
                             </button>
                         </footer>
                     </motion.div>

@@ -7,6 +7,7 @@ import { ChatIcon } from './icons/ChatIcon';
 import { MicIcon } from './icons/MicIcon';
 import { PlugIcon } from './icons/PlugIcon';
 import { WebToolIcon } from './icons/WebToolIcon';
+import { PlusCircleIcon } from './icons/PlusCircleIcon';
 
 
 interface MobileControlBarProps {
@@ -14,6 +15,7 @@ interface MobileControlBarProps {
     setAgentMode: (mode: AgentMode) => void;
     isWebToolActive: boolean;
     onWebToolClick: () => void;
+    onClearChat: () => void;
 }
 
 const ControlButton: React.FC<{
@@ -30,7 +32,7 @@ const ControlButton: React.FC<{
 );
 
 
-export const MobileControlBar: React.FC<MobileControlBarProps> = ({ agentMode, setAgentMode, isWebToolActive, onWebToolClick }) => {
+export const MobileControlBar: React.FC<MobileControlBarProps> = ({ agentMode, setAgentMode, isWebToolActive, onWebToolClick, onClearChat }) => {
     
     return (
         <div className="border-t border-black/10 dark:border-white/10 mt-2 pt-2 px-2 flex justify-between items-center">
@@ -50,6 +52,13 @@ export const MobileControlBar: React.FC<MobileControlBarProps> = ({ agentMode, s
                     onClick={() => setAgentMode(AgentMode.CHAT)}
                     activeColorClass="text-[#8B5CF6]"
                 />
+                {agentMode === AgentMode.CHAT && (
+                    <ControlButton
+                        icon={<PlusCircleIcon className="w-5 h-5" />}
+                        label="New"
+                        onClick={onClearChat}
+                    />
+                )}
                  <ControlButton
                     icon={<AgentsIcon className="w-5 h-5" />}
                     label="Agents"
