@@ -20,6 +20,21 @@ const structuredPlanSchema = {
     }
 };
 
+const actionAnalysisSchema = {
+    type: Type.OBJECT,
+    properties: {
+        is_actionable: { 
+            type: Type.BOOLEAN, 
+            description: "True if the user's message is a command or request to perform a task, false otherwise." 
+        },
+        suggested_prompt: { 
+            type: Type.STRING, 
+            description: "If actionable, a refined and clear version of the user's command. Otherwise, an empty string." 
+        }
+    },
+    required: ["is_actionable", "suggested_prompt"]
+};
+
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 let chat: Chat | null = null;
 
@@ -59,6 +74,31 @@ I am designed to learn.
 My goal is to be your ultimate tool for creation and execution. Give it a try! Switch to **Action Mode** and tell me to \`list all files in the current directory\`.
 
 Your thoughts. My echo. Infinite possibility.`;
+
+export const analyzeChatMessageForAction = async (prompt: string): Promise<{ is_actionable: boolean; suggested_prompt: string }> => {
+    const systemInstruction = `You are an intent-recognition AI. Your task is to analyze a user's chat message and determine if it contains an actionable command (e.g., "build this", "create a file", "run this command", "can you write a script for...") versus a conversational query (e.g., "how does this work?", "what is...", "explain...").
+- If it's an actionable command, set 'is_actionable' to true and rephrase the command into a clear, concise prompt for another AI agent.
+- If it's conversational, set 'is_actionable' to false.
+Your response MUST be a valid JSON object adhering to the provided schema.`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: actionAnalysisSchema,
+                systemInstruction: systemInstruction,
+            },
+        });
+        const resultJson = response.text.trim();
+        const result = JSON.parse(resultJson);
+        return result;
+    } catch (error) {
+        console.error("Error analyzing chat message for action:", error);
+        return { is_actionable: false, suggested_prompt: '' }; // Default to non-actionable on error
+    }
+};
 
 export const clarifyAndCorrectPrompt = async (prompt: string): Promise<string> => {
     const systemInstruction = `You are an AI assistant that refines user prompts. Your goal is to correct any spelling or grammar mistakes, clarify ambiguities, and rephrase the prompt into a clear, actionable command for another AI agent. Do not add any conversational fluff. Only return the refined prompt. If the prompt is already clear and well-defined, return it as-is.
@@ -156,7 +196,7 @@ const rehydrateTasksFromPlaybook = (playbook: Playbook, preferences: AgentPrefer
     });
 };
 
-export const createInitialPlan = async (prompt: string): Promise<Task[]> => {
+export const createInitialPlan = async (prompt: string, isWebToolActive: boolean): Promise<Task[]> => {
     let agentPreferences: AgentPreferences = {};
     let activeTodos: TodoItem[] = [];
     let playbooks: Playbook[] = [];
@@ -178,13 +218,20 @@ export const createInitialPlan = async (prompt: string): Promise<Task[]> => {
         console.error("Failed to parse data from localStorage", error);
     }
 
-    const relevantPlaybook = await findRelevantPlaybook(prompt, playbooks);
-    if (relevantPlaybook) {
-        console.log(`Found relevant playbook: ${relevantPlaybook.name}`);
-        return rehydrateTasksFromPlaybook(relevantPlaybook, agentPreferences);
+    if (!isWebToolActive) {
+        const relevantPlaybook = await findRelevantPlaybook(prompt, playbooks);
+        if (relevantPlaybook) {
+            console.log(`Found relevant playbook: ${relevantPlaybook.name}`);
+            return rehydrateTasksFromPlaybook(relevantPlaybook, agentPreferences);
+        }
     }
     
     let systemInstruction = "You are a world-class autonomous agent planner. Your job is to receive a user request and break it down into a sequence of logical tasks. A typical sequence is: 1. Planner (for outlining/structuring), 2. Executor (for performing the work), 3. Reviewer (for checking quality), and 4. Synthesizer (for final assembly). Keep tasks high-level. The Executor agent will handle the detailed, step-by-step tool usage. Respond with a JSON array of tasks that adheres to the provided schema.";
+
+    if (isWebToolActive) {
+        const webPreamble = "CRITICAL: The user has activated the Web Tool. The request is web-focused. You MUST prioritize using the `browse_web` tool. The primary agent for the execution task should be `WebHawk`.";
+        systemInstruction = `${webPreamble}\n\n${systemInstruction}`;
+    }
 
     if (activeTodos.length > 0) {
         const todoList = activeTodos.map(todo => `- ${todo.text}`).join('\n');
@@ -219,12 +266,18 @@ export const createInitialPlan = async (prompt: string): Promise<Task[]> => {
             let lastTaskId: string | null = null;
             const newTasks: Task[] = parsedPlan.map((p: any, index: number) => {
                 const taskId = `task-gen-${Date.now()}-${index}`;
-                const agentRole: AgentRole = p.agentRole || 'Executor';
+                let agentRole: AgentRole = p.agentRole || 'Executor';
+                let agentName = getAgentNameForRole(agentRole, agentPreferences);
+                
+                if (isWebToolActive && agentRole === 'Executor') {
+                    agentName = 'WebHawk';
+                }
+
                 const task: Task = {
                     id: taskId,
                     title: p.title || "Untitled Task",
                     status: "Queued",
-                    agent: { role: agentRole, name: getAgentNameForRole(agentRole, agentPreferences) },
+                    agent: { role: agentRole, name: agentName },
                     estimatedTime: "~45s",
                     details: p.details || "No details provided.",
                     dependencies: lastTaskId ? [lastTaskId] : [],

@@ -5,7 +5,7 @@ import { ExecutionDashboard } from './components/ExecutionDashboard';
 import { MasterConfigurationPanel } from './components/MasterConfigurationPanel';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Task, LogEntry, AgentMode, AgentStatus, Artifact, CustomAgent } from './types';
-import { createInitialPlan, getChatResponse, summarizePlanIntoPlaybook, clarifyAndCorrectPrompt } from './services/planner';
+import { createInitialPlan, getChatResponse, summarizePlanIntoPlaybook, clarifyAndCorrectPrompt, analyzeChatMessageForAction } from './services/planner';
 import { useMemory } from './hooks/useMemory';
 import { ChatInterface } from './components/ChatInterface';
 import { HistoryPanel } from './components/HistoryPanel';
@@ -22,7 +22,7 @@ const App: React.FC = () => {
     const [artifacts, setArtifacts] = useState<Artifact[]>([]);
     const [agents, setAgents] = useState<CustomAgent[]>([]);
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-    const { messages, addMessage, editMessage, clearMemory } = useMemory([]);
+    const { messages, addMessage, editMessage, removeMessage, clearMemory } = useMemory([]);
     const [agentMode, setAgentMode] = useState<AgentMode>(AgentMode.ACTION);
     const [agentStatus, setAgentStatus] = useState<AgentStatus>(AgentStatus.IDLE);
     const [currentPrompt, setCurrentPrompt] = useState<string>('');
@@ -83,12 +83,50 @@ const App: React.FC = () => {
             executorRef.current.cancelTask(taskId);
         }
     };
+    
+    const handleAcceptAction = (messageId: string, prompt: string) => {
+        removeMessage(messageId);
+        addMessage({
+            sender: 'agent',
+            text: 'Switching to Action Mode to execute the task.',
+            type: 'system',
+        });
+        setAgentMode(AgentMode.ACTION);
+        // We use a timeout to allow the mode switch animation to complete
+        // before kicking off the command, which can be computationally intensive.
+        setTimeout(() => {
+            handleSendCommand(prompt, false);
+        }, 300);
+    };
+
+    const handleDeclineAction = (messageId: string) => {
+        removeMessage(messageId);
+        addMessage({
+            sender: 'agent',
+            text: "Understood. We'll stay in Chat Mode. How else can I assist you?",
+        });
+    };
 
     const handleSendCommand = async (prompt: string, isWebToolActive: boolean) => {
         if (agentMode === AgentMode.CHAT) {
             addMessage({ sender: 'user', text: prompt });
-            const agentResponse = await getChatResponse(prompt);
-            addMessage({ sender: 'agent', text: agentResponse });
+            try {
+                const actionAnalysis = await analyzeChatMessageForAction(prompt);
+                if (actionAnalysis.is_actionable) {
+                    addMessage({
+                        sender: 'agent',
+                        text: 'It looks like you want me to perform an action. Shall I switch to Action Mode and execute this task?',
+                        type: 'action_prompt',
+                        suggestedPrompt: actionAnalysis.suggested_prompt,
+                    });
+                } else {
+                    const agentResponse = await getChatResponse(prompt);
+                    addMessage({ sender: 'agent', text: agentResponse });
+                }
+            } catch (error) {
+                 console.error("Error during chat analysis/response:", error);
+                 addMessage({ sender: 'agent', text: "Sorry, I encountered an error. Please try again." });
+            }
             return;
         }
 
@@ -109,13 +147,9 @@ const App: React.FC = () => {
                  addLog({ status: 'SUCCESS', message: '[Planner] Prompt is clear.' });
             }
 
-            const finalPrompt = isWebToolActive 
-                ? `Using the web tool, execute this task: ${correctedPrompt}` 
-                : correctedPrompt;
-
             addLog({ status: 'INFO', message: '[Planner] Deconstructing the request...' });
             
-            const initialTasks = await createInitialPlan(finalPrompt);
+            const initialTasks = await createInitialPlan(correctedPrompt, isWebToolActive);
             setTasks(initialTasks);
             
             if (initialTasks.length > 0 && initialTasks[0].id.startsWith('playbook-')) {
@@ -144,7 +178,7 @@ const App: React.FC = () => {
                 }
             });
             executorRef.current = executor;
-            await executor.run(initialTasks, finalPrompt);
+            await executor.run(initialTasks, correctedPrompt);
 
         } catch (error) {
             console.error("Error during agent execution:", error);
@@ -242,6 +276,8 @@ const App: React.FC = () => {
                                 messages={messages} 
                                 onSuggestionClick={handleSuggestionClick}
                                 onEditMessage={editMessage}
+                                onAcceptAction={handleAcceptAction}
+                                onDeclineAction={handleDeclineAction}
                            />
                         </motion.div>
                     )}

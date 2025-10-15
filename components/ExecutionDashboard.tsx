@@ -15,13 +15,13 @@ import { StopIcon } from './icons/StopIcon';
 
 
 const statusConfig = {
-    Done: { color: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 dark:bg-green-500/20 dark:border-green-500/30', glow: 'shadow-[0_0_8px_rgba(34,197,94,0.5)]' },
-    Executing: { color: 'bg-cyan-600/10 text-cyan-700 dark:bg-[#00D4FF]/20 dark:text-[#00D4FF] border-cyan-600/20 dark:border-[#00D4FF]/30', glow: 'shadow-[0_0_12px_rgba(8,145,178,0.5)] dark:shadow-[0_0_12px_rgba(0,212,255,0.7)] animate-pulse' },
+    Done: { color: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 dark:bg-green-500/20 dark:border-green-500/30', glow: '' },
+    Executing: { color: 'bg-cyan-600/10 text-cyan-700 dark:bg-[#00D4FF]/20 dark:text-[#00D4FF] border-cyan-600/20 dark:border-[#00D4FF]/30', glow: 'shadow-[0_0_15px_rgba(0,212,255,0.8)] animate-pulse' },
     Queued: { color: 'bg-zinc-500/10 text-zinc-600 dark:text-gray-400 border-zinc-500/20 dark:bg-gray-500/20 dark:border-gray-500/30', glow: '' },
-    Error: { color: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 dark:bg-red-500/20 dark:border-red-500/30', glow: 'shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse' },
-    'Pending Review': { color: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20 dark:bg-yellow-500/20 dark:border-yellow-500/30', glow: 'shadow-[0_0_10px_rgba(234,179,8,0.6)] animate-pulse' },
-    Revising: { color: 'bg-orange-600/10 text-orange-700 dark:text-[#FF6B00] border-orange-600/20 dark:bg-[#FF6B00]/20 dark:border-[#FF6B00]/30', glow: 'shadow-[0_0_12px_rgba(255,107,0,0.7)] animate-pulse' },
-    Delegating: { color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 dark:bg-purple-500/20 dark:border-purple-500/30', glow: 'shadow-[0_0_12px_rgba(168,85,247,0.7)] animate-pulse' },
+    Error: { color: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 dark:bg-red-500/20 dark:border-red-500/30', glow: 'shadow-[0_0_15px_rgba(239,68,68,0.8)] animate-pulse' },
+    'Pending Review': { color: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20 dark:bg-yellow-500/20 dark:border-yellow-500/30', glow: 'shadow-[0_0_15px_rgba(234,179,8,0.7)] animate-pulse' },
+    Revising: { color: 'bg-orange-600/10 text-orange-700 dark:text-[#FF6B00] border-orange-600/20 dark:bg-[#FF6B00]/20 dark:border-[#FF6B00]/30', glow: 'shadow-[0_0_15px_rgba(255,107,0,0.8)] animate-pulse' },
+    Delegating: { color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 dark:bg-purple-500/20 dark:border-purple-500/30', glow: 'shadow-[0_0_15px_rgba(168,85,247,0.8)] animate-pulse' },
     Cancelled: { color: 'bg-zinc-500/10 text-zinc-600 dark:text-gray-500 border-zinc-500/20 dark:bg-gray-600/20 dark:border-gray-600/30', glow: '' },
 };
 
@@ -52,9 +52,17 @@ const TaskItem = React.forwardRef<HTMLDivElement, {
     }, [task.status]);
     
     let highlightClass = '';
-    if (highlight === 'selected') highlightClass = 'border-2 border-[#FF6B00]';
-    if (highlight === 'dependency') highlightClass = 'border-2 border-cyan-500 dark:border-[#00D4FF]';
-    if (highlight === 'dependent') highlightClass = 'border-2 border-purple-500';
+    switch(highlight) {
+        case 'selected':
+            highlightClass = 'border-2 border-[#FF6B00] shadow-[0_0_15px_rgba(255,107,0,0.9)]';
+            break;
+        case 'dependency':
+            highlightClass = 'border-2 border-cyan-400 dark:border-[#00D4FF] shadow-[0_0_15px_rgba(0,212,255,0.9)]';
+            break;
+        case 'dependent':
+            highlightClass = 'border-2 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.9)]';
+            break;
+    }
 
     return (
         <motion.div
@@ -187,12 +195,12 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                                 <stop offset="100%" stopColor="rgba(0,212,255,0.7)" />
                             </linearGradient>
                              <linearGradient id="line-gradient-dep" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#8B5CF6" />
+                                <stop offset="0%" stopColor="#00D4FF" />
                                 <stop offset="100%" stopColor="#FF6B00" />
                             </linearGradient>
                             <linearGradient id="line-gradient-child" x1="0%" y1="0%" x2="100%" y2="0%">
                                 <stop offset="0%" stopColor="#FF6B00" />
-                                <stop offset="100%" stopColor="#00D4FF" />
+                                <stop offset="100%" stopColor="#a855f7" />
                             </linearGradient>
                         </defs>
                         <AnimatePresence>

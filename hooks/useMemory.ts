@@ -21,9 +21,13 @@ export const useMemory = (initialMessages: Message[] = []) => {
         );
     }, []);
 
+    const removeMessage = useCallback((messageId: string) => {
+        setMessages(prevMessages => prevMessages.filter(msg => msg.id !== messageId));
+    }, []);
+
     const clearMemory = useCallback(() => {
         setMessages([]);
     }, []);
 
-    return { messages, addMessage, editMessage, clearMemory };
+    return { messages, addMessage, editMessage, removeMessage, clearMemory };
 };

@@ -541,20 +541,28 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                 </motion.div>
             </motion.div>
             
-            <ServiceConnectionModal
-                service={selectedService}
-                isOpen={!!selectedService}
-                onClose={() => setSelectedService(null)}
-                onSave={handleSaveService}
-                onDisconnect={handleDisconnectService}
-            />
+            <AnimatePresence>
+                {selectedService && (
+                     <ServiceConnectionModal
+                        service={selectedService}
+                        isOpen={!!selectedService}
+                        onClose={() => setSelectedService(null)}
+                        onSave={handleSaveService}
+                        onDisconnect={handleDisconnectService}
+                    />
+                )}
+            </AnimatePresence>
 
-            <AgentCreationModal
-                agent={editingAgent}
-                isOpen={isAgentModalOpen}
-                onClose={() => setIsAgentModalOpen(false)}
-                onSave={handleSaveAgent}
-            />
+            <AnimatePresence>
+                {isAgentModalOpen && (
+                    <AgentCreationModal
+                        agent={editingAgent}
+                        isOpen={isAgentModalOpen}
+                        onClose={() => setIsAgentModalOpen(false)}
+                        onSave={handleSaveAgent}
+                    />
+                )}
+            </AnimatePresence>
         </>
     );
 };

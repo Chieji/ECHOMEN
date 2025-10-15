@@ -10,7 +10,8 @@ export interface Message {
     text: string;
     sender: 'user' | 'agent';
     timestamp: string;
-    type?: 'chat' | 'system';
+    type?: 'chat' | 'system' | 'action_prompt';
+    suggestedPrompt?: string;
 }
 
 export type TaskStatus = 'Done' | 'Executing' | 'Queued' | 'Error' | 'Pending Review' | 'Revising' | 'Delegating' | 'Cancelled';

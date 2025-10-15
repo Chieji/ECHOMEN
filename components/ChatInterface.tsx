@@ -13,6 +13,8 @@ interface ChatInterfaceProps {
     messages: Message[];
     onSuggestionClick: (prompt: string) => void;
     onEditMessage: (messageId: string, newText: string) => void;
+    onAcceptAction: (messageId: string, prompt: string) => void;
+    onDeclineAction: (messageId: string) => void;
 }
 
 interface WelcomeScreenProps {
@@ -29,13 +31,21 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSuggestionClick }) => {
 
     const suggestions = [
         {
-            title: "Explain a concept",
-            prompt: "Explain quantum computing in simple terms."
+            title: "Draft an email",
+            prompt: "Draft a professional email to my team about the new project timeline."
         },
         {
-            title: "Help me debug",
-            prompt: "Why is my React component not re-rendering?"
-        }
+            title: "Write a script",
+            prompt: "Write a Python script to organize files in my downloads folder by file type."
+        },
+        {
+            title: "Research a topic",
+            prompt: "What are the latest advancements in autonomous AI agents?"
+        },
+        {
+            title: "Create a plan",
+            prompt: "Create a step-by-step plan to launch a new weekly podcast."
+        },
     ];
 
     return (
@@ -51,7 +61,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSuggestionClick }) => {
             <p className="mt-2 max-w-md text-gray-500 dark:text-gray-400">
                 Ask questions, brainstorm ideas, or get help on any topic. This is a direct line to the AI, no actions will be taken.
             </p>
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md w-full">
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl w-full">
                 {suggestions.map((suggestion) => (
                     <div
                         key={suggestion.title}
@@ -71,7 +81,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSuggestionClick }) => {
 };
 
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSuggestionClick, onEditMessage }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSuggestionClick, onEditMessage, onAcceptAction, onDeclineAction }) => {
     const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
     const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
@@ -143,6 +153,46 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSugges
                                 </motion.div>
                             );
                         }
+
+                        if (msg.type === 'action_prompt') {
+                             return (
+                                <motion.div
+                                    key={msg.id}
+                                    className="flex gap-4 items-start"
+                                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                >
+                                    <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center bg-cyan-600 dark:bg-[#00D4FF]">
+                                        <LogoIcon className="w-5 h-5 text-black" />
+                                    </div>
+                                    <div className="relative p-4 rounded-2xl max-w-lg bg-white dark:bg-[#181818] shadow-md w-full border border-cyan-500/30">
+                                        <p className="text-base text-zinc-800 dark:text-zinc-100">{msg.text}</p>
+                                        <div className="mt-4 p-3 bg-black/5 dark:bg-white/5 rounded-lg border border-black/10 dark:border-white/10">
+                                            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">PROPOSED ACTION:</p>
+                                            <p className="text-sm font-medium text-zinc-800 dark:text-white mt-1">"{msg.suggestedPrompt}"</p>
+                                        </div>
+                                        <div className="flex justify-end items-center gap-3 mt-4">
+                                            <p className="text-sm font-semibold text-zinc-800 dark:text-white">Activate Agent?</p>
+                                            <button 
+                                                onClick={() => onDeclineAction(msg.id)}
+                                                className="w-10 h-10 flex items-center justify-center rounded-full bg-red-500/20 hover:bg-red-500/30 text-red-700 dark:text-red-400 transition-colors"
+                                                aria-label="Decline Action"
+                                            >
+                                                ❌
+                                            </button>
+                                            <button 
+                                                onClick={() => onAcceptAction(msg.id, msg.suggestedPrompt || '')}
+                                                className="w-10 h-10 flex items-center justify-center rounded-full bg-green-500/20 hover:bg-green-500/30 text-green-700 dark:text-green-400 transition-colors"
+                                                aria-label="Accept Action"
+                                            >
+                                                ✔️
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                             )
+                        }
+
                         return (
                             <motion.div 
                                 key={msg.id} 

@@ -72,6 +72,14 @@ const executeShellCommand = async (command: string): Promise<string> => {
     return callBackendTool('executeShellCommand', { command });
 };
 
+const browse_web = async (url: string, task_description: string): Promise<string> => {
+    // In a real app, you might check for a specific web browsing service connection
+    // if (!checkAuth('tavily')) {
+    //     throw new Error("Web browsing requires a connected service like Tavily.");
+    // }
+    return callBackendTool('browse_web', { url, task_description });
+};
+
 const executeCode = async (language: 'javascript', code: string): Promise<string> => {
     if (language !== 'javascript') {
         return Promise.reject(new Error(`Unsupported language: ${language}. Only 'javascript' is available in the browser sandbox. For other languages, write to a file and use 'executeShellCommand'.`));
@@ -204,6 +212,16 @@ export const toolDeclarations: FunctionDeclaration[] = [
         }
     },
     {
+        name: 'browse_web',
+        description: 'Accesses a given URL and performs a specific task on its content, such as summarizing, extracting information, or answering a question based on the content.',
+        parameters: {
+            type: Type.OBJECT, properties: {
+                url: { type: Type.STRING, description: 'The full URL to access (e.g., "https://www.example.com").' },
+                task_description: { type: Type.STRING, description: 'A clear and specific instruction on what to do with the content of the URL (e.g., "Summarize the main points of the article.", "Extract all the headlines.", "What is the price of the main product listed?").' }
+            }, required: ['url', 'task_description']
+        }
+    },
+    {
         name: 'github_create_repo',
         description: 'Creates a new repository on GitHub. Requires GitHub service connection.',
         parameters: {
@@ -294,6 +312,7 @@ export const availableTools: { [key: string]: (...args: any[]) => Promise<any> }
     writeFile: (args: { path: string; content: string }) => writeFile(args.path, args.content),
     listFiles: (args: { path: string }) => listFiles(args.path),
     executeShellCommand: (args: { command: string }) => executeShellCommand(args.command),
+    browse_web: (args: { url: string; task_description: string }) => browse_web(args.url, args.task_description),
     executeCode: (args: { language: 'javascript', code: string }) => executeCode(args.language, args.code),
     github_create_repo: (args: { name: string, description: string, is_private: boolean }) => github_create_repo(args.name, args.description, args.is_private),
     github_get_pr_details: (args: { pr_url: string }) => github_get_pr_details(args.pr_url),
