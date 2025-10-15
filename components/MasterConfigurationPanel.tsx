@@ -63,6 +63,21 @@ const initialServices: Service[] = [
     { id: 'agentops', name: 'Agentops.ai', icon: <GenericApiIcon className="w-6 h-6" />, inputs: [{ id: 'apiKey', label: 'API Key', type: 'password', placeholder: '...' }, { id: 'apiUrl', label: 'Endpoint URL (Optional)', type: 'text', placeholder: 'https://api.agentops.ai' }], status: 'Not Connected' },
 ];
 
+const advancedWorkflows = [
+  {
+    "id": "PR_REVIEW_STANDARD",
+    "name": "Standard Pull Request Review and Merge",
+    "description": "Automatically reviews a GitHub Pull Request (PR) for quality, runs security checks, provides a summary, and merges the PR if all checks pass.",
+    "prompt": "Review the pull request at https://github.com/user/repo/pull/123. Analyze the code for quality and security, post the findings as a comment, and if there are no major issues, merge it using the squash method."
+  },
+  {
+    "id": "PROJECT_SETUP_INITIALIZE",
+    "name": "Initialize New GitHub Project Repository",
+    "description": "Sets up a new GitHub repository, creates a standard file structure (README, .gitignore, license), and pushes the initial commit.",
+    "prompt": "Initialize a new private GitHub project repository named 'awesome-api-v2'. The project uses TypeScript with Node.js. The description is 'A short, descriptive summary of the project.' Create a README.md and a .gitignore file and commit them to the new repository."
+  }
+];
+
 const Section: React.FC<{ title: string; icon?: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
     <div className="border-b border-black/10 dark:border-white/10 pb-6 mb-6">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-[#00D4FF] tracking-widest uppercase mb-4">
@@ -113,6 +128,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
     const [todos, setTodos] = useState<TodoItem[]>([]);
     const [newTodoText, setNewTodoText] = useState('');
     const [playbooks, setPlaybooks] = useState<Playbook[]>([]);
+    const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
     
     const [agents, setAgents] = useState<CustomAgent[]>(() => {
         let savedAgents: CustomAgent[] = [];
@@ -286,6 +302,12 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
     const handleDeleteTodo = (id: string) => {
         setTodos(prev => prev.filter(todo => todo.id !== id));
     };
+    
+    const handleCopyPrompt = (workflowId: string, prompt: string) => {
+        navigator.clipboard.writeText(prompt);
+        setCopiedPromptId(workflowId);
+        setTimeout(() => setCopiedPromptId(null), 2000);
+    };
 
     return (
         <>
@@ -379,7 +401,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                             </div>
                         </Section>
                         
-                        <Section title="Cognitive Core: Playbooks" icon={<BrainIcon className="w-5 h-5" />}>
+                        <Section title="Cognitive Core: Learned Playbooks" icon={<BrainIcon className="w-5 h-5" />}>
                             <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
                                 {playbooks.map(playbook => (
                                     <div key={playbook.id} className="bg-black/5 dark:bg-white/5 p-3 rounded-lg">
@@ -404,6 +426,23 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                             >
                                 Clear All Playbooks
                             </button>
+                        </Section>
+                        
+                        <Section title="Advanced Workflows" icon={<GithubIcon className="w-5 h-5" />}>
+                            <div className="space-y-3">
+                                {advancedWorkflows.map(workflow => (
+                                    <div key={workflow.id} className="bg-black/5 dark:bg-white/5 p-4 rounded-lg">
+                                        <p className="font-bold text-zinc-800 dark:text-white">{workflow.name}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{workflow.description}</p>
+                                        <button 
+                                            onClick={() => handleCopyPrompt(workflow.id, workflow.prompt)}
+                                            className={`mt-3 w-full text-sm font-semibold py-2 px-4 rounded-lg transition-colors ${copiedPromptId === workflow.id ? 'bg-green-500/20 text-green-400' : 'bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-zinc-800 dark:text-white'}`}
+                                        >
+                                            {copiedPromptId === workflow.id ? 'Copied to Clipboard!' : 'Copy Example Prompt'}
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
                         </Section>
 
                         <Section title="App Deployments" icon={<RocketIcon className="w-5 h-5" />}>

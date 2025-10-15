@@ -20,6 +20,7 @@ const statusConfig = {
     Error: { color: 'bg-red-500/20 text-red-500 dark:text-red-400 border-red-500/30', glow: 'shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse' },
     'Pending Review': { color: 'bg-yellow-500/20 text-yellow-500 dark:text-yellow-400 border-yellow-500/30', glow: 'shadow-[0_0_10px_rgba(234,179,8,0.6)] animate-pulse' },
     Revising: { color: 'bg-[#FF6B00]/20 text-[#FF6B00] border-[#FF6B00]/30', glow: 'shadow-[0_0_12px_rgba(255,107,0,0.7)] animate-pulse' },
+    Delegating: { color: 'bg-purple-500/20 text-purple-400 border-purple-500/30', glow: 'shadow-[0_0_12px_rgba(168,85,247,0.7)] animate-pulse' },
 };
 
 const roleIcons = {

@@ -13,7 +13,7 @@ export interface Message {
     type?: 'chat' | 'system';
 }
 
-export type TaskStatus = 'Done' | 'Executing' | 'Queued' | 'Error' | 'Pending Review' | 'Revising';
+export type TaskStatus = 'Done' | 'Executing' | 'Queued' | 'Error' | 'Pending Review' | 'Revising' | 'Delegating';
 
 export interface LogEntry {
     timestamp: string;
@@ -58,6 +58,7 @@ export interface Task {
     maxRetries: number;
     toolCall?: ToolCall;
     subSteps?: SubStep[];
+    delegatorTaskId?: string;
 }
 
 export interface CustomAgent {

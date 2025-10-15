@@ -117,18 +117,32 @@ const executeCode = async (language: 'javascript', code: string): Promise<string
     });
 };
 
-const github_list_repos = async (): Promise<string> => {
-    if (!checkAuth('github')) {
-        throw new Error("GitHub service is not connected. Please connect it in the settings.");
-    }
-    // This would ideally call a backend proxy to use the saved token securely.
-    // For now, we'll keep the mock and add a note.
-    console.warn("GitHub tool is using simulated data. A backend proxy is required for real API calls.");
-    return JSON.stringify([
-        { name: 'ECHO-Agent', private: false, stars: 128 },
-        { name: 'Project-Orion', private: true, stars: 12 },
-    ], null, 2);
-}
+// --- GitHub Tools ---
+
+const github_create_repo = async (name: string, description: string, is_private: boolean): Promise<any> => {
+    if (!checkAuth('github')) throw new Error("GitHub service not connected.");
+    return callBackendTool('github_create_repo', { name, description, is_private });
+};
+
+const github_get_pr_details = async (pr_url: string): Promise<any> => {
+    if (!checkAuth('github')) throw new Error("GitHub service not connected.");
+    return callBackendTool('github_get_pr_details', { pr_url });
+};
+
+const github_post_pr_comment = async (pr_url: string, comment: string): Promise<any> => {
+    if (!checkAuth('github')) throw new Error("GitHub service not connected.");
+    return callBackendTool('github_post_pr_comment', { pr_url, comment });
+};
+
+const github_merge_pr = async (pr_url: string, method: 'merge' | 'squash' | 'rebase'): Promise<any> => {
+    if (!checkAuth('github')) throw new Error("GitHub service not connected.");
+    return callBackendTool('github_merge_pr', { pr_url, method });
+};
+
+const github_create_file_in_repo = async (repo_name: string, path: string, content: string, commit_message: string): Promise<any> => {
+    if (!checkAuth('github')) throw new Error("GitHub service not connected.");
+    return callBackendTool('github_create_file_in_repo', { repo_name, path, content, commit_message });
+};
 
 
 const askUser = async (question: string): Promise<string> => {
@@ -141,6 +155,11 @@ const askUser = async (question: string): Promise<string> => {
 // This is a placeholder. The actual logic is handled by the AgentExecutor.
 const createArtifact = async (title: string, type: 'code' | 'markdown' | 'live-preview', content: string): Promise<string> => {
     return `Artifact "${title}" has been marked for creation.`;
+};
+
+// This is a placeholder. The actual logic is handled by the AgentExecutor.
+const create_and_delegate_task_to_new_agent = async (agent_name: string, agent_instructions: string, task_description: string, agent_icon: string): Promise<string> => {
+    return `Signal received to create agent "${agent_name}" and delegate task: "${task_description}". The executor will handle this process.`;
 };
 
 
@@ -177,29 +196,78 @@ export const toolDeclarations: FunctionDeclaration[] = [
     },
     {
         name: 'executeShellCommand',
-        description: 'Executes a command in a real shell environment on the backend. This is a powerful tool for running commands like `git`, `npm`, `docker`, `python`, etc. Requires the ECHO Execution Engine to be running.',
+        description: 'Executes a command in a real shell environment. This is a powerful tool for using system commands, developer tools, and scripts. Examples: `npm install`, `git clone <url>`, `docker build -t my-app .`, `python my_script.py`. Requires the ECHO Execution Engine to be running.',
         parameters: {
             type: Type.OBJECT, properties: { 
-                command: { type: Type.STRING, description: 'The shell command to execute (e.g., "npm install" or "docker build -t my-app .").' } 
+                command: { type: Type.STRING, description: 'The shell command to execute.' } 
             }, required: ['command']
         }
     },
-     {
-        name: 'executeCode',
-        description: 'Executes a snippet of JavaScript and HTML code in a secure, sandboxed browser environment to generate a "live-preview" artifact. This is for testing frontend code. For other languages or environments, use `writeFile` and `executeShellCommand`.',
+    {
+        name: 'github_create_repo',
+        description: 'Creates a new repository on GitHub. Requires GitHub service connection.',
         parameters: {
             type: Type.OBJECT, properties: {
-                language: { type: Type.STRING, enum: ['javascript'], description: "The programming language. Must be 'javascript'." },
-                code: { type: Type.STRING, description: 'The code to execute. For previews, provide a full HTML document string.' }
-            }, required: ['language', 'code']
+                name: { type: Type.STRING, description: 'The name of the repository.' },
+                description: { type: Type.STRING, description: 'A short description for the repository.' },
+                is_private: { type: Type.BOOLEAN, description: 'Whether the repository should be private.' }
+            }, required: ['name', 'description', 'is_private']
         }
     },
     {
-        name: 'github_list_repos',
-        description: 'Lists repositories for the authenticated GitHub user. Requires the GitHub service to be connected in the settings panel.',
-        parameters: { type: Type.OBJECT, properties: {} }
+        name: 'github_get_pr_details',
+        description: 'Fetches details for a GitHub Pull Request, including title, description, and changed files. Requires GitHub service connection.',
+        parameters: {
+            type: Type.OBJECT, properties: {
+                pr_url: { type: Type.STRING, description: 'The full URL of the pull request.' }
+            }, required: ['pr_url']
+        }
     },
-     {
+    {
+        name: 'github_post_pr_comment',
+        description: 'Posts a comment on a GitHub Pull Request. Requires GitHub service connection.',
+        parameters: {
+            type: Type.OBJECT, properties: {
+                pr_url: { type: Type.STRING, description: 'The full URL of the pull request.' },
+                comment: { type: Type.STRING, description: 'The content of the comment to post.' }
+            }, required: ['pr_url', 'comment']
+        }
+    },
+    {
+        name: 'github_merge_pr',
+        description: 'Merges a GitHub Pull Request. Requires GitHub service connection.',
+        parameters: {
+            type: Type.OBJECT, properties: {
+                pr_url: { type: Type.STRING, description: 'The full URL of the pull request to merge.' },
+                method: { type: Type.STRING, enum: ['merge', 'squash', 'rebase'], description: 'The merge method to use.' }
+            }, required: ['pr_url', 'method']
+        }
+    },
+    {
+        name: 'github_create_file_in_repo',
+        description: 'Creates or updates a file directly in a GitHub repository. Requires GitHub service connection.',
+        parameters: {
+            type: Type.OBJECT, properties: {
+                repo_name: { type: Type.STRING, description: 'The name of the repository in "owner/repo" format.' },
+                path: { type: Type.STRING, description: 'The full path of the file within the repository.' },
+                content: { type: Type.STRING, description: 'The content of the file.' },
+                commit_message: { type: Type.STRING, description: 'The commit message for the file creation/update.' }
+            }, required: ['repo_name', 'path', 'content', 'commit_message']
+        }
+    },
+    {
+        name: 'create_and_delegate_task_to_new_agent',
+        description: 'A meta-tool for agent proliferation. When a task is too complex or requires a specialist, use this to create a new, temporary agent with specific instructions and delegate a sub-task to it. The current task will pause until the new agent completes its work.',
+        parameters: {
+            type: Type.OBJECT, properties: {
+                agent_name: { type: Type.STRING, description: 'A descriptive name for the new specialist agent (e.g., "DB Schema Designer").' },
+                agent_instructions: { type: Type.STRING, description: 'The full system prompt or instructions for the new agent, defining its role, capabilities, and constraints.' },
+                task_description: { type: Type.STRING, description: 'The specific, detailed task to be delegated to this new agent.' },
+                agent_icon: { type: Type.STRING, description: 'Optional. An icon name from the predefined list (e.g., "CodeForge", "Brain") for the agent\'s UI representation.' },
+            }, required: ['agent_name', 'agent_instructions', 'task_description']
+        }
+    },
+    {
         name: 'createArtifact',
         description: 'Creates a final output artifact to be displayed to the user. Use this when you have generated a complete piece of code, a document, or other final result.',
         parameters: {
@@ -218,15 +286,6 @@ export const toolDeclarations: FunctionDeclaration[] = [
                 question: { type: Type.STRING, description: 'The question to ask the user.' } 
             }, required: ['question']
         }
-    },
-    {
-        name: 'finish',
-        description: 'Signals that the current high-level task is fully complete and no further actions are necessary. Use this as the final step in your thought process.',
-        parameters: {
-            type: Type.OBJECT, properties: { 
-                reason: { type: Type.STRING, description: 'A brief summary of why the task is considered finished and what was accomplished.' } 
-            }, required: ['reason']
-        }
     }
 ];
 
@@ -236,7 +295,12 @@ export const availableTools: { [key: string]: (...args: any[]) => Promise<any> }
     listFiles: (args: { path: string }) => listFiles(args.path),
     executeShellCommand: (args: { command: string }) => executeShellCommand(args.command),
     executeCode: (args: { language: 'javascript', code: string }) => executeCode(args.language, args.code),
-    github_list_repos: () => github_list_repos(),
+    github_create_repo: (args: { name: string, description: string, is_private: boolean }) => github_create_repo(args.name, args.description, args.is_private),
+    github_get_pr_details: (args: { pr_url: string }) => github_get_pr_details(args.pr_url),
+    github_post_pr_comment: (args: { pr_url: string, comment: string }) => github_post_pr_comment(args.pr_url, args.comment),
+    github_merge_pr: (args: { pr_url: string, method: 'merge' | 'squash' | 'rebase' }) => github_merge_pr(args.pr_url, args.method),
+    github_create_file_in_repo: (args: { repo_name: string, path: string, content: string, commit_message: string }) => github_create_file_in_repo(args.repo_name, args.path, args.content, args.commit_message),
     createArtifact: (args: { title: string, type: 'code' | 'markdown' | 'live-preview', content: string }) => createArtifact(args.title, args.type, args.content),
+    create_and_delegate_task_to_new_agent: (args: { agent_name: string, agent_instructions: string, task_description: string, agent_icon: string }) => create_and_delegate_task_to_new_agent(args.agent_name, args.agent_instructions, args.task_description, args.agent_icon),
     askUser: (args: { question: string }) => askUser(args.question),
 };

@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { CommandCenter } from './components/CommandCenter';
 import { ExecutionDashboard } from './components/ExecutionDashboard';
 import { MasterConfigurationPanel } from './components/MasterConfigurationPanel';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Task, LogEntry, AgentMode, AgentStatus, Artifact } from './types';
+import { Task, LogEntry, AgentMode, AgentStatus, Artifact, CustomAgent } from './types';
 import { createInitialPlan, getChatResponse, summarizePlanIntoPlaybook, clarifyAndCorrectPrompt } from './services/planner';
 import { useMemory } from './hooks/useMemory';
 import { ChatInterface } from './components/ChatInterface';
@@ -20,6 +21,7 @@ const App: React.FC = () => {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [liveLogs, setLiveLogs] = useState<LogEntry[]>([]);
     const [artifacts, setArtifacts] = useState<Artifact[]>([]);
+    const [agents, setAgents] = useState<CustomAgent[]>([]); // New state for agents
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
     const { messages, addMessage, clearMemory } = useMemory([]);
     const [agentMode, setAgentMode] = useState<AgentMode>(AgentMode.ACTION);
@@ -59,6 +61,20 @@ const App: React.FC = () => {
         };
         setArtifacts(prev => [...prev, newArtifact]);
         addLog({ status: 'SUCCESS', message: `[Executor] New artifact created: "${artifactData.title}"` });
+    };
+
+    const handleAgentCreated = (newAgent: CustomAgent) => {
+        setAgents(prev => {
+            const updatedAgents = [...prev, newAgent];
+            try {
+                const userAgents = updatedAgents.filter(agent => !agent.isCore);
+                localStorage.setItem('echo-custom-agents', JSON.stringify(userAgents));
+            } catch (error) {
+                console.error("Failed to save new agent to localStorage", error);
+            }
+            return updatedAgents;
+        });
+        addLog({ status: 'SUCCESS', message: `[System] New specialist agent spawned: "${newAgent.name}"` });
     };
 
     const handleSendCommand = async (prompt: string, isWebToolActive: boolean) => {
@@ -115,8 +131,12 @@ const App: React.FC = () => {
                 onTaskUpdate: (updatedTask) => {
                     setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
                 },
+                onTasksUpdate: (updatedTasks) => { // New callback for full list updates
+                    setTasks(updatedTasks);
+                },
                 onLog: addLog,
                 onArtifactCreated: handleCreateArtifact,
+                onAgentCreated: handleAgentCreated, // Pass the new handler
                 onFinish: () => {
                     addLog({ status: 'SUCCESS', message: 'ECHO: All tasks completed successfully.' });
                     setAgentStatus(AgentStatus.FINISHED);
@@ -169,7 +189,7 @@ const App: React.FC = () => {
         // For now, we'll just update the UI state.
         addLog({ status: 'WARN', message: 'User initiated stop command. Halting all tasks.' });
         setAgentStatus(AgentStatus.IDLE);
-        setTasks(tasks => tasks.map(t => ['Executing', 'Queued', 'Revising', 'Pending Review'].includes(t.status) ? {...t, status: 'Error'} : t));
+        setTasks(tasks => tasks.map(t => ['Executing', 'Queued', 'Revising', 'Pending Review', 'Delegating'].includes(t.status) ? {...t, status: 'Error'} : t));
     };
 
     const pageVariants = {
@@ -251,6 +271,9 @@ const App: React.FC = () => {
                         onClose={handleSettingsClose}
                         theme={theme}
                         setTheme={setTheme}
+                        // Pass agents state and handler to settings panel
+                        agents={agents}
+                        setAgents={setAgents}
                     />
                 )}
             </AnimatePresence>
@@ -267,6 +290,7 @@ const App: React.FC = () => {
                 {isArtifactsOpen && (
                     <ArtifactsPanel
                         artifacts={artifacts}
+                        // FIX: Changed handleClose to handleArtifactsClose to fix "Cannot find name 'handleClose'" error.
                         onClose={handleArtifactsClose}
                     />
                 )}
