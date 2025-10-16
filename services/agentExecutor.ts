@@ -8,6 +8,7 @@ interface AgentExecutorCallbacks {
     onTaskUpdate: (task: Task) => void;
     onTasksUpdate: (tasks: Task[]) => void;
     onLog: (log: Omit<LogEntry, 'timestamp'>) => void;
+    onTokenUpdate: (count: number) => void;
     onArtifactCreated: (artifact: Omit<Artifact, 'id' | 'createdAt'>) => void;
     onAgentCreated: (agent: CustomAgent) => void;
     onFinish: () => void;
@@ -17,35 +18,68 @@ interface AgentExecutorCallbacks {
 export class AgentExecutor {
     private callbacks: AgentExecutorCallbacks;
     private tasks: Task[] = [];
+    private currentArtifacts: Artifact[] = [];
     private isStopped = false;
 
     constructor(callbacks: AgentExecutorCallbacks) {
         this.callbacks = callbacks;
     }
 
-    public async run(initialTasks: Task[], prompt: string) {
+    public async run(initialTasks: Task[], prompt: string, initialArtifacts: Artifact[]) {
         this.isStopped = false;
         this.tasks = [...initialTasks];
-        
-        while (this.tasks.some(t => t.status === 'Queued') && !this.isStopped) {
-            const currentTask = this.findNextTask();
-            if (currentTask) {
-                const success = await this.executeTask(currentTask);
-                if (!success && !this.isStopped) {
-                    this.callbacks.onFail(`Execution halted: Task "${currentTask.title}" failed after all retries.`);
-                    return;
+        this.currentArtifacts = [...initialArtifacts];
+
+        const MAX_PARALLEL_TASKS = 4;
+        const activePromises = new Map<string, Promise<boolean>>();
+
+        while (this.tasks.some(t => ['Queued', 'Executing', 'Delegating'].includes(t.status)) && !this.isStopped) {
+            // Find ready tasks that are not already being executed
+            const readyTasks = this.findReadyTasks();
+
+            // Start executing tasks up to the concurrency limit
+            while (activePromises.size < MAX_PARALLEL_TASKS && readyTasks.length > 0) {
+                const taskToRun = readyTasks.shift();
+                if (taskToRun) {
+                    const promise = this.executeTask(taskToRun).finally(() => {
+                        activePromises.delete(taskToRun.id);
+                    });
+                    activePromises.set(taskToRun.id, promise);
                 }
+            }
+            
+            // Log waiting tasks
+            this.tasks.forEach(task => {
+                if (task.status === 'Queued' && !readyTasks.includes(task) && !activePromises.has(task.id)) {
+                    const deps = task.dependencies.map(depId => this.tasks.find(t => t.id === depId)?.title || 'Unknown Task').join(', ');
+                     if(deps) this.callbacks.onLog({ status: 'INFO', message: `[System] Task "${task.title}" is waiting for: ${deps}` });
+                }
+            });
+
+            // If there are active tasks, wait for one to complete.
+            // If not, check for deadlocks or completion.
+            if (activePromises.size > 0) {
+                await Promise.race(Array.from(activePromises.values()));
+            } else if (this.tasks.some(t => t.status === 'Queued')) {
+                // Deadlock check: No tasks running, but some are still queued
+                this.callbacks.onFail("Execution stalled due to a dependency issue or a cycle in the task graph.");
+                this.tasks.forEach(t => {
+                    if (t.status === 'Queued') this.updateTask(t, {status: 'Error'});
+                });
+                break; // Exit the loop on deadlock
             } else {
-                if (this.tasks.some(t => t.status === 'Delegating' || t.status === 'Executing')) {
-                    await new Promise(resolve => setTimeout(resolve, 500)); 
-                } else {
-                    break;
-                }
+                // All tasks are done, have failed, or were cancelled.
+                break;
             }
         }
 
-        if (this.isStopped) return;
-
+        // Wait for any stragglers if execution was stopped.
+        if (this.isStopped) {
+            await Promise.allSettled(Array.from(activePromises.values()));
+            return;
+        }
+        
+        // Final status check
         if (this.tasks.every(t => t.status === 'Done' || t.status === 'Cancelled')) {
             const isFromPlaybook = initialTasks[0]?.id.startsWith('playbook-');
             if(!isFromPlaybook) {
@@ -58,7 +92,6 @@ export class AgentExecutor {
              if (remainingTasks > 0) {
                 this.callbacks.onFail(`Could not complete all tasks. ${remainingTasks} tasks remain unresolved.`);
              } else if (!this.tasks.some(t => t.status === 'Error')) {
-                // If no tasks are queued and none have errored, it must be a success.
                 this.callbacks.onFinish();
              }
         }
@@ -97,8 +130,8 @@ export class AgentExecutor {
         this.callbacks.onTasksUpdate([...this.tasks]);
     }
     
-    private findNextTask(): Task | undefined {
-        return this.tasks.find(task => 
+    private findReadyTasks(): Task[] {
+        return this.tasks.filter(task => 
             task.status === 'Queued' && 
             task.dependencies.every(depId => {
                 const dep = this.tasks.find(t => t.id === depId);
@@ -192,7 +225,7 @@ export class AgentExecutor {
                     message: `[${task.agent.name}] Task '${task.title}' failed. Retrying (${newRetryCount}/${task.maxRetries}). Error: ${errorMessage}` 
                 });
                 await new Promise(resolve => setTimeout(resolve, 1000)); // Wait a second before retry
-                return this.executeTask(this.tasks.find(t => t.id === task.id));
+                return this.executeTask(this.tasks.find(t => t.id === task.id)!);
             } else {
                 this.updateTask(task, { status: 'Error' });
                 this.callbacks.onLog({ 
@@ -213,7 +246,7 @@ export class AgentExecutor {
                 return;
             }
 
-            const nextStep = await determineNextStep(task, subSteps);
+            const nextStep = await determineNextStep(task, subSteps, this.currentArtifacts, this.callbacks.onTokenUpdate);
 
             if ('isFinished' in nextStep) {
                 this.callbacks.onLog({ status: 'INFO', message: `[${task.agent.name}] Concluding task with reason: ${nextStep.finalThought}` });
@@ -267,22 +300,34 @@ export class AgentExecutor {
             }
 
             if (toolCall.name === 'createArtifact') {
-                this.callbacks.onArtifactCreated({
+                const newArtifactData = {
                     taskId: task.id,
                     title: toolCall.args.title,
                     type: toolCall.args.type,
                     content: toolCall.args.content
+                };
+                this.callbacks.onArtifactCreated(newArtifactData);
+                 this.currentArtifacts.push({
+                    ...newArtifactData,
+                    id: `artifact-${Date.now()}`,
+                    createdAt: new Date().toISOString()
                 });
                 observation = `Artifact "${toolCall.args.title}" created successfully.`;
             } else if (toolCall.name === 'executeCode') {
                 const { language, code } = toolCall.args;
                 try {
                     const result = await availableTools.executeCode({ language, code });
-                    this.callbacks.onArtifactCreated({
+                     const newArtifactData = {
                         taskId: task.id,
                         title: `Execution Result: ${language}`,
-                        type: 'live-preview',
+                        type: 'live-preview' as const,
                         content: JSON.stringify({ code, result })
+                    };
+                    this.callbacks.onArtifactCreated(newArtifactData);
+                    this.currentArtifacts.push({
+                        ...newArtifactData,
+                        id: `artifact-${Date.now()}`,
+                        createdAt: new Date().toISOString()
                     });
                     observation = `Code executed successfully. Result: ${result.substring(0, 200)}...`;
                 } catch (e) {

@@ -23,7 +23,7 @@ export const ExecutionStatusBar: React.FC<ExecutionStatusBarProps> = ({ tasks, a
                 };
             case AgentStatus.SYNTHESIZING:
                 return {
-                    statusText: 'Learning from successful plan...',
+                    statusText: 'Synthesizing Playbook...',
                     Icon: <BrainIcon className="w-5 h-5 text-[#8B5CF6]" />,
                 }
             case AgentStatus.FINISHED:

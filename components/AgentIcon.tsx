@@ -8,6 +8,9 @@ import { UserCircleIcon } from './icons/UserCircleIcon';
 import { PlugIcon } from './icons/PlugIcon';
 import { RocketIcon } from './icons/RocketIcon';
 import { CommandLineIcon } from './icons/CommandLineIcon';
+import { GoogleIcon } from './icons/GoogleIcon';
+import { HuggingFaceIcon } from './icons/HuggingFaceIcon';
+import { CpuChipIcon } from './icons/CpuChipIcon';
 
 export const PREDEFINED_ICONS: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
     WebHawk: WebHawkIcon,
@@ -19,6 +22,10 @@ export const PREDEFINED_ICONS: Record<string, React.FC<React.SVGProps<SVGSVGElem
     Plug: PlugIcon,
     Rocket: RocketIcon,
     CommandLine: CommandLineIcon,
+    // Provider Icons
+    GEMINI: GoogleIcon,
+    OLLAMA: CpuChipIcon,
+    HUGGING_FACE: HuggingFaceIcon,
 };
 
 export const AgentIcon: React.FC<{ icon?: string; className?: string }> = ({ icon, className = 'w-6 h-6' }) => {

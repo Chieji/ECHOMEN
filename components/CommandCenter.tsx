@@ -44,14 +44,14 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ agentMode, setAgen
         ? "Describe the action or task for the AI agents..." 
         : "Chat with the AI assistant...";
 
-    const borderColor = agentMode === AgentMode.ACTION ? 'border-cyan-600/70 dark:border-[#00D4FF]/70' : 'border-[#8B5CF6]/70';
-    const buttonBg = agentMode === AgentMode.ACTION ? 'bg-cyan-600 hover:bg-cyan-700 dark:bg-[#00D4FF] dark:hover:bg-[#00b8e6]' : 'bg-[#8B5CF6] hover:bg-[#7c4ee3]';
+    const borderColor = agentMode === AgentMode.ACTION ? 'border-cyan-500/90 dark:border-[#00D4FF]/90' : 'border-violet-500/90';
+    const buttonBg = agentMode === AgentMode.ACTION ? 'bg-cyan-500 hover:bg-cyan-600 dark:bg-[#00D4FF] dark:hover:bg-[#00b8e6]' : 'bg-violet-500 hover:bg-violet-600';
     const buttonText = agentMode === AgentMode.ACTION ? 'text-white dark:text-black' : 'text-white';
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-40">
             <div className="max-w-3xl mx-auto px-4 pb-4">
-                <div className={`bg-white/60 dark:bg-[#121212]/60 backdrop-blur-3xl border-2 ${borderColor} rounded-2xl shadow-lg shadow-black/20 overflow-hidden`}>
+                <div className={`bg-white/80 dark:bg-[#121212]/80 backdrop-blur-2xl border-2 ${borderColor} rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/50 overflow-hidden`}>
                     <div className="p-4 flex items-end gap-3">
                         <textarea
                             value={inputValue}

@@ -4,19 +4,21 @@ import { CommandCenter } from './components/CommandCenter';
 import { ExecutionDashboard } from './components/ExecutionDashboard';
 import { MasterConfigurationPanel } from './components/MasterConfigurationPanel';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Task, LogEntry, AgentMode, AgentStatus, Artifact, CustomAgent } from './types';
-import { createInitialPlan, getChatResponse, summarizePlanIntoPlaybook, clarifyAndCorrectPrompt, analyzeChatMessageForAction } from './services/planner';
+import { Task, LogEntry, AgentMode, AgentStatus, Artifact, CustomAgent, Service, Playbook, TodoItem, SessionStats } from './types';
+import { createInitialPlan, getChatResponse, suggestPlaybookName, clarifyAndCorrectPrompt, analyzeChatMessageForAction } from './services/planner';
 import { useMemory } from './hooks/useMemory';
 import { ChatInterface } from './components/ChatInterface';
 import { HistoryPanel } from './components/HistoryPanel';
 import { ExecutionStatusBar } from './components/ExecutionStatusBar';
 import { AgentExecutor } from './services/agentExecutor';
 import { ArtifactsPanel } from './components/ArtifactsPanel';
+import { PlaybookCreationModal } from './components/PlaybookCreationModal';
 
 const App: React.FC = () => {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [isArtifactsOpen, setIsArtifactsOpen] = useState(false);
+    const [isPlaybookModalOpen, setIsPlaybookModalOpen] = useState(false);
     const [tasks, setTasks] = useState<Task[]>([]);
     const [liveLogs, setLiveLogs] = useState<LogEntry[]>([]);
     const [artifacts, setArtifacts] = useState<Artifact[]>([]);
@@ -27,7 +29,9 @@ const App: React.FC = () => {
     const [agentStatus, setAgentStatus] = useState<AgentStatus>(AgentStatus.IDLE);
     const [currentPrompt, setCurrentPrompt] = useState<string>('');
     const [commandCenterInput, setCommandCenterInput] = useState<string>('');
-    
+    const [sessionStats, setSessionStats] = useState<SessionStats>({ totalTokensUsed: 0 });
+    const [playbookCandidate, setPlaybookCandidate] = useState<{ suggestedName: string; tasks: Task[]; triggerPrompt: string } | null>(null);
+
     const executorRef = useRef<AgentExecutor | null>(null);
 
     useEffect(() => {
@@ -48,6 +52,12 @@ const App: React.FC = () => {
     const handleHistoryClose = () => setIsHistoryOpen(false);
     const handleArtifactsClick = () => setIsArtifactsOpen(true);
     const handleArtifactsClose = () => setIsArtifactsOpen(false);
+
+    const handleTokenUpdate = (tokenCount: number) => {
+        if (typeof tokenCount === 'number' && !isNaN(tokenCount)) {
+            setSessionStats(prev => ({ ...prev, totalTokensUsed: prev.totalTokensUsed + tokenCount }));
+        }
+    };
 
     const addLog = (log: Omit<LogEntry, 'timestamp'>) => {
         const newLog = { ...log, timestamp: new Date().toISOString() };
@@ -111,7 +121,7 @@ const App: React.FC = () => {
         if (agentMode === AgentMode.CHAT) {
             addMessage({ sender: 'user', text: prompt });
             try {
-                const actionAnalysis = await analyzeChatMessageForAction(prompt);
+                const actionAnalysis = await analyzeChatMessageForAction(prompt, handleTokenUpdate);
                 if (actionAnalysis.is_actionable) {
                     addMessage({
                         sender: 'agent',
@@ -120,7 +130,7 @@ const App: React.FC = () => {
                         suggestedPrompt: actionAnalysis.suggested_prompt,
                     });
                 } else {
-                    const agentResponse = await getChatResponse(prompt);
+                    const agentResponse = await getChatResponse(prompt, handleTokenUpdate);
                     addMessage({ sender: 'agent', text: agentResponse });
                 }
             } catch (error) {
@@ -140,7 +150,7 @@ const App: React.FC = () => {
 
         try {
             addLog({ status: 'INFO', message: '[Planner] Analyzing and clarifying prompt...' });
-            const correctedPrompt = await clarifyAndCorrectPrompt(prompt);
+            const correctedPrompt = await clarifyAndCorrectPrompt(prompt, handleTokenUpdate);
             if (prompt !== correctedPrompt) {
                  addLog({ status: 'SUCCESS', message: `[Planner] Refined prompt: "${correctedPrompt}"` });
             } else {
@@ -149,7 +159,20 @@ const App: React.FC = () => {
 
             addLog({ status: 'INFO', message: '[Planner] Deconstructing the request...' });
             
-            const initialTasks = await createInitialPlan(correctedPrompt, isWebToolActive);
+            // Gather full context for the planner
+            const connectedServices = JSON.parse(localStorage.getItem('echo-services') || '[]').filter((s: Service) => s.status === 'Connected').map((s: Service) => s.name);
+            const playbooks = JSON.parse(localStorage.getItem('echo-playbooks') || '[]') as Playbook[];
+            const customAgents = JSON.parse(localStorage.getItem('echo-custom-agents') || '[]') as CustomAgent[];
+            const todos = JSON.parse(localStorage.getItem('echo-todo-list') || '[]') as TodoItem[];
+            
+            const executionContext = {
+                connectedServices,
+                playbooks,
+                customAgents,
+                activeTodos: todos.filter(t => !t.isCompleted),
+            };
+
+            const initialTasks = await createInitialPlan(correctedPrompt, isWebToolActive, executionContext, handleTokenUpdate);
             setTasks(initialTasks);
             
             if (initialTasks.length > 0 && initialTasks[0].id.startsWith('playbook-')) {
@@ -166,6 +189,7 @@ const App: React.FC = () => {
                     setTasks(updatedTasks);
                 },
                 onLog: addLog,
+                onTokenUpdate: handleTokenUpdate,
                 onArtifactCreated: handleCreateArtifact,
                 onAgentCreated: handleAgentCreated,
                 onFinish: () => {
@@ -178,7 +202,7 @@ const App: React.FC = () => {
                 }
             });
             executorRef.current = executor;
-            await executor.run(initialTasks, correctedPrompt);
+            await executor.run(initialTasks, correctedPrompt, artifacts);
 
         } catch (error) {
             console.error("Error during agent execution:", error);
@@ -194,16 +218,16 @@ const App: React.FC = () => {
                 setAgentStatus(AgentStatus.SYNTHESIZING);
                 addLog({ status: 'INFO', message: '[Synthesizer] Analyzing successful plan to create a new playbook...' });
                 try {
-                    const newPlaybook = await summarizePlanIntoPlaybook(currentPrompt, tasks);
-                    const savedPlaybooksJSON = localStorage.getItem('echo-playbooks');
-                    const playbooks = savedPlaybooksJSON ? JSON.parse(savedPlaybooksJSON) : [];
-                    playbooks.push(newPlaybook);
-                    localStorage.setItem('echo-playbooks', JSON.stringify(playbooks));
-                    addLog({ status: 'SUCCESS', message: `[Synthesizer] New playbook created: "${newPlaybook.name}"` });
+                    const suggestedName = await suggestPlaybookName(currentPrompt, tasks, handleTokenUpdate);
+                    setPlaybookCandidate({
+                        suggestedName,
+                        tasks,
+                        triggerPrompt: currentPrompt,
+                    });
+                    setIsPlaybookModalOpen(true);
                 } catch (error) {
                     const errorMessage = error instanceof Error ? error.message : String(error);
                     addLog({ status: 'ERROR', message: `[Synthesizer] Failed to create playbook: ${errorMessage}` });
-                } finally {
                     setAgentStatus(AgentStatus.IDLE);
                 }
             } else if (agentStatus === AgentStatus.FINISHED || agentStatus === AgentStatus.ERROR) {
@@ -213,6 +237,38 @@ const App: React.FC = () => {
         handleSynthesis();
     }, [agentStatus, currentPrompt, tasks]);
 
+
+    const handleSavePlaybook = (name: string, description: string) => {
+        if (!playbookCandidate) return;
+
+        const taskTemplates = playbookCandidate.tasks.map(({ id, status, dependencies, logs, reviewHistory, retryCount, maxRetries, subSteps, ...rest }) => rest);
+        const newPlaybook: Playbook = {
+            id: `playbook-${Date.now()}`,
+            name,
+            description,
+            triggerPrompt: playbookCandidate.triggerPrompt,
+            tasks: taskTemplates,
+            createdAt: new Date().toISOString(),
+        };
+
+        const savedPlaybooksJSON = localStorage.getItem('echo-playbooks');
+        const playbooks = savedPlaybooksJSON ? JSON.parse(savedPlaybooksJSON) : [];
+        playbooks.push(newPlaybook);
+        localStorage.setItem('echo-playbooks', JSON.stringify(playbooks));
+        
+        addLog({ status: 'SUCCESS', message: `[Synthesizer] New playbook created: "${newPlaybook.name}"` });
+        
+        setIsPlaybookModalOpen(false);
+        setPlaybookCandidate(null);
+        setAgentStatus(AgentStatus.IDLE);
+    };
+
+    const handleCancelPlaybookCreation = () => {
+        setIsPlaybookModalOpen(false);
+        setPlaybookCandidate(null);
+        setAgentStatus(AgentStatus.IDLE);
+        addLog({ status: 'WARN', message: '[Synthesizer] Playbook creation cancelled by user.' });
+    };
 
     const handleStopExecution = () => {
         if (executorRef.current) {
@@ -242,6 +298,7 @@ const App: React.FC = () => {
                 onArtifactsClick={handleArtifactsClick}
                 tasks={tasks}
                 agentStatus={agentStatus}
+                sessionStats={sessionStats}
             />
             
             <main className="flex-grow pt-24 pb-48 md:pb-40 flex flex-col">
@@ -297,7 +354,10 @@ const App: React.FC = () => {
                     handleSendCommand(prompt, isWebToolActive);
                     setCommandCenterInput('');
                 }} 
-                onClearChat={clearMemory}
+                onClearChat={() => {
+                    clearMemory();
+                    setSessionStats({ totalTokensUsed: 0 }); // Reset token count on new chat
+                }}
                 inputValue={commandCenterInput}
                 onInputChange={setCommandCenterInput}
             />
@@ -317,6 +377,10 @@ const App: React.FC = () => {
                         tasks={tasks}
                         messages={messages} 
                         onClose={handleHistoryClose} 
+                        onClearChat={() => {
+                            clearMemory();
+                            handleHistoryClose();
+                        }}
                     />
                 )}
             </AnimatePresence>
@@ -325,6 +389,17 @@ const App: React.FC = () => {
                     <ArtifactsPanel
                         artifacts={artifacts}
                         onClose={handleArtifactsClose}
+                    />
+                )}
+            </AnimatePresence>
+            <AnimatePresence>
+                {isPlaybookModalOpen && playbookCandidate && (
+                    <PlaybookCreationModal
+                        isOpen={isPlaybookModalOpen}
+                        suggestedName={playbookCandidate.suggestedName}
+                        triggerPrompt={playbookCandidate.triggerPrompt}
+                        onClose={handleCancelPlaybookCreation}
+                        onSave={handleSavePlaybook}
                     />
                 )}
             </AnimatePresence>

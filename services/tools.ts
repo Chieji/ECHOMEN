@@ -53,24 +53,25 @@ const checkAuth = (serviceId: string): boolean => {
     return false;
 }
 
+const getSandboxToolRunner = (operation: string, args: object) => {
+    if (checkAuth('daytona')) {
+        return callBackendTool(`daytona_${operation}`, args);
+    }
+    if (checkAuth('codesandbox')) {
+        // Here you could add a log that it's using the fallback
+        return callBackendTool(`codesandbox_${operation}`, args);
+    }
+    throw new Error("No sandbox environment connected. Please connect Daytona or CodeSandbox in settings to manage files and execute commands.");
+}
+
 
 // --- Tool Implementations ---
 
-const readFile = async (path: string): Promise<string> => {
-    return callBackendTool('readFile', { path });
-};
+const readFile = (path: string): Promise<string> => getSandboxToolRunner('readFile', { path });
+const writeFile = (path: string, content: string): Promise<string> => getSandboxToolRunner('writeFile', { path, content });
+const listFiles = (path: string): Promise<string[]> => getSandboxToolRunner('listFiles', { path });
+const executeShellCommand = (command: string): Promise<string> => getSandboxToolRunner('executeShellCommand', { command });
 
-const writeFile = async (path: string, content: string): Promise<string> => {
-    return callBackendTool('writeFile', { path, content });
-};
-
-const listFiles = async (path: string): Promise<string[]> => {
-    return callBackendTool('listFiles', { path });
-};
-
-const executeShellCommand = async (command: string): Promise<string> => {
-    return callBackendTool('executeShellCommand', { command });
-};
 
 const browse_web = async (url: string, task_description: string): Promise<string> => {
     // In a real app, you might check for a specific web browsing service connection
@@ -176,7 +177,7 @@ const create_and_delegate_task_to_new_agent = async (agent_name: string, agent_i
 export const toolDeclarations: FunctionDeclaration[] = [
     {
         name: 'readFile',
-        description: 'Reads the entire content of a specified file from the real file system via the ECHO Execution Engine.',
+        description: 'Reads the entire content of a specified file from the connected sandbox environment (Daytona or CodeSandbox).',
         parameters: {
             type: Type.OBJECT, properties: { 
                 path: { type: Type.STRING, description: 'The full path to the file (e.g., "./src/index.js").' } 
@@ -185,7 +186,7 @@ export const toolDeclarations: FunctionDeclaration[] = [
     },
     {
         name: 'writeFile',
-        description: 'Writes or overwrites content to a file on the real file system. If the file or its parent directories do not exist, they will be created.',
+        description: 'Writes or overwrites content to a file in the sandbox environment. If the file or its parent directories do not exist, they will be created.',
         parameters: {
             type: Type.OBJECT, properties: {
                 path: { type: Type.STRING, description: 'The path for the file to be written (e.g., "./components/NewComponent.js").' },
@@ -195,7 +196,7 @@ export const toolDeclarations: FunctionDeclaration[] = [
     },
     {
         name: 'listFiles',
-        description: 'Lists all files and subdirectories directly within a given directory path on the real file system.',
+        description: 'Lists all files and subdirectories directly within a given directory path in the sandbox environment.',
         parameters: {
             type: Type.OBJECT, properties: { 
                 path: { type: Type.STRING, description: 'The directory path to inspect (e.g., "./src" or "." for the root).' } 
@@ -204,7 +205,7 @@ export const toolDeclarations: FunctionDeclaration[] = [
     },
     {
         name: 'executeShellCommand',
-        description: 'Executes a command in a real shell environment. This is a powerful tool for using system commands, developer tools, and scripts. Examples: `npm install`, `git clone <url>`, `docker build -t my-app .`, `python my_script.py`. Requires the ECHO Execution Engine to be running.',
+        description: 'Executes a command in a real shell inside the connected sandbox environment. This is a powerful tool for using system commands, developer tools, and scripts. Examples: `npm install`, `git clone <url>`, `docker build -t my-app .`, `python my_script.py`.',
         parameters: {
             type: Type.OBJECT, properties: { 
                 command: { type: Type.STRING, description: 'The shell command to execute.' } 

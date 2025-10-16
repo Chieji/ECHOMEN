@@ -1,5 +1,5 @@
-import { GoogleGenAI, FunctionDeclaration, Type, Chat } from "@google/genai";
-import type { Task, AgentRole, ToolCall, AgentPreferences, TodoItem, SubStep, Playbook } from '../types';
+import { GoogleGenAI, FunctionDeclaration, Type, Chat, GenerateContentResponse } from "@google/genai";
+import type { Task, AgentRole, ToolCall, AgentPreferences, TodoItem, SubStep, Playbook, CustomAgent, Artifact } from '../types';
 import { availableTools, toolDeclarations } from './tools';
 
 const structuredPlanSchema = {
@@ -75,7 +75,14 @@ My goal is to be your ultimate tool for creation and execution. Give it a try! S
 
 Your thoughts. My echo. Infinite possibility.`;
 
-export const analyzeChatMessageForAction = async (prompt: string): Promise<{ is_actionable: boolean; suggested_prompt: string }> => {
+const handleApiResponse = (response: GenerateContentResponse, onTokenUpdate: (count: number) => void): string => {
+    if (response.usageMetadata?.totalTokenCount) {
+        onTokenUpdate(response.usageMetadata.totalTokenCount);
+    }
+    return response.text;
+}
+
+export const analyzeChatMessageForAction = async (prompt: string, onTokenUpdate: (count: number) => void): Promise<{ is_actionable: boolean; suggested_prompt: string }> => {
     const systemInstruction = `You are an intent-recognition AI. Your task is to analyze a user's chat message and determine if it contains an actionable command (e.g., "build this", "create a file", "run this command", "can you write a script for...") versus a conversational query (e.g., "how does this work?", "what is...", "explain...").
 - If it's an actionable command, set 'is_actionable' to true and rephrase the command into a clear, concise prompt for another AI agent.
 - If it's conversational, set 'is_actionable' to false.
@@ -91,7 +98,7 @@ Your response MUST be a valid JSON object adhering to the provided schema.`;
                 systemInstruction: systemInstruction,
             },
         });
-        const resultJson = response.text.trim();
+        const resultJson = handleApiResponse(response, onTokenUpdate).trim();
         const result = JSON.parse(resultJson);
         return result;
     } catch (error) {
@@ -100,7 +107,7 @@ Your response MUST be a valid JSON object adhering to the provided schema.`;
     }
 };
 
-export const clarifyAndCorrectPrompt = async (prompt: string): Promise<string> => {
+export const clarifyAndCorrectPrompt = async (prompt: string, onTokenUpdate: (count: number) => void): Promise<string> => {
     const systemInstruction = `You are an AI assistant that refines user prompts. Your goal is to correct any spelling or grammar mistakes, clarify ambiguities, and rephrase the prompt into a clear, actionable command for another AI agent. Do not add any conversational fluff. Only return the refined prompt. If the prompt is already clear and well-defined, return it as-is.
 
 Example 1:
@@ -120,7 +127,7 @@ Assistant: "Create a new React component named 'Header'. It should have a defaul
                 temperature: 0.2, // Be conservative with changes
             },
         });
-        return response.text.trim();
+        return handleApiResponse(response, onTokenUpdate).trim();
     } catch (error) {
         console.error("Error clarifying prompt:", error);
         return prompt; // Return original prompt on error
@@ -141,7 +148,7 @@ const getAgentNameForRole = (role: AgentRole, preferences: AgentPreferences): st
     }
 }
 
-const findRelevantPlaybook = async (prompt: string, playbooks: Playbook[]): Promise<Playbook | null> => {
+const findRelevantPlaybook = async (prompt: string, playbooks: Playbook[], onTokenUpdate: (count: number) => void): Promise<Playbook | null> => {
     if (playbooks.length === 0) return null;
 
     const playbookDescriptions = playbooks.map(p => `ID: ${p.id}, Description: ${p.triggerPrompt}`).join('\n');
@@ -164,7 +171,7 @@ ${playbookDescriptions}
             contents: recallPrompt,
         });
 
-        const bestId = response.text.trim();
+        const bestId = handleApiResponse(response, onTokenUpdate).trim();
         if (bestId && bestId !== 'NONE') {
             return playbooks.find(p => p.id === bestId) || null;
         }
@@ -196,30 +203,30 @@ const rehydrateTasksFromPlaybook = (playbook: Playbook, preferences: AgentPrefer
     });
 };
 
-export const createInitialPlan = async (prompt: string, isWebToolActive: boolean): Promise<Task[]> => {
+interface ExecutionContext {
+    connectedServices: string[];
+    playbooks: Playbook[];
+    customAgents: CustomAgent[];
+    activeTodos: TodoItem[];
+}
+
+export const createInitialPlan = async (
+    prompt: string,
+    isWebToolActive: boolean,
+    context: ExecutionContext,
+    onTokenUpdate: (count: number) => void
+): Promise<Task[]> => {
     let agentPreferences: AgentPreferences = {};
-    let activeTodos: TodoItem[] = [];
-    let playbooks: Playbook[] = [];
 
     try {
         const savedPrefsJSON = localStorage.getItem('echo-agent-preferences');
         if (savedPrefsJSON) agentPreferences = JSON.parse(savedPrefsJSON);
-        
-        const savedTodosJSON = localStorage.getItem('echo-todo-list');
-        if (savedTodosJSON) {
-            const allTodos: TodoItem[] = JSON.parse(savedTodosJSON);
-            activeTodos = allTodos.filter(todo => !todo.isCompleted);
-        }
-
-        const savedPlaybooksJSON = localStorage.getItem('echo-playbooks');
-        if (savedPlaybooksJSON) playbooks = JSON.parse(savedPlaybooksJSON);
-
     } catch (error) {
-        console.error("Failed to parse data from localStorage", error);
+        console.error("Failed to parse agent preferences from localStorage", error);
     }
 
     if (!isWebToolActive) {
-        const relevantPlaybook = await findRelevantPlaybook(prompt, playbooks);
+        const relevantPlaybook = await findRelevantPlaybook(prompt, context.playbooks, onTokenUpdate);
         if (relevantPlaybook) {
             console.log(`Found relevant playbook: ${relevantPlaybook.name}`);
             return rehydrateTasksFromPlaybook(relevantPlaybook, agentPreferences);
@@ -227,16 +234,21 @@ export const createInitialPlan = async (prompt: string, isWebToolActive: boolean
     }
     
     let systemInstruction = "You are a world-class autonomous agent planner. Your job is to receive a user request and break it down into a sequence of logical tasks. A typical sequence is: 1. Planner (for outlining/structuring), 2. Executor (for performing the work), 3. Reviewer (for checking quality), and 4. Synthesizer (for final assembly). Keep tasks high-level. The Executor agent will handle the detailed, step-by-step tool usage. Respond with a JSON array of tasks that adheres to the provided schema.";
+    
+    let contextPreamble = `
+[SYSTEM CONTEXT]
+- Connected Services: ${context.connectedServices.length > 0 ? context.connectedServices.join(', ') : 'None'}
+- Available Custom Agents: ${context.customAgents.length > 0 ? context.customAgents.map(a => a.name).join(', ') : 'None'}
+- Learned Playbooks: ${context.playbooks.length}
+- High-Priority To-Dos: ${context.activeTodos.length > 0 ? context.activeTodos.map(t => t.text).join('; ') : 'None'}
+This context is for your awareness. Use it to create a more effective and informed plan.
+`;
+
+    systemInstruction = contextPreamble + "\n---\n" + systemInstruction;
 
     if (isWebToolActive) {
         const webPreamble = "CRITICAL: The user has activated the Web Tool. The request is web-focused. You MUST prioritize using the `browse_web` tool. The primary agent for the execution task should be `WebHawk`.";
         systemInstruction = `${webPreamble}\n\n${systemInstruction}`;
-    }
-
-    if (activeTodos.length > 0) {
-        const todoList = activeTodos.map(todo => `- ${todo.text}`).join('\n');
-        const todoContext = `\n\nHigh-Priority To-Do List (consider these for context):\n${todoList}`;
-        systemInstruction = todoContext + '\n\n' + systemInstruction;
     }
 
     try {
@@ -249,8 +261,9 @@ export const createInitialPlan = async (prompt: string, isWebToolActive: boolean
                 systemInstruction: systemInstruction,
             },
         });
+        
+        const textResponse = handleApiResponse(response, onTokenUpdate);
 
-        const textResponse = response.text;
         if (!textResponse || !textResponse.trim()) {
             throw new Error("The AI planner returned an empty response.");
         }
@@ -307,16 +320,22 @@ export const createInitialPlan = async (prompt: string, isWebToolActive: boolean
 };
 
 
-export const determineNextStep = async (task: Task, subSteps: SubStep[]): Promise<{ thought: string; toolCall: ToolCall } | { isFinished: true; finalThought: string }> => {
+export const determineNextStep = async (task: Task, subSteps: SubStep[], currentArtifacts: Artifact[], onTokenUpdate: (count: number) => void): Promise<{ thought: string; toolCall: ToolCall } | { isFinished: true; finalThought: string }> => {
     const history = subSteps.map(step => 
         `Thought: ${step.thought}\nAction: ${JSON.stringify(step.toolCall)}\nObservation: ${step.observation}`
     ).join('\n\n');
+    
+    const artifactList = currentArtifacts.map(a => `- ${a.title} (${a.type})`).join('\n');
 
     const prompt = `
 You are an autonomous agent executing a task.
 Your high-level objective is: "${task.title} - ${task.details}"
 
 You have access to the following tools: ${toolDeclarations.map(t => t.name).join(', ')}.
+
+[CURRENT CONTEXT]
+- Artifacts created so far:
+${artifactList.length > 0 ? artifactList : "None"}
 
 Based on the history of your previous actions and observations, decide on the very next step. 
 You must think step-by-step and then choose one single tool to use.
@@ -339,9 +358,10 @@ What is your next action?
             systemInstruction: "You are a methodical AI agent executor. Follow the ReAct (Reason-Act) pattern. Your response must be a single, valid JSON object representing your next thought and action, or a finalization signal.",
         },
     });
+    
+    const resultJson = handleApiResponse(response, onTokenUpdate).trim();
 
     try {
-        const resultJson = response.text.trim();
         const result = JSON.parse(resultJson);
         if (result.isFinished) {
             return { isFinished: true, finalThought: result.finalThought };
@@ -351,7 +371,7 @@ What is your next action?
         }
         throw new Error("Invalid JSON response from agent brain.");
     } catch (e) {
-        console.error("Failed to parse agent's next step:", response.text, e);
+        console.error("Failed to parse agent's next step:", resultJson, e);
         // Fallback or error handling action
         return {
             thought: "I seem to be confused about the next step. I will ask for clarification.",
@@ -360,7 +380,7 @@ What is your next action?
     }
 };
 
-export const getChatResponse = async (prompt: string): Promise<string> => {
+export const getChatResponse = async (prompt: string, onTokenUpdate: (count: number) => void): Promise<string> => {
     // Check for welcome triggers
     const lowerCasePrompt = prompt.toLowerCase().trim().replace(/[.,?_]/g, "");
     if (WELCOME_TRIGGERS.some(trigger => lowerCasePrompt.includes(trigger))) {
@@ -377,7 +397,7 @@ export const getChatResponse = async (prompt: string): Promise<string> => {
     }
     try {
         const response = await chat.sendMessage({ message: prompt });
-        return response.text;
+        return handleApiResponse(response, onTokenUpdate);
     } catch (error) {
         console.error("Error getting chat response:", error);
         if (error instanceof Error) {
@@ -388,7 +408,7 @@ export const getChatResponse = async (prompt: string): Promise<string> => {
 };
 
 
-export const summarizePlanIntoPlaybook = async (prompt: string, tasks: Task[]): Promise<Playbook> => {
+export const suggestPlaybookName = async (prompt: string, tasks: Task[], onTokenUpdate: (count: number) => void): Promise<string> => {
     const taskSummary = tasks.map((t, i) => `${i + 1}. [${t.agent.role}] ${t.title}`).join('\n');
     
     const summarizationPrompt = `
@@ -406,20 +426,9 @@ Based on the original prompt and the successful plan, create a short, descriptiv
             contents: summarizationPrompt,
         });
 
-        const playbookName = response.text.trim().replace(/"/g, ''); // Clean up quotes
-
-        const taskTemplates = tasks.map(({ id, status, dependencies, logs, reviewHistory, retryCount, maxRetries, subSteps, ...rest }) => rest);
-
-        return {
-            id: `playbook-${Date.now()}`,
-            name: playbookName,
-            triggerPrompt: prompt,
-            tasks: taskTemplates,
-            createdAt: new Date().toISOString(),
-        };
-
+        return handleApiResponse(response, onTokenUpdate).trim().replace(/"/g, '');
     } catch (error) {
-        console.error("Error summarizing plan:", error);
-        throw new Error("Could not synthesize playbook from the completed plan.");
+        console.error("Error suggesting playbook name:", error);
+        throw new Error("Could not suggest a name for the completed plan.");
     }
 };

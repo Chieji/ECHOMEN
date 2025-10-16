@@ -8,11 +8,13 @@ import { ExecutorIcon } from './icons/ExecutorIcon';
 import { ReviewerIcon } from './icons/ReviewerIcon';
 import { SynthesizerIcon } from './icons/SynthesizerIcon';
 import { ChatIcon } from './icons/ChatIcon';
+import { PlusCircleIcon } from './icons/PlusCircleIcon';
 
 interface HistoryPanelProps {
     tasks: Task[];
     messages: Message[];
     onClose: () => void;
+    onClearChat: () => void;
 }
 
 const statusConfig = {
@@ -22,6 +24,8 @@ const statusConfig = {
     Error: { color: 'bg-red-500/20 text-red-500 dark:text-red-400 border-red-500/30' },
     'Pending Review': { color: 'bg-yellow-500/20 text-yellow-500 dark:text-yellow-400 border-yellow-500/30' },
     Revising: { color: 'bg-[#FF6B00]/20 text-[#FF6B00] border-[#FF6B00]/30' },
+    Cancelled: { color: 'bg-zinc-500/10 text-zinc-600 dark:text-gray-500 border-zinc-500/20 dark:bg-gray-600/20 dark:border-gray-600/30' },
+    Delegating: { color: 'bg-purple-500/20 text-purple-500 dark:text-purple-400 border-purple-500/70 dark:border-purple-400/70' },
 };
 
 const roleIcons = {
@@ -33,6 +37,23 @@ const roleIcons = {
 
 // FIX: Renamed discriminant property to `historyType` to avoid conflict with `Message.type`.
 type HistoryItem = (Task & { historyType: 'task' }) | (Message & { historyType: 'message' });
+
+// FIX: Added a helper to reliably get a task's timestamp for sorting and display.
+const getTaskTimestamp = (task: Task): string => {
+    // Prefer the first log's timestamp if it exists.
+    if (task.logs && task.logs.length > 0 && task.logs[0].timestamp) {
+        return task.logs[0].timestamp;
+    }
+    // Fallback to parsing the creation timestamp from the task ID.
+    // We look for the last 13-digit number, as that's most likely the Date.now() timestamp.
+    const matches = task.id.match(/\d{13}/g);
+    if (matches && matches.length > 0) {
+        return new Date(parseInt(matches[matches.length - 1], 10)).toISOString();
+    }
+    // Final fallback, though it shouldn't be reached in normal operation.
+    return new Date(0).toISOString();
+}
+
 
 const HistoryItemCard: React.FC<{ item: HistoryItem }> = ({ item }) => {
     // FIX: Use `historyType` for discriminating the union.
@@ -49,7 +70,7 @@ const HistoryItemCard: React.FC<{ item: HistoryItem }> = ({ item }) => {
                     <span>{item.agent.role}: <span className="font-semibold">{item.agent.name}</span></span>
                 </p>
                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    {new Date(item.logs[0]?.timestamp || Date.now()).toLocaleString()}
+                    {new Date(getTaskTimestamp(item)).toLocaleString()}
                 </p>
             </div>
         );
@@ -71,22 +92,22 @@ const HistoryItemCard: React.FC<{ item: HistoryItem }> = ({ item }) => {
     }
 };
 
-export const HistoryPanel: React.FC<HistoryPanelProps> = ({ tasks, messages, onClose }) => {
+export const HistoryPanel: React.FC<HistoryPanelProps> = ({ tasks, messages, onClose, onClearChat }) => {
     // In a real app, filtering state would be managed here with useState
     // FIX: Use `historyType` when creating the combined array to avoid type conflicts.
     const historyItems: HistoryItem[] = [
         ...tasks.map(t => ({ ...t, historyType: 'task' as const })),
         ...messages.map(m => ({ ...m, historyType: 'message' as const }))
     ].sort((a, b) => {
-        // FIX: Use `historyType` to correctly access timestamp properties for sorting.
-        const timeA = new Date(a.historyType === 'task' ? a.logs[0]?.timestamp || 0 : a.timestamp).getTime();
-        const timeB = new Date(b.historyType === 'task' ? b.logs[0]?.timestamp || 0 : b.timestamp).getTime();
+        // FIX: Use `getTaskTimestamp` helper to correctly access timestamp properties for sorting.
+        const timeA = new Date(a.historyType === 'task' ? getTaskTimestamp(a) : a.timestamp).getTime();
+        const timeB = new Date(b.historyType === 'task' ? getTaskTimestamp(b) : b.timestamp).getTime();
         return timeB - timeA;
     });
 
     const groupedItems = historyItems.reduce((acc, item) => {
-        // FIX: Use `historyType` for grouping items by date.
-        const date = new Date(item.historyType === 'task' ? item.logs[0]?.timestamp || 0 : item.timestamp).toDateString();
+        // FIX: Use `getTaskTimestamp` helper for grouping items by date.
+        const date = new Date(item.historyType === 'task' ? getTaskTimestamp(item) : item.timestamp).toDateString();
         if (!acc[date]) {
             acc[date] = [];
         }
@@ -115,9 +136,19 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ tasks, messages, onC
                         <DocumentTextIcon className="w-6 h-6 text-orange-500" />
                         Execution & Chat History
                     </h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-black dark:hover:text-white transition-colors">
-                        <CloseIcon className="w-6 h-6" />
-                    </button>
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={onClearChat}
+                            className="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors"
+                            title="Start New Chat"
+                        >
+                            <PlusCircleIcon className="w-5 h-5" />
+                            <span>New Chat</span>
+                        </button>
+                        <button onClick={onClose} className="text-gray-500 hover:text-black dark:hover:text-white transition-colors">
+                            <CloseIcon className="w-6 h-6" />
+                        </button>
+                    </div>
                 </header>
 
                 <div className="p-4 border-b border-black/10 dark:border-white/10 flex-shrink-0">
