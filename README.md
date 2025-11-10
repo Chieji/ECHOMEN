@@ -27,7 +27,7 @@ The principle behind ECHO is simple: **Action over conversation.** While chat is
 
 -   **Deconstruct** high-level objectives into actionable task pipelines.
 -   **Orchestrate** a multi-agent system, assigning the right agent to the right task.
--   **Execute** tasks using a suite of tools, from file manipulation to web interaction.
+-   **Execute** tasks using a comprehensive suite of tools, including file manipulation, web interaction, **structured long-term memory**, and **data analysis**.
 -   **Learn** from successful executions to create reusable "Playbooks," improving its efficiency over time.
 
 <!-- TODO: Replace this with a high-quality GIF of ECHO in action! -->
@@ -88,7 +88,7 @@ ECHO is an evolving experiment. The next frontiers include:
 
 -   [ ] **Real Tool Integration:** Bridge the gap from a simulated file system to real-world APIs by building secure backend proxies for services like GitHub, and an optional local server for file system access.
 -   [ ] **WebHawk Agent:** Fully implement the `WebHawk` agent for autonomous web browsing, data extraction, and research.
--   [ ] **Long-Term Memory:** Integrate a vector database (e.g., Supabase with pgvector) to give ECHO persistent, searchable memory across sessions.
+-   [x] **Long-Term Memory:** Integrated a structured memory system using Supabase (backend implementation pending) to give ECHO persistent, searchable memory across sessions.
 -   [ ] **Collaborative Agents:** Allow multiple ECHO instances to communicate and delegate tasks to each other.
 
 ## 🤝 Contributing
