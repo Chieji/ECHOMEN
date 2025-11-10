@@ -154,6 +154,46 @@ const github_create_file_in_repo = async (repo_name: string, path: string, conte
 };
 
 
+// --- Memory Tools (Supabase Integration) ---
+
+const memory_save = async (key: string, value: string, tags: string[]): Promise<string> => {
+    if (!checkAuth(\'supabase\')) throw new Error("Supabase service not connected for memory operations.");
+    return callBackendTool(\'memory_save\', { key, value, tags });
+};
+
+const memory_retrieve = async (key?: string, tags?: string[]): Promise<string> => {
+    if (!checkAuth(\'supabase\')) throw new Error("Supabase service not connected for memory operations.");
+    if (!key && (!tags || tags.length === 0)) {
+        throw new Error("Must provide either a \'key\' or \'tags\' to retrieve memory.");
+    }
+    return callBackendTool(\'memory_retrieve\', { key, tags });
+};
+
+const memory_delete = async (key: string): Promise<string> => {
+    if (!checkAuth(\'supabase\')) throw new Error("Supabase service not connected for memory operations.");
+    return callBackendTool(\'memory_delete\', { key });
+};
+
+const data_analyze = async (input_file_path: string, analysis_script: string): Promise<string> => {
+    // The script will be written to a temporary file and executed via executeShellCommand
+    const temp_script_path = `./temp_analysis_${Date.now()}.py`;
+    await writeFile(temp_script_path, analysis_script);
+    const command = `python3 ${temp_script_path} ${input_file_path}`;
+    const result = await executeShellCommand(command);
+    await executeShellCommand(`rm ${temp_script_path}`); // Clean up
+    return result;
+};
+
+const data_visualize = async (input_file_path: string, visualization_script: string, output_image_path: string): Promise<string> => {
+    // The script will be written to a temporary file and executed via executeShellCommand
+    const temp_script_path = `./temp_viz_${Date.now()}.py`;
+    await writeFile(temp_script_path, visualization_script);
+    const command = `python3 ${temp_script_path} ${input_file_path} ${output_image_path}`;
+    const result = await executeShellCommand(command);
+    await executeShellCommand(`rm ${temp_script_path}`); // Clean up
+    return `Visualization saved to: ${output_image_path}. Shell output: ${result}`;
+};
+
 const askUser = async (question: string): Promise<string> => {
     return new Promise((resolve) => {
         const answer = window.prompt(question);
@@ -275,6 +315,57 @@ export const toolDeclarations: FunctionDeclaration[] = [
         }
     },
     {
+        name: 'memory_save',
+        description: 'Stores a piece of structured information or a key-value pair into the agent\'s long-term memory via Supabase. Use this to persist learned information, user preferences, or project details.',
+        parameters: {
+            type: Type.OBJECT, properties: {
+                key: { type: Type.STRING, description: 'A unique identifier for the memory item (e.g., "user_project_goals").' },
+                value: { type: Type.STRING, description: 'The content to be stored (e.g., a JSON string or a long text block).' },
+                tags: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'An array of strings for categorization (e.g., ["project", "config", "user_pref"]).' }
+            }, required: ['key', 'value', 'tags']
+        }
+    },
+    {
+        name: 'memory_retrieve',
+        description: 'Retrieves a memory item based on its key or a set of tags from Supabase. At least one of key or tags must be provided.',
+        parameters: {
+            type: Type.OBJECT, properties: {
+                key: { type: Type.STRING, description: 'The unique identifier of the memory item to retrieve.' },
+                tags: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'An array of tags to search for relevant memory items.' }
+            }, required: []
+        }
+    },
+    {
+        name: 'memory_delete',
+        description: 'Deletes a memory item based on its key from Supabase.',
+        parameters: {
+            type: Type.OBJECT, properties: {
+                key: { type: Type.STRING, description: 'The unique identifier of the memory item to delete.' }
+            }, required: ['key']
+        }
+    },
+    {
+        name: 'data_analyze',
+        description: 'Executes a Python script to perform data manipulation, cleaning, or statistical analysis on a specified file. The script must print the final result to standard output.',
+        parameters: {
+            type: Type.OBJECT, properties: {
+                input_file_path: { type: Type.STRING, description: 'The path to the data file (e.g., CSV, JSON) in the sandbox.' },
+                analysis_script: { type: Type.STRING, description: 'The full Python script to execute. The script MUST read the input file, perform the analysis, and print the final result to standard output.' }
+            }, required: ['input_file_path', 'analysis_script']
+        }
+    },
+    {
+        name: 'data_visualize',
+        description: 'Executes a Python script to generate a data visualization (chart, graph) from a specified file and saves it as an image artifact.',
+        parameters: {
+            type: Type.OBJECT, properties: {
+                input_file_path: { type: Type.STRING, description: 'The path to the data file in the sandbox.' },
+                visualization_script: { type: Type.STRING, description: 'The full Python script to execute. The script MUST read the input file, generate the plot, and save the image to the path specified by output_image_path.' },
+                output_image_path: { type: Type.STRING, description: 'The path where the generated image (e.g., .png) will be saved in the sandbox.' }
+            }, required: ['input_file_path', 'visualization_script', 'output_image_path']
+        }
+    },
+    {
         name: 'create_and_delegate_task_to_new_agent',
         description: 'A meta-tool for agent proliferation. When a task is too complex or requires a specialist, use this to create a new, temporary agent with specific instructions and delegate a sub-task to it. The current task will pause until the new agent completes its work.',
         parameters: {
@@ -320,6 +411,11 @@ export const availableTools: { [key: string]: (...args: any[]) => Promise<any> }
     github_post_pr_comment: (args: { pr_url: string, comment: string }) => github_post_pr_comment(args.pr_url, args.comment),
     github_merge_pr: (args: { pr_url: string, method: 'merge' | 'squash' | 'rebase' }) => github_merge_pr(args.pr_url, args.method),
     github_create_file_in_repo: (args: { repo_name: string, path: string, content: string, commit_message: string }) => github_create_file_in_repo(args.repo_name, args.path, args.content, args.commit_message),
+    memory_save: (args: { key: string, value: string, tags: string[] }) => memory_save(args.key, args.value, args.tags),
+    memory_retrieve: (args: { key?: string, tags?: string[] }) => memory_retrieve(args.key, args.tags),
+    memory_delete: (args: { key: string }) => memory_delete(args.key),
+    data_analyze: (args: { input_file_path: string, analysis_script: string }) => data_analyze(args.input_file_path, args.analysis_script),
+    data_visualize: (args: { input_file_path: string, visualization_script: string, output_image_path: string }) => data_visualize(args.input_file_path, args.visualization_script, args.output_image_path),
     createArtifact: (args: { title: string, type: 'code' | 'markdown' | 'live-preview', content: string }) => createArtifact(args.title, args.type, args.content),
     create_and_delegate_task_to_new_agent: (args: { agent_name: string, agent_instructions: string, task_description: string, agent_icon: string }) => create_and_delegate_task_to_new_agent(args.agent_name, args.agent_instructions, args.task_description, args.agent_icon),
     askUser: (args: { question: string }) => askUser(args.question),
