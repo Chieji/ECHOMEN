@@ -1,13 +1,7 @@
 
 <div align="center">
 
-```
-      /\\
-__/\\_/  \\/\\/\\___
-\\/   \\__/  \\____>
-```
-
-# ECHO - Autonomous AI Agent
+<img src="https://files.manuscdn.com/user_upload_by_module/session_file/310419663029321070/NVvajgOUYjfhzUHU.png" alt="ECHO - Autonomous AI Agent Logo" width="600"/>
 
 **Your thoughts. My echo. Infinite possibility.**
 
