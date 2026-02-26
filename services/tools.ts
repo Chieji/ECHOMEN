@@ -157,21 +157,21 @@ const github_create_file_in_repo = async (repo_name: string, path: string, conte
 // --- Memory Tools (Supabase Integration) ---
 
 const memory_save = async (key: string, value: string, tags: string[]): Promise<string> => {
-    if (!checkAuth(\'supabase\')) throw new Error("Supabase service not connected for memory operations.");
-    return callBackendTool(\'memory_save\', { key, value, tags });
+    if (!checkAuth('supabase')) throw new Error("Supabase service not connected for memory operations.");
+    return callBackendTool('memory_save', { key, value, tags });
 };
 
 const memory_retrieve = async (key?: string, tags?: string[]): Promise<string> => {
-    if (!checkAuth(\'supabase\')) throw new Error("Supabase service not connected for memory operations.");
+    if (!checkAuth('supabase')) throw new Error("Supabase service not connected for memory operations.");
     if (!key && (!tags || tags.length === 0)) {
-        throw new Error("Must provide either a \'key\' or \'tags\' to retrieve memory.");
+        throw new Error("Must provide either a 'key' or 'tags' to retrieve memory.");
     }
-    return callBackendTool(\'memory_retrieve\', { key, tags });
+    return callBackendTool('memory_retrieve', { key, tags });
 };
 
 const memory_delete = async (key: string): Promise<string> => {
-    if (!checkAuth(\'supabase\')) throw new Error("Supabase service not connected for memory operations.");
-    return callBackendTool(\'memory_delete\', { key });
+    if (!checkAuth('supabase')) throw new Error("Supabase service not connected for memory operations.");
+    return callBackendTool('memory_delete', { key });
 };
 
 const data_analyze = async (input_file_path: string, analysis_script: string): Promise<string> => {
@@ -250,6 +250,17 @@ export const toolDeclarations: FunctionDeclaration[] = [
             type: Type.OBJECT, properties: { 
                 command: { type: Type.STRING, description: 'The shell command to execute.' } 
             }, required: ['command']
+        }
+    },
+
+    {
+        name: 'executeCode',
+        description: 'Executes a JavaScript snippet in a browser-isolated worker and returns the serialized result.',
+        parameters: {
+            type: Type.OBJECT, properties: {
+                language: { type: Type.STRING, enum: ['javascript'], description: 'Execution language. Currently only javascript is supported.' },
+                code: { type: Type.STRING, description: 'The JavaScript code to execute.' }
+            }, required: ['language', 'code']
         }
     },
     {

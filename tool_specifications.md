@@ -67,3 +67,14 @@ These tools will leverage the `executeShellCommand` capability to run Python scr
 
 ---
 **Next Step:** Implement the backend logic for these tools and update `services/tools.ts` with the new function declarations.
+
+
+## Contract Ownership and Validation
+
+To avoid drift between docs and runtime behavior:
+
+- **Canonical contract source:** `services/tools.ts` (both `toolDeclarations` and `availableTools`).
+- **Reference documentation:** this file (`tool_specifications.md`) describes intent and examples.
+- **Cross-module type contracts:** `types.ts`.
+
+Run `npm run check:tools` to verify every declared tool has a matching runtime implementation, and every implementation has a declaration.

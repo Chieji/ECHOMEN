@@ -33,12 +33,12 @@ const roleIcons = {
     Synthesizer: <SynthesizerIcon className="w-4 h-4" />,
 };
 
-const TaskItem = React.forwardRef<HTMLDivElement, { 
-    task: Task; 
+const TaskItem = React.forwardRef(({ task, onClick, highlight, isDimmed }: {
+    task: Task;
     onClick: () => void;
     highlight: 'selected' | 'dependency' | 'dependent' | 'none';
     isDimmed: boolean;
-}>(({ task, onClick, highlight, isDimmed }, ref) => {
+}, ref: React.Ref<HTMLDivElement>) => {
     const config = statusConfig[task.status];
     const prevStatusRef = useRef<TaskStatus | undefined>(undefined);
     const [animateComplete, setAnimateComplete] = useState(false);
