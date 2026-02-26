@@ -1,8 +1,10 @@
-import { Task, LogEntry, SubStep, ToolCall, Artifact, CustomAgent } from '../types';
+import { Task, LogEntry, SubStep, ToolCall, Artifact, CustomAgent, ExecutionError } from '../types';
 import { determineNextStep } from './planner';
 import { availableTools } from './tools';
 
 const MAX_SUB_STEPS = 10;
+const MAX_PARALLEL_TASKS = 4;
+const MAX_LLM_CALLS_PER_RUN = 40;
 
 interface AgentExecutorCallbacks {
     onTaskUpdate: (task: Task) => void;
@@ -20,6 +22,7 @@ export class AgentExecutor {
     private tasks: Task[] = [];
     private currentArtifacts: Artifact[] = [];
     private isStopped = false;
+    private llmCallCount = 0;
 
     constructor(callbacks: AgentExecutorCallbacks) {
         this.callbacks = callbacks;
@@ -29,8 +32,8 @@ export class AgentExecutor {
         this.isStopped = false;
         this.tasks = [...initialTasks];
         this.currentArtifacts = [...initialArtifacts];
+        this.llmCallCount = 0;
 
-        const MAX_PARALLEL_TASKS = 4;
         const activePromises = new Map<string, Promise<boolean>>();
 
         while (this.tasks.some(t => ['Queued', 'Executing', 'Delegating'].includes(t.status)) && !this.isStopped) {
@@ -62,7 +65,7 @@ export class AgentExecutor {
                 await Promise.race(Array.from(activePromises.values()));
             } else if (this.tasks.some(t => t.status === 'Queued')) {
                 // Deadlock check: No tasks running, but some are still queued
-                this.callbacks.onFail("Execution stalled due to a dependency issue or a cycle in the task graph.");
+                this.callbacks.onFail(new ExecutionError("Execution stalled due to a dependency issue or a cycle in the task graph.", { code: 'DEPENDENCY_DEADLOCK' }).message);
                 this.tasks.forEach(t => {
                     if (t.status === 'Queued') this.updateTask(t, {status: 'Error'});
                 });
@@ -215,7 +218,8 @@ export class AgentExecutor {
             }
             return true;
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
+            const normalizedError = this.normalizeExecutionError(error, task.id);
+            const errorMessage = normalizedError.message;
 
             if (task.retryCount < task.maxRetries) {
                 const newRetryCount = task.retryCount + 1;
@@ -246,6 +250,14 @@ export class AgentExecutor {
                 return;
             }
 
+            if (this.llmCallCount >= MAX_LLM_CALLS_PER_RUN) {
+                throw new ExecutionError(
+                    `LLM budget exceeded (${MAX_LLM_CALLS_PER_RUN} calls) for this run.`,
+                    { code: 'LLM_BUDGET_EXCEEDED', taskId: task.id }
+                );
+            }
+
+            this.llmCallCount += 1;
             const nextStep = await determineNextStep(task, subSteps, this.currentArtifacts, this.callbacks.onTokenUpdate);
 
             if ('isFinished' in nextStep) {
@@ -334,7 +346,7 @@ export class AgentExecutor {
                      const toolError = e instanceof Error ? e.message : String(e);
                      observation = `Error executing code: ${toolError}`;
                      this.callbacks.onLog({ status: 'ERROR', message: `[Tool] ${observation}` });
-                     throw new Error(observation);
+                     throw new ExecutionError(observation, { code: 'TOOL_EXECUTION_FAILED', taskId: task.id, toolName: toolCall.name, cause: e });
                 }
             } else {
                  const toolImplementation = availableTools[toolCall.name];
@@ -349,7 +361,7 @@ export class AgentExecutor {
                         const toolError = e instanceof Error ? e.message : String(e);
                         observation = `Error executing tool ${toolCall.name}: ${toolError}`;
                         this.callbacks.onLog({ status: 'ERROR', message: `[Tool] ${observation}` });
-                        throw new Error(observation);
+                        throw new ExecutionError(observation, { code: 'TOOL_EXECUTION_FAILED', taskId: task.id, toolName: toolCall.name, cause: e });
                     }
                 } else {
                     observation = `Tool '${toolCall.name}' not found.`;
@@ -364,6 +376,21 @@ export class AgentExecutor {
         }
         
         this.callbacks.onLog({ status: 'WARN', message: `[${task.agent.name}] Task "${task.title}" reached max steps (${MAX_SUB_STEPS}) and will now be finalized.` });
+        throw new ExecutionError(`Task reached max step budget (${MAX_SUB_STEPS}).`, { code: 'MAX_SUB_STEPS_REACHED', taskId: task.id });
+    }
+
+
+
+    private normalizeExecutionError(error: unknown, taskId?: string): ExecutionError {
+        if (error instanceof ExecutionError) {
+            return error;
+        }
+
+        if (error instanceof Error) {
+            return new ExecutionError(error.message, { code: 'UNKNOWN', taskId, cause: error });
+        }
+
+        return new ExecutionError(String(error), { code: 'UNKNOWN', taskId, cause: error });
     }
 
     private async simulateSimpleExecution(task: Task) {

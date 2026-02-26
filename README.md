@@ -47,32 +47,64 @@ The principle behind ECHO is simple: **Action over conversation.** While chat is
 
 ## 🚀 Getting Started
 
-ECHO runs entirely in your browser. To get started locally:
+ECHO has a **browser-first UI** with an **optional backend execution engine** for privileged tools (file system, shell, web, GitHub, memory). To get started locally:
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/echo-agent.git
-    cd echo-agent
+    git clone https://github.com/Chieji/ECHOMEN.git
+    cd ECHOMEN
     ```
 
-2.  **Set up your API Key:**
-    -   Create a `.env` file in the project root.
+2.  **Set up configuration:**
+    -   Copy `.env.example` to `.env`.
     -   Add your Google AI Studio API key:
         ```
         API_KEY=your_google_api_key_here
         ```
 
 3.  **Install dependencies and run:**
-    This project is configured to run with a simple static server.
     ```bash
-    # If you have Python 3
-    python -m http.server
-
-    # Or with Node.js
-    npx serve
+    npm install
+    npm run dev
     ```
 
-4.  Open your browser to the local server address (e.g., `http://localhost:8000`).
+4.  Open your browser at the Vite address (typically `http://localhost:5173`).
+
+### Backend execution engine (optional but required for non-browser tools)
+
+Some tools in `services/tools.ts` call a backend endpoint (`http://localhost:3001/execute-tool`) for secure execution. If no backend is running, those tools will fail gracefully and surface an error in the terminal UI.
+
+Current status:
+-   ✅ Browser-native path: planning, orchestration, local UI, `executeCode`.
+-   ⚠️ Backend-dependent path: sandbox file I/O, shell execution, web browsing, GitHub operations, and Supabase memory calls.
+
+If you are only evaluating UI/orchestration behavior, frontend-only mode is enough. If you need real tool execution, run or implement a compatible backend engine first.
+
+
+## 🔒 Runtime Safety Limits
+
+To prevent runaway autonomous execution, the executor enforces hard limits:
+
+-   `MAX_SUB_STEPS = 10` per ReAct task loop.
+-   `MAX_PARALLEL_TASKS = 4` concurrent tasks.
+-   `MAX_LLM_CALLS_PER_RUN = 40` model calls per run.
+
+When a limit is hit, execution emits a normalized `ExecutionError` and the failure is surfaced in the Live Terminal log.
+
+## 📐 Tool Contract Source of Truth
+
+Tool contracts are defined and consumed with this precedence:
+
+1.  **Source of truth:** `services/tools.ts` (`toolDeclarations` + `availableTools`).
+2.  **Documentation:** `tool_specifications.md` (high-level behavior and intent).
+3.  **Shared runtime types:** `types.ts` (cross-module data contracts).
+4.  **App metadata only:** `metadata.json` (project/app descriptor, not tool contracts).
+
+A validation script is included to detect drift between tool declarations and implementations:
+
+```bash
+npm run check:tools
+```
 
 ## 🛠️ Technology Stack
 

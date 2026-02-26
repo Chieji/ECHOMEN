@@ -171,3 +171,25 @@ export interface ModelProviderConfig {
   integration_layer: 'NATIVE' | 'LANGCHAIN';
   enabled: boolean;
 }
+
+export interface ExecutionErrorDetails {
+  code:
+    | 'LLM_BUDGET_EXCEEDED'
+    | 'MAX_SUB_STEPS_REACHED'
+    | 'DEPENDENCY_DEADLOCK'
+    | 'TOOL_EXECUTION_FAILED'
+    | 'UNKNOWN';
+  taskId?: string;
+  toolName?: string;
+  cause?: unknown;
+}
+
+export class ExecutionError extends Error {
+  public readonly details: ExecutionErrorDetails;
+
+  constructor(message: string, details: ExecutionErrorDetails) {
+    super(message);
+    this.name = 'ExecutionError';
+    this.details = details;
+  }
+}
