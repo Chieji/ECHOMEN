@@ -14,8 +14,14 @@ interface AgentExecutorCallbacks {
     onArtifactCreated: (artifact: Omit<Artifact, 'id' | 'createdAt'>) => void;
     onAgentCreated: (agent: CustomAgent) => void;
     onFinish: () => void;
-    onFail: (errorMessage: string) => void;
+    onFail: (error: ExecutionError) => void;
 }
+
+const NON_RETRYABLE_ERROR_CODES: ReadonlySet<ExecutionError['details']['code']> = new Set([
+    'LLM_BUDGET_EXCEEDED',
+    'MAX_SUB_STEPS_REACHED',
+    'DEPENDENCY_DEADLOCK',
+]);
 
 export class AgentExecutor {
     private callbacks: AgentExecutorCallbacks;
@@ -65,7 +71,7 @@ export class AgentExecutor {
                 await Promise.race(Array.from(activePromises.values()));
             } else if (this.tasks.some(t => t.status === 'Queued')) {
                 // Deadlock check: No tasks running, but some are still queued
-                this.callbacks.onFail(new ExecutionError("Execution stalled due to a dependency issue or a cycle in the task graph.", { code: 'DEPENDENCY_DEADLOCK' }).message);
+                this.callbacks.onFail(new ExecutionError("Execution stalled due to a dependency issue or a cycle in the task graph.", { code: 'DEPENDENCY_DEADLOCK' }));
                 this.tasks.forEach(t => {
                     if (t.status === 'Queued') this.updateTask(t, {status: 'Error'});
                 });
@@ -93,7 +99,10 @@ export class AgentExecutor {
         } else {
              const remainingTasks = this.tasks.filter(t => t.status === 'Queued' || t.status === 'Pending Review').length;
              if (remainingTasks > 0) {
-                this.callbacks.onFail(`Could not complete all tasks. ${remainingTasks} tasks remain unresolved.`);
+                this.callbacks.onFail(new ExecutionError(
+                    `Could not complete all tasks. ${remainingTasks} tasks remain unresolved.`,
+                    { code: 'UNKNOWN' },
+                ));
              } else if (!this.tasks.some(t => t.status === 'Error')) {
                 this.callbacks.onFinish();
              }
@@ -220,8 +229,9 @@ export class AgentExecutor {
         } catch (error) {
             const normalizedError = this.normalizeExecutionError(error, task.id);
             const errorMessage = normalizedError.message;
+            const isRetryableError = !NON_RETRYABLE_ERROR_CODES.has(normalizedError.details.code);
 
-            if (task.retryCount < task.maxRetries) {
+            if (task.retryCount < task.maxRetries && isRetryableError) {
                 const newRetryCount = task.retryCount + 1;
                 this.updateTask(task, { status: 'Queued', retryCount: newRetryCount });
                 this.callbacks.onLog({ 
@@ -234,8 +244,11 @@ export class AgentExecutor {
                 this.updateTask(task, { status: 'Error' });
                 this.callbacks.onLog({ 
                     status: 'ERROR', 
-                    message: `[${task.agent.name}] Task '${task.title}' failed after ${task.maxRetries} retries: ${errorMessage}` 
+                    message: isRetryableError
+                        ? `[${task.agent.name}] Task '${task.title}' failed after ${task.maxRetries} retries: ${errorMessage}`
+                        : `[${task.agent.name}] Task '${task.title}' failed without retry due to non-retryable error (${normalizedError.details.code}): ${errorMessage}`
                 });
+                this.callbacks.onFail(normalizedError);
                 return false; 
             }
         }

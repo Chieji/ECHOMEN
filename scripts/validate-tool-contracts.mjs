@@ -1,24 +1,91 @@
 import { readFileSync } from 'node:fs';
+import ts from 'typescript';
 
-const source = readFileSync(new URL('../services/tools.ts', import.meta.url), 'utf8');
+const filePath = new URL('../services/tools.ts', import.meta.url);
+const source = readFileSync(filePath, 'utf8');
+const sourceFile = ts.createSourceFile(filePath.pathname, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
 
-const declarationMatch = source.match(/export const toolDeclarations:[\s\S]*?=\s*\[(?<body>[\s\S]*?)\n\];/);
-const availableMatch = source.match(/export const availableTools:[\s\S]*?=\s*\{(?<body>[\s\S]*?)\n\};/);
+function getExportedVariable(name) {
+  for (const statement of sourceFile.statements) {
+    if (!ts.isVariableStatement(statement)) continue;
 
-if (!declarationMatch?.groups?.body || !availableMatch?.groups?.body) {
-  console.error('Could not parse tools.ts for tool declarations/implementations.');
+    const hasExportModifier = statement.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
+    if (!hasExportModifier) continue;
+
+    for (const declaration of statement.declarationList.declarations) {
+      if (ts.isIdentifier(declaration.name) && declaration.name.text === name && declaration.initializer) {
+        return declaration.initializer;
+      }
+    }
+  }
+
+  return null;
+}
+
+function readToolDeclarations(initializer) {
+  if (!ts.isArrayLiteralExpression(initializer)) {
+    throw new Error('toolDeclarations is not an array literal.');
+  }
+
+  const names = [];
+
+  for (const element of initializer.elements) {
+    if (!ts.isObjectLiteralExpression(element)) continue;
+
+    const nameProperty = element.properties.find((property) => {
+      if (!ts.isPropertyAssignment(property)) return false;
+      if (!ts.isIdentifier(property.name) && !ts.isStringLiteral(property.name)) return false;
+      return property.name.text === 'name';
+    });
+
+    if (!nameProperty || !ts.isPropertyAssignment(nameProperty) || !ts.isStringLiteral(nameProperty.initializer)) {
+      continue;
+    }
+
+    names.push(nameProperty.initializer.text);
+  }
+
+  return names;
+}
+
+function readAvailableTools(initializer) {
+  if (!ts.isObjectLiteralExpression(initializer)) {
+    throw new Error('availableTools is not an object literal.');
+  }
+
+  const names = [];
+
+  for (const property of initializer.properties) {
+    if (!ts.isPropertyAssignment(property) && !ts.isMethodDeclaration(property)) continue;
+
+    if (ts.isComputedPropertyName(property.name)) continue;
+
+    if (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)) {
+      names.push(property.name.text);
+    }
+  }
+
+  return names;
+}
+
+const toolDeclarationsInitializer = getExportedVariable('toolDeclarations');
+const availableToolsInitializer = getExportedVariable('availableTools');
+
+if (!toolDeclarationsInitializer || !availableToolsInitializer) {
+  console.error('Could not locate exported toolDeclarations/availableTools in services/tools.ts.');
   process.exit(1);
 }
 
-const declarationNames = Array.from(
-  declarationMatch.groups.body.matchAll(/\bname:\s*'([^']+)'/g),
-  (m) => m[1],
-);
+let declarationNames;
+let implementationNames;
 
-const implementationNames = Array.from(
-  availableMatch.groups.body.matchAll(/\n\s*([A-Za-z0-9_]+)\s*:/g),
-  (m) => m[1],
-);
+try {
+  declarationNames = readToolDeclarations(toolDeclarationsInitializer);
+  implementationNames = readAvailableTools(availableToolsInitializer);
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+}
 
 const declarationSet = new Set(declarationNames);
 const implementationSet = new Set(implementationNames);
