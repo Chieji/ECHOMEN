@@ -13,6 +13,7 @@ export enum MemoryMode {
 export interface PersistenceSettings {
     mode: MemoryMode;
     isCloudConnected: boolean;
+    fileSearchStoreId?: string;
 }
 
 export interface SessionStats {
@@ -63,7 +64,7 @@ export interface Message {
     suggestedPrompt?: string;
 }
 
-export type TaskStatus = 'Done' | 'Executing' | 'Queued' | 'Error' | 'Pending Review' | 'Revising' | 'Delegating' | 'Cancelled';
+export type TaskStatus = 'Done' | 'Executing' | 'Queued' | 'Error' | 'Pending Review' | 'Revising' | 'Delegating' | 'Cancelled' | 'AwaitingApproval';
 
 export interface LogEntry {
     timestamp: string;
@@ -109,6 +110,7 @@ export interface Task {
     toolCall?: ToolCall;
     subSteps?: SubStep[];
     delegatorTaskId?: string;
+    pendingAction?: ToolCall; // For AwaitingApproval status
 }
 
 export interface ChildAgentTemplate {

@@ -1,44 +1,32 @@
-import { GoogleGenAI, FunctionDeclaration, Type, Chat, GenerateContentResponse } from "@google/genai";
 import type { Task, AgentRole, ToolCall, AgentPreferences, TodoItem, SubStep, Playbook, CustomAgent, Artifact } from '../types';
-import { availableTools, toolDeclarations } from './tools';
-
-const structuredPlanSchema = {
-    type: Type.ARRAY,
-    description: "An array of task objects that represent the plan.",
-    items: {
-        type: Type.OBJECT,
-        properties: {
-            title: { type: Type.STRING, description: "A short, descriptive title for the task." },
-            details: { type: Type.STRING, description: "A detailed description of what this task entails." },
-            agentRole: { 
-                type: Type.STRING, 
-                description: "The role of the agent best suited for this task.",
-                enum: ['Planner', 'Executor', 'Reviewer', 'Synthesizer']
-            },
-        },
-        required: ["title", "details", "agentRole"]
-    }
-};
-
-const actionAnalysisSchema = {
-    type: Type.OBJECT,
-    properties: {
-        is_actionable: { 
-            type: Type.BOOLEAN, 
-            description: "True if the user's message is a command or request to perform a task, false otherwise." 
-        },
-        suggested_prompt: { 
-            type: Type.STRING, 
-            description: "If actionable, a refined and clear version of the user's command. Otherwise, an empty string." 
-        }
-    },
-    required: ["is_actionable", "suggested_prompt"]
-};
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-let chat: Chat | null = null;
+import { AIBridge, TaskType } from '../lib/ai_bridge';
 
 const WELCOME_TRIGGERS = ['what can you do', 'help', 'explain yourself', 'what is this', 'hello', 'hi', 'what are you', 'who are you'];
+
+/**
+ * Smart Router for ECHO AI Bridge
+ * Routes tasks to optimal providers based on task type
+ */
+export const routeToProvider = (
+    taskType: TaskType,
+    systemPrompt: string,
+    userPrompt: string,
+    tools: any[] = [],
+    onTokenUpdate: (count: number) => void
+): Promise<string> => {
+    return AIBridge.generate(
+        taskType,
+        null, // Let AIBridge select optimal model
+        systemPrompt,
+        userPrompt,
+        tools
+    ).then(response => {
+        if (response.usage?.totalTokens) {
+            onTokenUpdate(response.usage.totalTokens);
+        }
+        return response.text;
+    });
+};
 
 const ECHO_EXPLANATION = `Hello! I am **ECHO**, an autonomous AI agent. My core philosophy is **Action over Conversation**. I'm designed to turn your thoughts into executed reality.
 
@@ -75,9 +63,9 @@ My goal is to be your ultimate tool for creation and execution. Give it a try! S
 
 Your thoughts. My echo. Infinite possibility.`;
 
-const handleApiResponse = (response: GenerateContentResponse, onTokenUpdate: (count: number) => void): string => {
-    if (response.usageMetadata?.totalTokenCount) {
-        onTokenUpdate(response.usageMetadata.totalTokenCount);
+const handleApiResponse = (response: Awaited<ReturnType<typeof AIBridge.generate>>, onTokenUpdate: (count: number) => void): string => {
+    if (response.usage?.totalTokens) {
+        onTokenUpdate(response.usage.totalTokens);
     }
     return response.text;
 }
@@ -89,15 +77,13 @@ export const analyzeChatMessageForAction = async (prompt: string, onTokenUpdate:
 Your response MUST be a valid JSON object adhering to the provided schema.`;
 
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: actionAnalysisSchema,
-                systemInstruction: systemInstruction,
-            },
-        });
+        const response = await AIBridge.generate(
+            'reasoning',
+            'gemini-2.0-flash-exp',
+            systemInstruction,
+            prompt,
+            []
+        );
         const resultJson = handleApiResponse(response, onTokenUpdate).trim();
         const result = JSON.parse(resultJson);
         return result;
@@ -119,18 +105,17 @@ User: "make a new react component called header"
 Assistant: "Create a new React component named 'Header'. It should have a default export and a basic JSX structure."
 `;
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                systemInstruction: systemInstruction,
-                temperature: 0.2, // Be conservative with changes
-            },
-        });
+        const response = await AIBridge.generate(
+            'chat',
+            'gemini-2.0-flash-exp',
+            systemInstruction,
+            prompt,
+            []
+        );
         return handleApiResponse(response, onTokenUpdate).trim();
     } catch (error) {
         console.error("Error clarifying prompt:", error);
-        return prompt; // Return original prompt on error
+        return prompt;
     }
 };
 
@@ -166,10 +151,13 @@ ${playbookDescriptions}
 `;
     
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: recallPrompt,
-        });
+        const response = await AIBridge.generate(
+            'reasoning',
+            'gemini-2.0-flash-exp',
+            'Find the most relevant playbook for the user prompt.',
+            recallPrompt,
+            []
+        );
 
         const bestId = handleApiResponse(response, onTokenUpdate).trim();
         if (bestId && bestId !== 'NONE') {
@@ -252,15 +240,13 @@ This context is for your awareness. Use it to create a more effective and inform
     }
 
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: structuredPlanSchema,
-                systemInstruction: systemInstruction,
-            },
-        });
+        const response = await AIBridge.generate(
+            isWebToolActive ? 'code' : 'reasoning',
+            'gemini-2.0-flash-exp',
+            systemInstruction,
+            prompt,
+            []
+        );
         
         const textResponse = handleApiResponse(response, onTokenUpdate);
 
@@ -351,14 +337,13 @@ ${history || "No external data retrieved yet."}
 Based on the [CONTEXT] and the [UNTRUSTED_DATA], what is your next action?
 `;
 
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            systemInstruction: "You are ECHO, an elite autonomous workstation agent. You follow the ReAct (Reason-Act) pattern with high-fidelity visual grounding. Your response must be a single, valid JSON object representing your next thought and action.",
-        },
-    });
+    const response = await AIBridge.generate(
+        'reasoning',
+        'gemini-2.0-flash-exp',
+        "You are ECHO, an elite autonomous workstation agent. You follow the ReAct (Reason-Act) pattern with high-fidelity visual grounding. Your response must be a single, valid JSON object representing your next thought and action.",
+        prompt,
+        []
+    );
     
     const resultJson = handleApiResponse(response, onTokenUpdate).trim();
 
@@ -373,7 +358,6 @@ Based on the [CONTEXT] and the [UNTRUSTED_DATA], what is your next action?
         throw new Error("Invalid JSON response from agent brain.");
     } catch (e) {
         console.error("Failed to parse agent's next step:", resultJson, e);
-        // Fallback or error handling action
         return {
             thought: "I seem to be confused about the next step. I will ask for clarification.",
             toolCall: { name: 'askUser', args: { question: 'I am unable to determine the next step. Can you clarify what I should do?' } }
@@ -388,16 +372,14 @@ export const getChatResponse = async (prompt: string, onTokenUpdate: (count: num
         return ECHO_EXPLANATION;
     }
 
-    if (!chat) {
-        chat = ai.chats.create({
-            model: 'gemini-2.5-flash',
-            config: {
-                systemInstruction: 'You are ECHO, a helpful AI assistant. You are direct, efficient, and concise in your responses.',
-            },
-        });
-    }
     try {
-        const response = await chat.sendMessage({ message: prompt });
+        const response = await AIBridge.generate(
+            'chat',
+            'gemini-2.0-flash-exp',
+            'You are ECHO, a helpful AI assistant. You are direct, efficient, and concise in your responses.',
+            prompt,
+            []
+        );
         return handleApiResponse(response, onTokenUpdate);
     } catch (error) {
         console.error("Error getting chat response:", error);
@@ -422,10 +404,13 @@ Based on the original prompt and the successful plan, create a short, descriptiv
 `;
 
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: summarizationPrompt,
-        });
+        const response = await AIBridge.generate(
+            'general',
+            'gemini-2.0-flash-exp',
+            'Create a memorable name for this playbook.',
+            summarizationPrompt,
+            []
+        );
 
         return handleApiResponse(response, onTokenUpdate).trim().replace(/"/g, '');
     } catch (error) {

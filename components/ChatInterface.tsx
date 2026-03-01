@@ -21,8 +21,8 @@ interface WelcomeScreenProps {
     onSuggestionClick: (prompt: string) => void;
 }
 
-const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSuggestionClick }) => {
-    const handleSuggestionKeyPress = (e: React.KeyboardEvent, prompt: string) => {
+const WelcomeScreen = ({ onSuggestionClick }: WelcomeScreenProps): React.ReactElement => {
+    const handleSuggestionKeyPress = (e: React.KeyboardEvent<HTMLDivElement>, prompt: string) => {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             onSuggestionClick(prompt);
@@ -67,7 +67,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSuggestionClick }) => {
                         key={suggestion.title}
                         className="bg-zinc-100 dark:bg-[#121212] p-4 rounded-lg text-left text-sm cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/50"
                         onClick={() => onSuggestionClick(suggestion.prompt)}
-                        onKeyDown={(e) => handleSuggestionKeyPress(e, suggestion.prompt)}
+                        onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => handleSuggestionKeyPress(e, suggestion.prompt)}
                         role="button"
                         tabIndex={0}
                     >
@@ -81,7 +81,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSuggestionClick }) => {
 };
 
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSuggestionClick, onEditMessage, onAcceptAction, onDeclineAction }) => {
+export const ChatInterface = ({ messages, onSuggestionClick, onEditMessage, onAcceptAction, onDeclineAction }: ChatInterfaceProps): React.ReactElement => {
     const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
     const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
@@ -115,7 +115,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSugges
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        const nativeEvent = e as unknown as KeyboardEvent;
+        if (e.key === 'Enter' && !nativeEvent.shiftKey) {
             e.preventDefault();
             handleSaveEdit();
         }
@@ -209,7 +210,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSugges
                                         <div>
                                             <textarea
                                                 value={editText}
-                                                onChange={(e) => setEditText(e.target.value)}
+                                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditText(e.target.value)}
                                                 onKeyDown={handleKeyDown}
                                                 className="w-full bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg p-2 text-base resize-none focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]"
                                                 rows={Math.max(3, editText.split('\n').length)}

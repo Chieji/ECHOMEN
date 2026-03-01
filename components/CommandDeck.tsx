@@ -25,9 +25,9 @@ interface CommandDeckProps {
     onCancelTask: (taskId: string) => void;
 }
 
-export const CommandDeck: React.FC<CommandDeckProps> = ({ 
-    tasks, logs, artifacts, services, sessionStats, onCommand, onCancelTask 
-}) => {
+export const CommandDeck = ({
+    tasks, logs, artifacts, services, sessionStats, onCommand, onCancelTask
+}: CommandDeckProps): React.ReactElement => {
     const [activeTab, setActiveTab] = useState<'board' | 'artifacts' | 'history' | 'brain'>('board');
     const [currentNoteContent, setCurrentNoteContent] = useState('');
     
@@ -117,17 +117,17 @@ export const CommandDeck: React.FC<CommandDeckProps> = ({
                     <div className="flex-grow overflow-hidden relative">
                         <AnimatePresence mode="wait">
                             {activeTab === 'board' && (
-                                <motion.div 
+                                <motion.div
                                     key="board"
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 20 }}
                                     className="h-full"
                                 >
-                                    <ExecutionDashboard 
-                                        tasks={tasks} 
-                                        logs={logs} 
-                                        onCancelTask={onCancelTask} 
+                                    <ExecutionDashboard
+                                        tasks={tasks}
+                                        liveLogs={logs}
+                                        onCancelTask={onCancelTask}
                                     />
                                 </motion.div>
                             )}

@@ -14,7 +14,7 @@ interface AgentCreationModalProps {
     modelProviders: ModelProviderConfig[];
 }
 
-const Accordion: React.FC<{ title: string; children: React.ReactNode; defaultOpen?: boolean }> = ({ title, children, defaultOpen = false }) => {
+const Accordion = ({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }): React.ReactElement => {
     const [isOpen, setIsOpen] = useState(defaultOpen);
     return (
         <div className="border border-black/10 dark:border-white/10 rounded-lg">
@@ -43,7 +43,7 @@ const Accordion: React.FC<{ title: string; children: React.ReactNode; defaultOpe
     );
 };
 
-export const AgentCreationModal: React.FC<AgentCreationModalProps> = ({ agent, isOpen, onClose, onSave, modelProviders }) => {
+export const AgentCreationModal = ({ agent, isOpen, onClose, onSave, modelProviders }: AgentCreationModalProps): React.ReactElement => {
     const [formData, setFormData] = useState<Partial<CustomAgent>>({});
     const [childTemplateJson, setChildTemplateJson] = useState('');
     const [jsonError, setJsonError] = useState<string | null>(null);
@@ -125,7 +125,7 @@ export const AgentCreationModal: React.FC<AgentCreationModalProps> = ({ agent, i
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e: { stopPropagation: () => void }) => e.stopPropagation()}
                     >
                         <header className="flex-shrink-0 flex justify-between items-center mb-6 p-6 pb-0">
                             <div className="flex items-center gap-3">
@@ -145,7 +145,7 @@ export const AgentCreationModal: React.FC<AgentCreationModalProps> = ({ agent, i
                                         <input
                                             type="text"
                                             value={formData.name || ''}
-                                            onChange={(e) => handleFormChange('name', e.target.value)}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFormChange('name', e.target.value)}
                                             placeholder="e.g., Python Code Generator"
                                             className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
                                         />
@@ -168,7 +168,7 @@ export const AgentCreationModal: React.FC<AgentCreationModalProps> = ({ agent, i
                                         <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Agent Description</label>
                                         <textarea
                                             value={formData.description || ''}
-                                            onChange={(e) => handleFormChange('description', e.target.value)}
+                                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleFormChange('description', e.target.value)}
                                             placeholder="A brief summary of the agent's purpose."
                                             rows={2}
                                             className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
@@ -180,9 +180,9 @@ export const AgentCreationModal: React.FC<AgentCreationModalProps> = ({ agent, i
                                 <div className="space-y-4">
                                      <div>
                                         <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Language Model Profile</label>
-                                        <select 
+                                        <select
                                             value={formData.llm_profile_id || ''}
-                                            onChange={(e) => handleFormChange('llm_profile_id', e.target.value)}
+                                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleFormChange('llm_profile_id', e.target.value)}
                                             className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
                                         >
                                             <option value="">-- Select a Model --</option>
@@ -197,7 +197,7 @@ export const AgentCreationModal: React.FC<AgentCreationModalProps> = ({ agent, i
                                         <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Agent Instructions / Initial Prompt</label>
                                         <textarea
                                             value={formData.instructions || ''}
-                                            onChange={(e) => handleFormChange('instructions', e.target.value)}
+                                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleFormChange('instructions', e.target.value)}
                                             placeholder="Define the agent's purpose, capabilities, and personality..."
                                             rows={6}
                                             className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50 font-mono text-sm"
@@ -212,7 +212,7 @@ export const AgentCreationModal: React.FC<AgentCreationModalProps> = ({ agent, i
                                         <input
                                             type="text"
                                             value={(formData.capabilities || []).join(', ')}
-                                            onChange={(e) => handleListChange('capabilities', e.target.value)}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleListChange('capabilities', e.target.value)}
                                             placeholder="e.g., PLANNING, CODE_EXECUTION"
                                             className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
                                         />
@@ -222,7 +222,7 @@ export const AgentCreationModal: React.FC<AgentCreationModalProps> = ({ agent, i
                                         <input
                                             type="text"
                                             value={(formData.enabled_tools || []).join(', ')}
-                                            onChange={(e) => handleListChange('enabled_tools', e.target.value)}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleListChange('enabled_tools', e.target.value)}
                                             placeholder="e.g., CODE_INTERPRETER, GOOGLE_SEARCH"
                                             className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
                                         />
@@ -236,7 +236,7 @@ export const AgentCreationModal: React.FC<AgentCreationModalProps> = ({ agent, i
                                         <input
                                             type="checkbox"
                                             checked={!!formData.delegation_enabled}
-                                            onChange={(e) => handleFormChange('delegation_enabled', e.target.checked)}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFormChange('delegation_enabled', e.target.checked)}
                                             className="w-5 h-5 rounded bg-zinc-300 dark:bg-zinc-700 border-zinc-400 dark:border-zinc-600 text-cyan-600 dark:text-[#00D4FF] focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
                                         />
                                     </div>
@@ -245,7 +245,7 @@ export const AgentCreationModal: React.FC<AgentCreationModalProps> = ({ agent, i
                                         <input
                                             type="text"
                                             value={formData.review_policy || ''}
-                                            onChange={(e) => handleFormChange('review_policy', e.target.value)}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFormChange('review_policy', e.target.value)}
                                             placeholder="e.g., CRITIQUE_DEBUG_AND_REFINE"
                                             className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
                                         />
@@ -254,7 +254,7 @@ export const AgentCreationModal: React.FC<AgentCreationModalProps> = ({ agent, i
                                         <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Child Agent Template (JSON)</label>
                                         <textarea
                                             value={childTemplateJson}
-                                            onChange={(e) => setChildTemplateJson(e.target.value)}
+                                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setChildTemplateJson(e.target.value)}
                                             placeholder={'{\n  "llm_profile_id": "ollama-llama3-8b",\n  "default_tools": ["CODE_INTERPRETER"]\n}'}
                                             rows={8}
                                             className={`w-full bg-black/5 dark:bg-black/40 border rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 font-mono text-sm ${jsonError ? 'border-red-500 focus:ring-red-500' : 'border-black/10 dark:border-white/10 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50'}`}

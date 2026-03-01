@@ -60,7 +60,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     const handleWebToolToggle = () => setIsWebToolActive(prev => !prev);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if (e.key === 'Enter' && !(e.nativeEvent as KeyboardEvent).shiftKey) {
             e.preventDefault();
             handleSend();
         }

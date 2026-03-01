@@ -102,6 +102,255 @@ const browserActions = {
     }
 };
 
+// --- GitHub Tools ---
+
+const githubTools = {
+    create_repo: async (args) => {
+        const { name, description, is_private } = args;
+        const token = process.env.GITHUB_TOKEN;
+        if (!token) {
+            throw new Error('GITHUB_TOKEN environment variable is not set');
+        }
+        
+        const response = await fetch('https://api.github.com/user/repos', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name,
+                description: description || '',
+                private: is_private || false,
+            }),
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`GitHub API error: ${response.status} - ${errorText}`);
+        }
+        
+        return await response.json();
+    },
+    
+    get_pr_details: async (args) => {
+        const { owner, repo, prNumber } = args;
+        const token = process.env.GITHUB_TOKEN;
+        if (!token) {
+            throw new Error('GITHUB_TOKEN environment variable is not set');
+        }
+        
+        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github.v3+json',
+            },
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`GitHub API error: ${response.status} - ${errorText}`);
+        }
+        
+        return await response.json();
+    },
+    
+    post_pr_comment: async (args) => {
+        const { owner, repo, prNumber, body } = args;
+        const token = process.env.GITHUB_TOKEN;
+        if (!token) {
+            throw new Error('GITHUB_TOKEN environment variable is not set');
+        }
+        
+        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues/${prNumber}/comments`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ body }),
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`GitHub API error: ${response.status} - ${errorText}`);
+        }
+        
+        return await response.json();
+    },
+    
+    merge_pr: async (args) => {
+        const { owner, repo, prNumber, merge_method = 'merge' } = args;
+        const token = process.env.GITHUB_TOKEN;
+        if (!token) {
+            throw new Error('GITHUB_TOKEN environment variable is not set');
+        }
+        
+        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/merge`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ merge_method }),
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`GitHub API error: ${response.status} - ${errorText}`);
+        }
+        
+        return await response.json();
+    },
+    
+    create_file_in_repo: async (args) => {
+        const { owner, repo, path: filePath, content, message, branch = 'main' } = args;
+        const token = process.env.GITHUB_TOKEN;
+        if (!token) {
+            throw new Error('GITHUB_TOKEN environment variable is not set');
+        }
+        
+        // Encode content to base64
+        const encodedContent = Buffer.from(content).toString('base64');
+        
+        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message,
+                content: encodedContent,
+                branch,
+            }),
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`GitHub API error: ${response.status} - ${errorText}`);
+        }
+        
+        return await response.json();
+    }
+};
+
+// --- Data Analysis Tools ---
+
+const dataTools = {
+    analyze: async (args) => {
+        const { input_file_path, analysis_script } = args;
+        
+        try {
+            const content = await fs.readFile(path.resolve(input_file_path), 'utf-8');
+            const fileExt = path.extname(input_file_path).toLowerCase();
+            
+            let parsedData;
+            if (fileExt === '.json') {
+                parsedData = JSON.parse(content);
+            } else if (fileExt === '.csv') {
+                // Simple CSV parsing
+                const lines = content.trim().split('\n');
+                const headers = lines[0].split(',');
+                parsedData = lines.slice(1).map(line => {
+                    const values = line.split(',');
+                    const obj = {};
+                    headers.forEach((header, i) => {
+                        obj[header.trim()] = values[i]?.trim();
+                    });
+                    return obj;
+                });
+            } else {
+                parsedData = content;
+            }
+            
+            // Execute analysis script if provided
+            if (analysis_script) {
+                try {
+                    const result = await eval(`(async (data) => { ${analysis_script} })(parsedData)`);
+                    return { 
+                        status: 'success', 
+                        analysis_result: result,
+                        data_sample: JSON.stringify(parsedData).substring(0, 1000)
+                    };
+                } catch (scriptError) {
+                    return {
+                        status: 'success',
+                        error_in_script: scriptError.message,
+                        data_sample: JSON.stringify(parsedData).substring(0, 1000)
+                    };
+                }
+            }
+            
+            return { 
+                status: 'success', 
+                file_type: fileExt,
+                record_count: Array.isArray(parsedData) ? parsedData.length : 'N/A',
+                data_sample: JSON.stringify(parsedData).substring(0, 1000)
+            };
+        } catch (error) {
+            return { status: 'error', message: error.message };
+        }
+    },
+    
+    visualize: async (args) => {
+        const { input_file_path, chart_type = 'bar' } = args;
+        
+        try {
+            const content = await fs.readFile(path.resolve(input_file_path), 'utf-8');
+            const fileExt = path.extname(input_file_path).toLowerCase();
+            
+            let parsedData;
+            if (fileExt === '.json') {
+                parsedData = JSON.parse(content);
+            } else if (fileExt === '.csv') {
+                const lines = content.trim().split('\n');
+                const headers = lines[0].split(',');
+                parsedData = lines.slice(1).map(line => {
+                    const values = line.split(',');
+                    const obj = {};
+                    headers.forEach((header, i) => {
+                        obj[header.trim()] = values[i]?.trim();
+                    });
+                    return obj;
+                });
+            }
+            
+            // Generate SVG visualization placeholder
+            const svgWidth = 400;
+            const svgHeight = 300;
+            const svg = `
+                <svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="100%" height="100%" fill="#f8f9fa"/>
+                    <text x="${svgWidth/2}" y="30" text-anchor="middle" font-family="Arial" font-size="16" fill="#333">
+                        ${chart_type.toUpperCase()} Chart - ${path.basename(input_file_path)}
+                    </text>
+                    <text x="${svgWidth/2}" y="${svgHeight/2}" text-anchor="middle" font-family="Arial" font-size="14" fill="#666">
+                        Data points: ${Array.isArray(parsedData) ? parsedData.length : 'N/A'}
+                    </text>
+                    <text x="${svgWidth/2}" y="${svgHeight/2 + 30}" text-anchor="middle" font-family="Arial" font-size="12" fill="#999">
+                        (Full visualization requires charting library)
+                    </text>
+                </svg>
+            `;
+            
+            return { 
+                status: 'success', 
+                chart_type,
+                svg_content: svg,
+                image_path: 'placeholder.png',
+                data_points: Array.isArray(parsedData) ? parsedData.length : 0
+            };
+        } catch (error) {
+            return { status: 'error', message: error.message };
+        }
+    }
+};
+
 // --- Main Execution Endpoint ---
 
 app.post('/execute-tool', async (req, res) => {
@@ -128,7 +377,7 @@ app.post('/execute-tool', async (req, res) => {
             case 'executeShellCommand':
                 result = await executeShellCommand(args.command);
                 break;
-            
+
             // WebHawk 2.0 (Isolated)
             case 'browser_navigate':
                 result = await browserActions.navigate(sessionId, args.url);
@@ -146,7 +395,33 @@ app.post('/execute-tool', async (req, res) => {
                 result = await browserActions.get_ax_tree(sessionId);
                 break;
             case 'browser_close_session':
-                result = await closeSession(sessionId);
+                await closeSession(sessionId);
+                result = { status: 'success', message: `Session ${sessionId} closed` };
+                break;
+
+            // GitHub Tools
+            case 'github_create_repo':
+                result = await githubTools.create_repo(args);
+                break;
+            case 'github_get_pr_details':
+                result = await githubTools.get_pr_details(args);
+                break;
+            case 'github_post_pr_comment':
+                result = await githubTools.post_pr_comment(args);
+                break;
+            case 'github_merge_pr':
+                result = await githubTools.merge_pr(args);
+                break;
+            case 'github_create_file_in_repo':
+                result = await githubTools.create_file_in_repo(args);
+                break;
+
+            // Data Analysis Tools
+            case 'data_analyze':
+                result = await dataTools.analyze(args);
+                break;
+            case 'data_visualize':
+                result = await dataTools.visualize(args);
                 break;
 
             default:
@@ -162,4 +437,5 @@ app.post('/execute-tool', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 ECHO Unified Tool Gateway running on http://localhost:${PORT}`);
     console.log(`WebHawk 2.0 Context Isolation: ACTIVE`);
+    console.log(`GitHub Tools: ${process.env.GITHUB_TOKEN ? 'ENABLED' : 'DISABLED (no token)'}`);
 });

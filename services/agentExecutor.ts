@@ -1,11 +1,9 @@
-import { Task, LogEntry, SubStep, ToolCall, Artifact, CustomAgent, ExecutionError, MemoryMode, PersistenceSettings } from '../types';
+import { Task, LogEntry, SubStep, Artifact, CustomAgent, ExecutionError, MemoryMode, PersistenceSettings, ToolCall } from '../types';
 import { determineNextStep } from './planner';
 import { availableTools } from './tools';
 
 const MAX_SUB_STEPS = 10;
 const MAX_PARALLEL_TASKS = 4;
-const MAX_LLM_CALLS_PER_RUN = 40;
-const MAX_AGENT_DEPTH = 3;
 
 // Security Guard: Tools that require explicit human approval
 const PRIVILEGED_TOOLS = [
@@ -14,6 +12,10 @@ const PRIVILEGED_TOOLS = [
     'memory_delete',
     'github_merge_pr'
 ];
+
+interface ToolCallWithApproval extends ToolCall {
+    requiresApproval?: boolean;
+}
 
 interface AgentExecutorCallbacks {
     onTaskUpdate: (task: Task) => void;
@@ -25,12 +27,6 @@ interface AgentExecutorCallbacks {
     onFinish: () => void;
     onFail: (error: ExecutionError) => void;
 }
-
-const NON_RETRYABLE_ERROR_CODES: ReadonlySet<ExecutionError['details']['code']> = new Set([
-    'LLM_BUDGET_EXCEEDED',
-    'MAX_SUB_STEPS_REACHED',
-    'DEPENDENCY_DEADLOCK',
-]);
 
 export class AgentExecutor {
     private callbacks: AgentExecutorCallbacks;
@@ -56,7 +52,7 @@ export class AgentExecutor {
         return MemoryMode.LOCAL;
     }
 
-    public async run(initialTasks: Task[], prompt: string, initialArtifacts: Artifact[]) {
+    public async run(initialTasks: Task[], _prompt: string, initialArtifacts: Artifact[]) {
         this.isStopped = false;
         this.tasks = [...initialTasks];
         this.currentArtifacts = [...initialArtifacts];
@@ -134,7 +130,9 @@ export class AgentExecutor {
 
     private async runReActLoop(task: Task) {
         let subSteps: SubStep[] = task.subSteps || [];
-        
+        let observation = '';
+        let currentDepth = this.calculateDepth(task);
+
         while (subSteps.length < MAX_SUB_STEPS) {
             if (this.isStopped || this.tasks.find(t => t.id === task.id)?.status !== 'Executing') return;
 
@@ -147,31 +145,39 @@ export class AgentExecutor {
             }
 
             const { thought, toolCall } = nextStep;
-            
+
             // --- Security Gate: Human-in-the-Loop ---
             if (PRIVILEGED_TOOLS.includes(toolCall.name)) {
-                this.callbacks.onLog({ 
-                    status: 'WARN', 
-                    message: `[Security] Tool '${toolCall.name}' is PRIVILEGED. Awaiting human approval...` 
+                this.callbacks.onLog({
+                    status: 'WARN',
+                    message: `[Security] Tool '${toolCall.name}' is PRIVILEGED. Awaiting human approval...`
                 });
-                
-                this.updateTask(task, { 
-                    status: 'AwaitingApproval', 
-                    pendingAction: toolCall as any // Custom property for UI
+
+                this.updateTask(task, {
+                    status: 'AwaitingApproval',
+                    pendingAction: { ...toolCall, requiresApproval: true } as any
                 });
-                
+
                 return; // PAUSE THE LOOP
             }
 
             try {
                 if (toolCall.name === 'create_and_delegate_task_to_new_agent') {
-                    const { agent_name, agent_instructions, task_description, agent_icon } = toolCall.args;
-                    
-                    const currentDepth = this.calculateDepth(task);
+                    const { agent_name, agent_instructions, task_description, agent_icon } = toolCall.args as {
+                        agent_name: string;
+                        agent_instructions: string;
+                        task_description: string;
+                        agent_icon?: string;
+                    };
+
                     const MAX_AGENT_DEPTH = 3;
 
                     if (currentDepth >= MAX_AGENT_DEPTH) {
-                        observation = `Error: Maximum agent depth reached. Cannot spawn further sub-agents.`;
+                        observation = `Error: Maximum agent depth reached (${MAX_AGENT_DEPTH}). Cannot spawn further sub-agents.`;
+                        this.callbacks.onLog({
+                            status: 'WARN',
+                            message: `[${task.agent.name}] Maximum recursion depth reached`
+                        });
                     } else {
                         const newAgentId = `agent-spawn-${Date.now()}`;
                         const newAgent: CustomAgent = {
@@ -205,25 +211,40 @@ export class AgentExecutor {
                         this.updateTask(task, { status: 'Delegating' });
                         this.tasks.push(newTask);
                         this.callbacks.onTasksUpdate([...this.tasks]);
-                        this.callbacks.onLog({ 
-                            status: 'INFO', 
-                            message: `[${task.agent.name}] 🚀 Spawning recursive sub-agent '${agent_name}'` 
+                        this.callbacks.onLog({
+                            status: 'INFO',
+                            message: `[${task.agent.name}] 🚀 Spawning recursive sub-agent '${agent_name}' at depth ${currentDepth + 1}`
                         });
                         return; // PAUSE PARENT
                     }
                 } else {
-                    const tool = (availableTools as any)[toolCall.name];
-                    if (!tool) throw new Error(`Tool ${toolCall.name} not found.`);
+                    // Execute regular tool
+                    const tool = (availableTools as Record<string, any>)[toolCall.name];
+                    if (!tool) {
+                        throw new Error(`Tool '${toolCall.name}' not found. Available tools: ${Object.keys(availableTools).join(', ')}`);
+                    }
                     const result = await tool(toolCall.args);
-                    observation = JSON.stringify(result);
+                    observation = typeof result === 'string' ? result : JSON.stringify(result);
                 }
             } catch (err: any) {
-                observation = `Error: ${err.message}`;
+                observation = `Error executing tool '${toolCall.name}': ${err.message || 'Unknown error'}`;
+                this.callbacks.onLog({
+                    status: 'ERROR',
+                    message: `[${task.agent.name}] Tool execution failed: ${observation}`
+                });
             }
 
             subSteps.push({ thought, toolCall, observation });
             this.updateTask(task, { subSteps: [...subSteps] });
+            
+            // Reset observation for next iteration
+            observation = '';
         }
+
+        this.callbacks.onLog({
+            status: 'WARN',
+            message: `[${task.agent.name}] Maximum sub-steps reached (${MAX_SUB_STEPS})`
+        });
     }
 
     private calculateDepth(task: Task): number {

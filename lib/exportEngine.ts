@@ -59,8 +59,7 @@ export const exportNeuralVault = async (
     });
 
     // 3. Export System Logs
-    const logsContent = logs.map(l => `[${l.timestamp}] [${l.status}] ${l.message}`).join('
-');
+    const logsContent = logs.map(l => `[${l.timestamp}] [${l.status}] ${l.message}`).join('\n');
     root?.file("system_pulse.log", logsContent);
 
     // 4. Metadata Snapshot

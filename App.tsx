@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Header } from './components/Header';
 import { MasterConfigurationPanel } from './components/MasterConfigurationPanel';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Task, LogEntry, AgentMode, AgentStatus, Artifact, CustomAgent, Service, Playbook, TodoItem, SessionStats } from './types';
-import { createInitialPlan, getChatResponse, suggestPlaybookName, clarifyAndCorrectPrompt, analyzeChatMessageForAction } from './services/planner';
-import { useMemory } from './hooks/useMemory';
+import { AnimatePresence } from 'framer-motion';
+import { Task, LogEntry, AgentStatus, Artifact, CustomAgent, Service, SessionStats } from './types';
+import { createInitialPlan, clarifyAndCorrectPrompt } from './services/planner';
 import { ExecutionStatusBar } from './components/ExecutionStatusBar';
 import { AgentExecutor } from './services/agentExecutor';
 import { CommandDeck } from './components/CommandDeck';
 import { CommandPalette } from './components/CommandPalette';
-import { PlaybookCreationModal } from './components/PlaybookCreationModal';
 
 /**
  * ECHO Main Application Entry
@@ -136,8 +134,11 @@ const App: React.FC = () => {
 
     return (
         <div className="flex flex-col h-screen bg-[#09090B] text-gray-100 selection:bg-[#00D4FF]/30 overflow-hidden">
-            <Header 
-                onSettingsClick={() => setIsSettingsOpen(true)} 
+            <Header
+                onSettingsClick={() => setIsSettingsOpen(true)}
+                onHistoryClick={() => {}}
+                onArtifactsClick={() => {}}
+                tasks={tasks}
                 agentStatus={agentStatus}
                 sessionStats={sessionStats}
             />
@@ -154,7 +155,7 @@ const App: React.FC = () => {
                 />
             </main>
 
-            <ExecutionStatusBar status={agentStatus} tokenCount={sessionStats.totalTokensUsed} />
+            <ExecutionStatusBar tasks={tasks} agentStatus={agentStatus} onStopExecution={() => executorRef.current?.cancelTask('')} />
 
             <CommandPalette 
                 isOpen={isPaletteOpen} 

@@ -23,6 +23,7 @@ const statusConfig = {
     Revising: { color: 'bg-orange-500/20 text-orange-500 dark:text-orange-400 border-orange-500/70 dark:border-orange-400/70', glow: 'shadow-[0_0_12px_rgba(249,115,22,0.6),0_0_24px_rgba(249,115,22,0.3)]' },
     Delegating: { color: 'bg-purple-500/20 text-purple-500 dark:text-purple-400 border-purple-500/70 dark:border-purple-400/70', glow: 'shadow-[0_0_12px_rgba(168,85,247,0.5),0_0_24px_rgba(168,85,247,0.3)]' },
     Cancelled: { color: 'bg-zinc-500/10 text-zinc-600 dark:text-gray-500 border-zinc-500/20 dark:bg-gray-600/20 dark:border-gray-600/30', glow: '' },
+    AwaitingApproval: { color: 'bg-yellow-500/20 text-yellow-500 dark:text-yellow-400 border-yellow-500/70 dark:border-yellow-400/70', glow: 'shadow-[0_0_12px_rgba(234,179,8,0.6),0_0_24px_rgba(234,179,8,0.3)]' },
 };
 
 
@@ -33,12 +34,12 @@ const roleIcons = {
     Synthesizer: <SynthesizerIcon className="w-4 h-4" />,
 };
 
-const TaskItem = React.forwardRef(({ task, onClick, highlight, isDimmed }: {
+const TaskItem = React.forwardRef<HTMLDivElement, {
     task: Task;
     onClick: () => void;
     highlight: 'selected' | 'dependency' | 'dependent' | 'none';
     isDimmed: boolean;
-}, ref: React.Ref<HTMLDivElement>) => {
+}>(({ task, onClick, highlight, isDimmed }, ref): React.ReactElement => {
     const config = statusConfig[task.status];
     const prevStatusRef = useRef<TaskStatus | undefined>(undefined);
     const [animateComplete, setAnimateComplete] = useState(false);
@@ -62,6 +63,9 @@ const TaskItem = React.forwardRef(({ task, onClick, highlight, isDimmed }: {
             break;
         case 'dependent':
             highlightClass = 'border-2 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.6)]';
+            break;
+        default:
+            highlightClass = '';
             break;
     }
 
@@ -150,14 +154,14 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
 
     useLayoutEffect(() => {
         const calculateLines = () => {
-            if (!pipelineRef.current) return;
+            if (!pipelineRef.current || !taskRefs.current) return;
             const newLines: Line[] = [];
             const pipelineRect = pipelineRef.current.getBoundingClientRect();
 
             tasks.forEach(task => {
                 task.dependencies.forEach(depId => {
-                    const sourceNode = taskRefs.current[depId];
-                    const targetNode = taskRefs.current[task.id];
+                    const sourceNode = taskRefs.current![depId];
+                    const targetNode = taskRefs.current![task.id];
 
                     if (sourceNode && targetNode) {
                         const sourceRect = sourceNode.getBoundingClientRect();
@@ -249,7 +253,7 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                         return (
                             <TaskItem
                                 key={task.id}
-                                ref={el => { taskRefs.current[task.id] = el }}
+                                ref={(el: HTMLDivElement | null) => { if (taskRefs.current) taskRefs.current[task.id] = el }}
                                 task={task}
                                 highlight={highlight}
                                 isDimmed={isDimmed}
@@ -270,9 +274,9 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                         exit={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
                         onClick={() => setSelectedTaskId(null)}
                      >
-                        <motion.div 
+                        <motion.div
                             className="w-full max-w-2xl bg-white dark:bg-[#0F0F0F] border-2 border-[#FF6B00] rounded-xl shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={(e: { stopPropagation: () => void }) => e.stopPropagation()}
                         >
                             <div className="flex-shrink-0 p-6 pb-4 border-b border-black/10 dark:border-white/10">
                                 <div className="flex justify-between items-center mb-4">

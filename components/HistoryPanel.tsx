@@ -26,6 +26,7 @@ const statusConfig = {
     Revising: { color: 'bg-[#FF6B00]/20 text-[#FF6B00] border-[#FF6B00]/30' },
     Cancelled: { color: 'bg-zinc-500/10 text-zinc-600 dark:text-gray-500 border-zinc-500/20 dark:bg-gray-600/20 dark:border-gray-600/30' },
     Delegating: { color: 'bg-purple-500/20 text-purple-500 dark:text-purple-400 border-purple-500/70 dark:border-purple-400/70' },
+    AwaitingApproval: { color: 'bg-yellow-500/20 text-yellow-500 dark:text-yellow-400 border-yellow-500/30' },
 };
 
 const roleIcons = {
@@ -129,7 +130,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ tasks, messages, onC
                 animate={{ x: '0%' }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e: { stopPropagation: () => void }) => e.stopPropagation()}
             >
                 <header className="p-6 flex justify-between items-center border-b border-black/10 dark:border-white/10 flex-shrink-0">
                     <h2 className="flex items-center gap-3 text-xl font-bold text-zinc-800 dark:text-gray-100">
