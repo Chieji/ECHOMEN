@@ -591,6 +591,32 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                             </div>
                         </Section>
 
+                        <Section title="MCP Tool Expansion" icon={<PlugIcon className="w-5 h-5" />}>
+                            <div className="space-y-4">
+                                <p className="text-[11px] text-gray-500 uppercase font-bold tracking-widest">Connected Protocols</p>
+                                {[
+                                    { name: 'Git Protocol', url: 'http://localhost:3002', status: 'Connected' },
+                                    { name: 'WebHawk (Playwright)', url: 'http://localhost:3003', status: 'Connected' },
+                                    { name: 'Sequential Thinking', url: 'http://localhost:3004', status: 'Connected' }
+                                ].map((mcp, idx) => (
+                                    <div key={idx} className="flex items-center justify-between bg-black/5 dark:bg-white/5 px-4 py-3 rounded-xl border border-black/5 dark:border-white/5">
+                                        <div>
+                                            <p className="text-sm font-bold text-zinc-800 dark:text-white">{mcp.name}</p>
+                                            <p className="text-[10px] text-gray-500 font-mono">{mcp.url}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-bold text-green-500 uppercase">ONLINE</span>
+                                            <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                                        </div>
+                                    </div>
+                                ))}
+                                <button className="w-full py-3 border-2 border-dashed border-white/10 rounded-xl text-xs font-bold text-gray-500 hover:text-white hover:border-[#00D4FF]/50 transition-all flex items-center justify-center gap-2">
+                                    <PlusIcon className="w-4 h-4" />
+                                    ADD NEW MCP ENDPOINT
+                                </button>
+                            </div>
+                        </Section>
+
                         
                         <Section title="System Instructions" icon={<CommandLineIcon className="w-5 h-5" />}>
                             <textarea

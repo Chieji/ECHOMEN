@@ -10,10 +10,18 @@
     "check:tools": "node scripts/validate-tool-contracts.mjs"
   },
   "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@google/genai": "^0.14.0",
+    "@tiptap/extension-mention": "^3.20.0",
+    "@tiptap/pm": "^3.20.0",
+    "@tiptap/react": "^3.20.0",
+    "@tiptap/starter-kit": "^3.20.0",
+    "flexsearch": "^0.8.212",
     "framer-motion": "^11.3.1",
-    "@google/genai": "^0.14.0"
+    "jszip": "^3.10.1",
+    "openai": "^6.25.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

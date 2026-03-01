@@ -305,7 +305,17 @@ export class AgentExecutor {
             if (toolCall.name === 'create_and_delegate_task_to_new_agent') {
                 const { agent_name, agent_instructions, task_description, agent_icon } = toolCall.args;
                 
-                // Real implementation: Create the custom agent and task, then push to the executor's state
+                // Real implementation: Create the custom agent and task
+                const currentDepth = this.calculateDepth(task);
+                const MAX_AGENT_DEPTH = 3;
+
+                if (currentDepth >= MAX_AGENT_DEPTH) {
+                    observation = `Error: Maximum agent depth reached. Cannot spawn further sub-agents.`;
+                    subSteps.push({ thought, toolCall, observation });
+                    this.updateTask(task, { subSteps: [...subSteps] });
+                    return;
+                }
+
                 const newAgentId = `agent-spawn-${Date.now()}`;
                 const newAgent: CustomAgent = {
                     id: newAgentId,
@@ -314,7 +324,7 @@ export class AgentExecutor {
                     icon: agent_icon || 'Brain',
                     isCore: false,
                     enabled: true,
-                    description: `Spawned by God Mode for: ${task.title}`
+                    description: `Spawned by ${task.agent.name} for: ${task.title}`
                 };
 
                 // Notify UI to add the new agent
@@ -322,12 +332,12 @@ export class AgentExecutor {
 
                 const newTask: Task = {
                     id: `task-sub-${Date.now()}`,
-                    title: `Delegated Task: ${agent_name}`,
+                    title: `[Level ${currentDepth + 1}] ${agent_name}`,
                     details: task_description,
                     status: 'Queued',
                     agent: { role: 'Executor', name: newAgent.name },
                     estimatedTime: '~5m',
-                    dependencies: [], // Sub-tasks usually don't have dependencies within the parent's context
+                    dependencies: [],
                     delegatorTaskId: task.id,
                     logs: [],
                     reviewHistory: [],
@@ -339,7 +349,7 @@ export class AgentExecutor {
                 const currentSubStep: SubStep = { 
                     thought, 
                     toolCall, 
-                    observation: `Task delegated to specialist agent '${agent_name}'. God Mode is now in 'Delegating' status, waiting for results.` 
+                    observation: `Task delegated to specialist agent '${agent_name}' (Depth: ${currentDepth + 1}).` 
                 };
                 subSteps.push(currentSubStep);
 
@@ -351,12 +361,23 @@ export class AgentExecutor {
                 this.callbacks.onTasksUpdate([...this.tasks]);
                 this.callbacks.onLog({ 
                     status: 'INFO', 
-                    message: `[God Mode] 🚀 Spawning sub-agent '${agent_name}' to handle: "${task_description}"` 
+                    message: `[${task.agent.name}] 🚀 Spawning recursive sub-agent '${agent_name}'` 
                 });
                 
-                // The main run() loop will pick up this new 'Queued' task in the next iteration.
                 return; 
             }
+
+    private calculateDepth(task: Task): number {
+        let depth = 0;
+        let currentTask = task;
+        while (currentTask.delegatorTaskId) {
+            const parent = this.tasks.find(t => t.id === currentTask.delegatorTaskId);
+            if (!parent) break;
+            depth++;
+            currentTask = parent;
+        }
+        return depth;
+    }
 
             if (toolCall.name === 'createArtifact') {
                 const { title, type, content } = toolCall.args;

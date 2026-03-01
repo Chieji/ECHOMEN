@@ -70,11 +70,19 @@ const TaskItem = React.forwardRef(({ task, onClick, highlight, isDimmed }: {
             ref={ref}
             layoutId={`task-container-${task.id}`}
             onClick={onClick}
-            className={`bg-white dark:bg-black/40 backdrop-blur-sm border ${config.color} ${highlightClass} rounded-lg p-3 flex-shrink-0 w-64 cursor-pointer transition-all duration-300 ${isDimmed ? 'opacity-40' : 'opacity-100'} ${highlight === 'none' ? config.glow : ''}`}
+            className={`bg-white dark:bg-black/40 backdrop-blur-sm border relative overflow-hidden ${config.color} ${highlightClass} rounded-lg p-3 flex-shrink-0 w-64 cursor-pointer transition-all duration-300 ${isDimmed ? 'opacity-40' : 'opacity-100'} ${highlight === 'none' ? config.glow : ''}`}
             whileHover={{ scale: isDimmed ? 1 : 1.03, y: isDimmed ? 0 : -4, opacity: 1 }}
             animate={animateComplete ? { scale: [1, 1.05, 1] } : {}}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
         >
+            {task.status === 'Executing' && (
+                <motion.div 
+                    initial={{ x: '-100%' }}
+                    animate={{ x: '100%' }}
+                    transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                    className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#00D4FF] to-transparent z-10"
+                />
+            )}
             <div className="flex justify-between items-start">
                 <p className="font-bold text-zinc-800 dark:text-white truncate pr-2">{task.title}</p>
                 <span className="text-xs font-mono text-gray-500 dark:text-gray-400">{task.estimatedTime}</span>
