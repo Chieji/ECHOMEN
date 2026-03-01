@@ -1,134 +1,70 @@
-
 <div align="center">
 
 <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310419663029321070/NVvajgOUYjfhzUHU.png" alt="ECHO - Autonomous AI Agent Logo" width="600"/>
 
 **Your thoughts. My echo. Infinite possibility.**
 
-</div>
-
-<div align="center">
-
 [![React](https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Gemini API](https://img.shields.io/badge/Gemini_API-Google-4285F4?style=for-the-badge&logo=google-gemini)](https://ai.google.dev/)
 [![Framer Motion](https://img.shields.io/badge/Framer_Motion-11-black?style=for-the-badge&logo=framer)](https://www.framer.com/motion/)
-[![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite)](https://vitejs.dev/)
+[![Security](https://img.shields.io/badge/Security-Fortress--Grade-red?style=for-the-badge)](./AGENTS.md)
 
 </div>
 
 ---
 
-**ECHO** is not just another AI chatbot. It's a browser-based autonomous agent designed to transform natural language commands into executed reality. It plans, acts, and delivers results with ruthless efficiency, orchestrating a team of specialized AI agents to achieve complex goals.
+**ECHO** is an Elite AI Workstation designed for **Action over Conversation.** It transforms your machine into a self-orchestrating multi-agent powerhouse, fusing a high-fidelity execution engine with a persistent "Second Brain."
 
-## Core Philosophy
+## 🧠 The Second Brain (Knowledge & Memory)
+ECHO doesn't just execute; it *remembers* and *connects*.
+-   **[[Wiki-Linking]]:** Use standard wiki syntax to link notes, artifacts, and tasks.
+-   **Bidirectional Echoes:** Automatic backlink detection in the Intelligence Sidebar.
+-   **FlexSearch Recall:** Sub-millisecond global search across all logs and artifacts.
+-   **Neural Vault:** Export your entire knowledge base as a portable, structured ZIP archive.
 
-The principle behind ECHO is simple: **Action over conversation.** While chat is a tool, the ultimate goal is execution. ECHO is designed with a persistent, stateful architecture that allows it to:
+## ⚡ WebHawk 2.0 (Agentic Browser)
+ECHO sees the web like a human.
+-   **Vision Protocol:** Uses Playwright to navigate, screenshot, and reason visually.
+-   **AXTree Navigation:** Reads the browser's Accessibility Tree for 100% reliable element interaction.
+-   **Persistent Session:** Maintain logins and state across complex multi-step web tasks.
 
--   **Deconstruct** high-level objectives into actionable task pipelines.
--   **Orchestrate** a multi-agent system, assigning the right agent to the right task.
--   **Execute** tasks using a comprehensive suite of tools, including file manipulation, web interaction, **structured long-term memory**, and **data analysis**.
--   **Learn** from successful executions to create reusable "Playbooks," improving its efficiency over time.
+## 🛡️ The ECHO Fortress (Security)
+Built with "Principal Architect" rigor.
+-   **The Trio (SOUL/AGENTS/TOOLS):** Modular behavior injection via root-level Markdown files.
+-   **Human-in-the-Loop (HITL):** Mandatory approval gate for privileged tools (Shell, Write, Delete).
+-   **Zero-Config Discovery:** Backend automatically scans and proxies local MCP services.
 
-<!-- TODO: Replace this with a high-quality GIF of ECHO in action! -->
-<img src="https://via.placeholder.com/800x400.png?text=ECHO+In+Action+(Replace+this+image)" alt="ECHO Demo" />
+## 🖥️ Elite Workstation UI
+-   **Unified Command Deck:** A high-density dashboard for real-time planning and execution.
+-   **ECHO-P (Command Palette):** Trigger global actions instantly with `Ctrl + P` or `Cmd + K`.
+-   **EchoBrain Pulse:** Real-time visualization of agent thoughts and system health.
 
-## ✨ Key Features
+## 🚀 Quick Start (V1 Miracle Build)
 
--   🤖 **Multi-Agent Orchestration:** A central `Core` brain delegates tasks to specialized agents like `Planner`, `Executor`, `Reviewer`, and `Synthesizer`.
--   🧠 **ReAct Logic Loop:** The `God Mode` executor uses a Reason-Act loop to make decisions, use tools, and process observations, enabling it to solve complex, multi-step problems.
--   ⚡ **Task Pipeline UI:** Visualize the entire execution plan in real-time, from queuing to completion, including dependencies between tasks.
--   📦 **Artifact Generation:** Final outputs like code blocks, documents, and reports are cleanly separated from execution logs and presented as downloadable artifacts.
--   📝 **Agent To-Do List:** Provide ECHO with high-priority objectives. The Planner uses this list as context to generate more relevant and aligned execution plans.
--   📚 **Playbook Synthesis:** ECHO learns from its successes. Completed task plans are summarized into "Playbooks" that can be instantly recalled for similar future requests.
--   ⚙️ **Master Configuration Panel (MCP):** A centralized hub to manage system instructions, connect services (e.g., GitHub, OpenAI), and create custom agents.
--   ↔️ **Dual Modes:** Switch seamlessly between `Action Mode` for task execution and `Chat Mode` for quick questions and brainstorming.
--   🖥️ **Live Terminal:** Monitor the agent's every thought, action, and observation in a familiar terminal interface.
-
-## 🚀 Getting Started
-
-ECHO has a **browser-first UI** with an **optional backend execution engine** for privileged tools (file system, shell, web, GitHub, memory). To get started locally:
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/Chieji/ECHOMEN.git
-    cd ECHOMEN
-    ```
-
-2.  **Set up configuration:**
-    -   Copy `.env.example` to `.env`.
-    -   Add your Google AI Studio API key:
-        ```
-        API_KEY=your_google_api_key_here
-        ```
-
-3.  **Install dependencies and run:**
-    ```bash
-    npm install
-    npm run dev
-    ```
-
-4.  Open your browser at the Vite address (typically `http://localhost:5173`).
-
-### Backend execution engine (optional but required for non-browser tools)
-
-Some tools in `services/tools.ts` call a backend endpoint (`http://localhost:3001/execute-tool`) for secure execution. If no backend is running, those tools will fail gracefully and surface an error in the terminal UI.
-
-Current status:
--   ✅ Browser-native path: planning, orchestration, local UI, `executeCode`.
--   ⚠️ Backend-dependent path: sandbox file I/O, shell execution, web browsing, GitHub operations, and Supabase memory calls.
-
-If you are only evaluating UI/orchestration behavior, frontend-only mode is enough. If you need real tool execution, run or implement a compatible backend engine first.
-
-
-## 🔒 Runtime Safety Limits
-
-To prevent runaway autonomous execution, the executor enforces hard limits:
-
--   `MAX_SUB_STEPS = 10` per ReAct task loop.
--   `MAX_PARALLEL_TASKS = 4` concurrent tasks.
--   `MAX_LLM_CALLS_PER_RUN = 40` model calls per run.
-
-When a limit is hit, execution emits a normalized `ExecutionError` and the failure is surfaced in the Live Terminal log.
-
-## 📐 Tool Contract Source of Truth
-
-Tool contracts are defined and consumed with this precedence:
-
-1.  **Source of truth:** `services/tools.ts` (`toolDeclarations` + `availableTools`).
-2.  **Documentation:** `tool_specifications.md` (high-level behavior and intent).
-3.  **Shared runtime types:** `types.ts` (cross-module data contracts).
-4.  **App metadata only:** `metadata.json` (project/app descriptor, not tool contracts).
-
-A validation script is included to detect drift between tool declarations and implementations:
-
+### 1. The Engine (Backend)
 ```bash
-npm run check:tools
+cd ECHOMEN/backend
+npm install
+npm start
 ```
+*Runs on port 3001. Handles Shell, Files, and WebHawk.*
 
-## 🛠️ Technology Stack
+### 2. The Cockpit (Frontend)
+```bash
+cd ECHOMEN
+npm install
+npm run dev
+```
+*Configure your keys in the Master Configuration Panel (Settings).*
 
--   **Frontend:** React 19, TypeScript, TailwindCSS
--   **AI/LLM:** Google Gemini API (`gemini-2.5-flash`)
--   **Animation:** Framer Motion
--   **State Management:** React Hooks & Context
--   **Build Tool:** Vite (via browser module loading)
-
-## 🗺️ Roadmap
-
-ECHO is an evolving experiment. The next frontiers include:
-
--   [ ] **Real Tool Integration:** Bridge the gap from a simulated file system to real-world APIs by building secure backend proxies for services like GitHub, and an optional local server for file system access.
--   [ ] **WebHawk Agent:** Fully implement the `WebHawk` agent for autonomous web browsing, data extraction, and research.
--   [x] **Long-Term Memory:** Integrated a structured memory system using Supabase (backend implementation pending) to give ECHO persistent, searchable memory across sessions.
--   [ ] **Collaborative Agents:** Allow multiple ECHO instances to communicate and delegate tasks to each other.
-
-## 🤝 Contributing
-
-Contributions are welcome! If you have an idea for a new feature, agent, or tool, please open an issue to discuss it.
+## 🏗️ Technical Architecture
+-   **Orchestration:** Recursive ReAct loop (up to Level 3 depth).
+-   **AI Bridge:** Unified abstraction for Gemini, OpenAI, and Anthropic.
+-   **Secure Storage:** AES-256-GCM encrypted credentials in session memory.
 
 ---
 
 <div align="center">
-    Built with precision and a bias for action.
+    <b>Built with ruthless precision. ECHO OUT.</b>
 </div>
