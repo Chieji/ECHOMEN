@@ -29,6 +29,11 @@
 - [x] **Command Palette:** High-velocity `ECHO-P` interface.
 - [x] **Neural Vault:** ZIP export engine for full brain backups.
 
+## Phase 5: Security Fortress 🛡️
+- [x] **OpenClaw Trio:** Injected `SOUL.md`, `AGENTS.md`, and `TOOLS.md` as core protocol.
+- [x] **Human-in-the-Loop:** Mandatory approval gate for privileged tools (Shell, Write, etc.).
+- [x] **Indirect Injection Protection:** Trained brain to treat web content as untrusted data.
+
 ## Code Health 🏗️
 - [x] **Consolidate Components:** Unified scattered UI into the `CommandDeck`.
 - [x] **Type Safety:** 100% AST-based tool validation and strict typing.
