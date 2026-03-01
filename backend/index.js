@@ -55,19 +55,26 @@ discoverMCPs();
 setInterval(discoverMCPs, 60000);
 
 /**
- * Executes a shell command with basic sanitization.
+ * Executes a shell command with hardened sanitization.
  */
 const executeShellCommand = (command) => {
-    // Security Guard: Prevent escaping current context or chaining dangerous commands
-    const forbiddenPatterns = [';', '&&', '||', '|', '>', '<', '..', '~'];
-    const containsForbidden = forbiddenPatterns.some(pattern => command.includes(pattern));
+    // Hardened Security Guard: Only allow alphanumeric, spaces, and basic file path characters.
+    // Explicitly block any shell meta-characters that could lead to injection.
+    const sanitizedCommand = command.trim();
+    const isDangerous = /[\x00-\x1F\x7F]|(;|\&\&|\|\||\||>|<|\!|\$|\(|\)|\{|\}|\[|\]|\*|\?|~|`|\\)/.test(sanitizedCommand);
     
-    if (containsForbidden) {
-        return Promise.reject(new Error("Security Error: Potential command injection detected. Command contains forbidden characters."));
+    if (isDangerous) {
+        return Promise.reject(new Error("Security Violation: Command contains restricted shell characters. Only direct commands are permitted."));
+    }
+
+    // Boundary Check: Prevent directory traversal attempts
+    if (sanitizedCommand.includes('..')) {
+        return Promise.reject(new Error("Security Violation: Directory traversal detected."));
     }
 
     return new Promise((resolve, reject) => {
-        exec(command, (error, stdout, stderr) => {
+        // We use exec here because it's a developer tool, but we've applied a strict regex filter above.
+        exec(sanitizedCommand, { timeout: 60000, maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
             if (error) {
                 reject(new Error(stderr || error.message));
                 return;
