@@ -42,7 +42,7 @@ export const CommandDeck: React.FC<CommandDeckProps> = ({
     const activeBacklinks = backlinkMap['Active Note'] || [];
 
     return (
-        <div className="flex h-full w-full bg-[#09090B] overflow-hidden">
+        <div className="flex h-full w-full bg-echo-void overflow-hidden">
             {/* Main Content Area */}
             <div className="flex-grow flex flex-col h-full gap-6 p-6 min-w-0">
                 {/* Top Row: The Brain & The Input */}
@@ -56,19 +56,19 @@ export const CommandDeck: React.FC<CommandDeckProps> = ({
                         />
                     </div>
                     <div className="xl:col-span-8 flex flex-col justify-center">
-                        <div className="bg-[#18181B] border border-white/10 rounded-2xl p-8 shadow-xl backdrop-blur-md">
+                        <div className="echo-glass rounded-2xl p-8 shadow-neon">
                             <div className="flex items-center justify-between mb-2">
                                 <h1 className="text-2xl font-bold text-white tracking-tight">System Command</h1>
                                 <div className="flex bg-black/40 p-1 rounded-lg border border-white/5">
                                     <button 
                                         onClick={() => setActiveTab('board')}
-                                        className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${activeTab !== 'brain' ? 'bg-[#00D4FF] text-black shadow-[0_0_10px_rgba(0,212,255,0.4)]' : 'text-gray-500'}`}
+                                        className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${activeTab !== 'brain' ? 'bg-echo-cyan text-black shadow-neon' : 'text-gray-500'}`}
                                     >
                                         ACTION
                                     </button>
                                     <button 
                                         onClick={() => setActiveTab('brain')}
-                                        className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${activeTab === 'brain' ? 'bg-[#00D4FF] text-black shadow-[0_0_10px_rgba(0,212,255,0.4)]' : 'text-gray-500'}`}
+                                        className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${activeTab === 'brain' ? 'bg-echo-cyan text-black shadow-neon' : 'text-gray-500'}`}
                                     >
                                         BRAIN
                                     </button>
@@ -81,34 +81,34 @@ export const CommandDeck: React.FC<CommandDeckProps> = ({
                 </div>
 
                 {/* Main Area: Integrated Workspace */}
-                <div className="flex-grow flex flex-col min-h-0 bg-[#09090B] border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
+                <div className="flex-grow flex flex-col min-h-0 bg-echo-void border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
                     {/* Navigation Bar */}
                     <nav className="flex items-center justify-between px-6 py-3 border-b border-white/5 bg-white/5">
                         <div className="flex items-center gap-6">
                             <button 
                                 onClick={() => setActiveTab('board')}
-                                className={`flex items-center gap-2 text-xs font-bold transition-all ${activeTab === 'board' ? 'text-[#00D4FF]' : 'text-gray-500 hover:text-white'}`}
+                                className={`flex items-center gap-2 text-xs font-bold transition-all ${activeTab === 'board' ? 'text-echo-cyan' : 'text-gray-500 hover:text-white'}`}
                             >
                                 <Squares2X2Icon className="w-4 h-4" />
                                 EXECUTION BOARD
                             </button>
                             <button 
                                 onClick={() => setActiveTab('artifacts')}
-                                className={`flex items-center gap-2 text-xs font-bold transition-all ${activeTab === 'artifacts' ? 'text-[#00D4FF]' : 'text-gray-500 hover:text-white'}`}
+                                className={`flex items-center gap-2 text-xs font-bold transition-all ${activeTab === 'artifacts' ? 'text-echo-cyan' : 'text-gray-500 hover:text-white'}`}
                             >
                                 <ArchiveBoxIcon className="w-4 h-4" />
                                 ARTIFACTS ({artifacts.length})
                             </button>
                             <button 
                                 onClick={() => setActiveTab('brain')}
-                                className={`flex items-center gap-2 text-xs font-bold transition-all ${activeTab === 'brain' ? 'text-[#00D4FF]' : 'text-gray-500 hover:text-white'}`}
+                                className={`flex items-center gap-2 text-xs font-bold transition-all ${activeTab === 'brain' ? 'text-echo-cyan' : 'text-gray-500 hover:text-white'}`}
                             >
                                 <BrainIcon className="w-4 h-4" />
                                 SECOND BRAIN
                             </button>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-green-500" />
+                            <div className="w-2 h-2 rounded-full bg-green-500 shadow-neon" />
                             <span className="text-[10px] text-gray-400 font-mono uppercase">Neural Link: Stable</span>
                         </div>
                     </nav>

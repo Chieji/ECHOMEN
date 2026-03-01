@@ -6,39 +6,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ECHO - Autonomous AI Agent</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Elite Typography: Geist & Geist Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet">
+    
     <style>
-      body {
-        font-family: 'Inter', sans-serif;
+      :root {
+        --echo-cyan: #00D4FF;
+        --echo-void: #09090B;
       }
+
+      body {
+        font-family: 'Geist', sans-serif;
+        background-color: var(--echo-void);
+        color: #eee;
+      }
+
       .font-mono {
-        font-family: 'JetBrains Mono', monospace;
+        font-family: 'Geist Mono', monospace;
+      }
+
+      /* Cyber Scrollbar Miracle */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(0, 212, 255, 0.1);
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 212, 255, 0.3);
+      }
+
+      /* Glassmorphism Global Utility */
+      .echo-glass {
+        backdrop-blur: 20px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      /* Global Animations */
+      @keyframes echo-pulse {
+        0%, 100% { opacity: 1; filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.4)); }
+        50% { opacity: 0.7; filter: drop-shadow(0 0 2px rgba(0, 212, 255, 0.1)); }
+      }
+      .animate-echo-pulse {
+        animation: echo-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "framer-motion": "https://aistudiocdn.com/framer-motion@^11.3.1",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^0.14.0"
-  }
-}
-</script>
-<script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {},
-      },
-      plugins: [],
+
+    <script type="importmap">
+    {
+      "imports": {
+        "react/": "https://aistudiocdn.com/react@^19.2.0/",
+        "react": "https://aistudiocdn.com/react@^19.2.0",
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+        "framer-motion": "https://aistudiocdn.com/framer-motion@^11.3.1",
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^0.14.0"
+      }
     }
-  </script>
-</head>
-  <body class="bg-zinc-100 dark:bg-[#0A0A0A]">
+    </script>
+
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              echo: {
+                cyan: '#00D4FF',
+                void: '#09090B',
+                zinc: '#18181B',
+                orange: '#FF6B00',
+              }
+            },
+            boxShadow: {
+              'neon': '0 0 15px rgba(0, 212, 255, 0.3)',
+              'neon-strong': '0 0 25px rgba(0, 212, 255, 0.5)',
+            }
+          },
+        },
+        plugins: [],
+      }
+    </script>
+  </head>
+  <body class="dark:bg-echo-void overflow-hidden">
     <div id="root"></div>
   </body>
 </html>

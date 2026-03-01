@@ -72,16 +72,16 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
         ? "Describe the action or task for the AI agents..." 
         : "Chat with the AI assistant...";
 
-    const borderColor = agentMode === AgentMode.ACTION ? 'border-cyan-500/90 dark:border-[#00D4FF]/90' : 'border-violet-500/90';
-    const buttonBg = agentMode === AgentMode.ACTION ? 'bg-cyan-500 hover:bg-cyan-600 dark:bg-[#00D4FF] dark:hover:bg-[#00b8e6]' : 'bg-violet-500 hover:bg-violet-600';
-    const buttonText = agentMode === AgentMode.ACTION ? 'text-white dark:text-black' : 'text-white';
+    const borderColor = agentMode === AgentMode.ACTION ? 'border-echo-cyan/90' : 'border-violet-500/90';
+    const buttonBg = agentMode === AgentMode.ACTION ? 'bg-echo-cyan hover:bg-echo-cyan/80' : 'bg-violet-500 hover:bg-violet-600';
+    const buttonText = agentMode === AgentMode.ACTION ? 'text-black' : 'text-white';
 
     return (
         <motion.div 
             animate={isEchoing ? { scale: [1, 1.01, 1] } : {}}
             className="relative"
         >
-            <div className={`bg-white/10 dark:bg-black/40 backdrop-blur-2xl border-2 ${borderColor} rounded-2xl shadow-2xl overflow-hidden relative`}>
+            <div className={`bg-white/10 dark:bg-black/40 backdrop-blur-2xl border-2 ${borderColor} rounded-2xl shadow-neon overflow-hidden relative`}>
                 <div className="p-4 flex items-end gap-3 relative z-10">
                     <textarea
                         value={value}
@@ -94,7 +94,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                      <button 
                         onClick={handleSend}
                         disabled={!value.trim()}
-                        className={`${buttonBg} ${buttonText} rounded-full w-10 h-10 flex-shrink-0 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(0,212,255,0.3)]`}
+                        className={`${buttonBg} ${buttonText} rounded-full w-10 h-10 flex-shrink-0 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-neon`}
                         aria-label="Send command"
                     >
                         <SendIcon className="w-5 h-5" />

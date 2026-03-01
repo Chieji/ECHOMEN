@@ -163,11 +163,54 @@ export class AgentExecutor {
                 return; // PAUSE THE LOOP
             }
 
-            let observation = '';
             try {
                 if (toolCall.name === 'create_and_delegate_task_to_new_agent') {
-                    // (Recursion logic handled here...)
-                    observation = "Task delegated.";
+                    const { agent_name, agent_instructions, task_description, agent_icon } = toolCall.args;
+                    
+                    const currentDepth = this.calculateDepth(task);
+                    const MAX_AGENT_DEPTH = 3;
+
+                    if (currentDepth >= MAX_AGENT_DEPTH) {
+                        observation = `Error: Maximum agent depth reached. Cannot spawn further sub-agents.`;
+                    } else {
+                        const newAgentId = `agent-spawn-${Date.now()}`;
+                        const newAgent: CustomAgent = {
+                            id: newAgentId,
+                            name: agent_name,
+                            instructions: agent_instructions,
+                            icon: agent_icon || 'Brain',
+                            isCore: false,
+                            enabled: true,
+                            description: `Spawned by ${task.agent.name} for: ${task.title}`
+                        };
+
+                        this.callbacks.onAgentCreated(newAgent);
+
+                        const newTask: Task = {
+                            id: `task-sub-${Date.now()}`,
+                            title: `[Level ${currentDepth + 1}] ${agent_name}`,
+                            details: task_description,
+                            status: 'Queued',
+                            agent: { role: 'Executor', name: newAgent.name },
+                            estimatedTime: '~5m',
+                            dependencies: [],
+                            delegatorTaskId: task.id,
+                            logs: [],
+                            reviewHistory: [],
+                            retryCount: 0,
+                            maxRetries: 3,
+                            subSteps: []
+                        };
+
+                        this.updateTask(task, { status: 'Delegating' });
+                        this.tasks.push(newTask);
+                        this.callbacks.onTasksUpdate([...this.tasks]);
+                        this.callbacks.onLog({ 
+                            status: 'INFO', 
+                            message: `[${task.agent.name}] 🚀 Spawning recursive sub-agent '${agent_name}'` 
+                        });
+                        return; // PAUSE PARENT
+                    }
                 } else {
                     const tool = (availableTools as any)[toolCall.name];
                     if (!tool) throw new Error(`Tool ${toolCall.name} not found.`);

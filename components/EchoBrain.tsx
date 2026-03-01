@@ -24,11 +24,11 @@ export const EchoBrain: React.FC<EchoBrainProps> = ({ services, activeTasks, log
     const lastLog = logs.length > 0 ? logs[logs.length - 1] : null;
 
     return (
-        <div className="bg-[#0F0F0F] border-2 border-[#00D4FF]/20 rounded-2xl p-6 shadow-2xl backdrop-blur-xl">
+        <div className="bg-echo-void border border-white/10 rounded-2xl p-6 shadow-neon backdrop-blur-xl">
             <header className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
-                    <div className="p-3 bg-cyan-500/10 rounded-xl border border-cyan-500/30">
-                        <BrainIcon className="w-8 h-8 text-[#00D4FF] animate-pulse" />
+                    <div className="p-3 bg-echo-cyan/10 rounded-xl border border-echo-cyan/30 shadow-neon">
+                        <BrainIcon className="w-8 h-8 text-echo-cyan animate-pulse" />
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-white tracking-tight">ECHO Core</h2>
@@ -38,7 +38,7 @@ export const EchoBrain: React.FC<EchoBrainProps> = ({ services, activeTasks, log
                 <div className="flex items-center gap-4">
                     <div className="text-right">
                         <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Total Tokens</p>
-                        <p className="text-lg font-mono text-cyan-400">{sessionStats.totalTokensUsed.toLocaleString()}</p>
+                        <p className="text-lg font-mono text-echo-cyan">{sessionStats.totalTokensUsed.toLocaleString()}</p>
                     </div>
                 </div>
             </header>
@@ -54,7 +54,7 @@ export const EchoBrain: React.FC<EchoBrainProps> = ({ services, activeTasks, log
                         {connectedServices.map(service => (
                             <div key={service.id} className="flex items-center justify-between bg-white/5 px-3 py-2 rounded-lg border border-white/5">
                                 <span className="text-xs font-medium text-gray-300">{service.name}</span>
-                                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                                <div className="w-2 h-2 rounded-full bg-green-500 shadow-neon" />
                             </div>
                         ))}
                         {connectedServices.length === 0 && <p className="text-xs text-gray-500 italic">No services online.</p>}
@@ -69,9 +69,9 @@ export const EchoBrain: React.FC<EchoBrainProps> = ({ services, activeTasks, log
                     </div>
                     <div className="space-y-2">
                         {runningTasks.map(task => (
-                            <div key={task.id} className="bg-cyan-500/10 px-3 py-2 rounded-lg border border-cyan-500/20">
-                                <p className="text-xs font-bold text-cyan-400 truncate">{task.title}</p>
-                                <p className="text-[10px] text-cyan-300/60 font-mono mt-1">{task.agent.name} is working...</p>
+                            <div key={task.id} className="bg-echo-cyan/10 px-3 py-2 rounded-lg border border-echo-cyan/20">
+                                <p className="text-xs font-bold text-echo-cyan truncate">{task.title}</p>
+                                <p className="text-[10px] text-echo-cyan/60 font-mono mt-1">{task.agent.name} is working...</p>
                             </div>
                         ))}
                         {runningTasks.length === 0 && <p className="text-xs text-gray-500 italic text-center py-2">ECHO is currently idle.</p>}
@@ -81,7 +81,7 @@ export const EchoBrain: React.FC<EchoBrainProps> = ({ services, activeTasks, log
                 {/* Status Card: Real-time Pulse */}
                 <div className="bg-white/5 border border-white/10 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-4">
-                        <div className="w-2 h-2 rounded-full bg-cyan-500 animate-ping" />
+                        <div className="w-2 h-2 rounded-full bg-echo-cyan animate-ping" />
                         <h3 className="text-sm font-semibold text-gray-200">System Pulse</h3>
                     </div>
                     <div className="h-20 overflow-hidden relative">
@@ -94,7 +94,7 @@ export const EchoBrain: React.FC<EchoBrainProps> = ({ services, activeTasks, log
                                     exit={{ opacity: 0, y: -10 }}
                                     className="text-[11px] font-mono leading-relaxed"
                                 >
-                                    <span className={`font-bold ${lastLog.status === 'ERROR' ? 'text-red-400' : (lastLog.status === 'SUCCESS' ? 'text-green-400' : 'text-cyan-400')}`}>
+                                    <span className={`font-bold ${lastLog.status === 'ERROR' ? 'text-red-400' : (lastLog.status === 'SUCCESS' ? 'text-green-400' : 'text-echo-cyan')}`}>
                                         [{lastLog.status}]
                                     </span>
                                     <span className="text-gray-400 ml-2">{lastLog.message}</span>
