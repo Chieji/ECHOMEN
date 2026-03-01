@@ -14,26 +14,41 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(bodyParser.json());
 
-// --- Browser State Management ---
+// --- Isolated Browser Context Management ---
 let browser = null;
-let context = null;
-let page = null;
+const activeContexts = new Map(); // sessionId -> { context, page }
 
 /**
- * Ensures a browser instance is running and returns the active page.
+ * Retrieves or creates an isolated browser context for a specific session.
  */
-const getActivePage = async () => {
+const getSessionPage = async (sessionId = 'default') => {
     if (!browser) {
         browser = await chromium.launch({ headless: true });
-        context = await browser.newContext({
+    }
+
+    if (!activeContexts.has(sessionId)) {
+        console.log(`[ECHO Engine] Creating isolated context for session: ${sessionId}`);
+        const context = await browser.newContext({
             viewport: { width: 1280, height: 800 },
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         });
+        const page = await context.newPage();
+        activeContexts.set(sessionId, { context, page });
     }
-    if (!page) {
-        page = await context.newPage();
+
+    return activeContexts.get(sessionId).page;
+};
+
+/**
+ * Closes and cleans up a session context.
+ */
+const closeSession = async (sessionId) => {
+    if (activeContexts.has(sessionId)) {
+        const { context } = activeContexts.get(sessionId);
+        await context.close();
+        activeContexts.delete(sessionId);
+        console.log(`[ECHO Engine] Purged context for session: ${sessionId}`);
     }
-    return page;
 };
 
 /**
@@ -56,34 +71,32 @@ const executeShellCommand = (command) => {
 // --- Agentic Browser Actions (WebHawk 2.0) ---
 
 const browserActions = {
-    navigate: async (url) => {
-        const page = await getActivePage();
-        console.log(`[WebHawk] Navigating to: ${url}`);
+    navigate: async (sessionId, url) => {
+        const page = await getSessionPage(sessionId);
+        console.log(`[WebHawk] [Session: ${sessionId}] Navigating to: ${url}`);
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
         return { status: 'success', title: await page.title(), url: page.url() };
     },
-    screenshot: async () => {
-        const page = await getActivePage();
+    screenshot: async (sessionId) => {
+        const page = await getSessionPage(sessionId);
         const buffer = await page.screenshot({ fullPage: false });
-        // Return as base64 for the agent to "see" (if supported) or save as artifact
-        const base64 = buffer.toString('base64');
-        return { status: 'success', screenshot: base64 };
+        return { status: 'success', screenshot: buffer.toString('base64') };
     },
-    click: async (selector) => {
-        const page = await getActivePage();
-        console.log(`[WebHawk] Clicking: ${selector}`);
+    click: async (sessionId, selector) => {
+        const page = await getSessionPage(sessionId);
+        console.log(`[WebHawk] [Session: ${sessionId}] Clicking: ${selector}`);
         await page.click(selector, { timeout: 5000 });
         return { status: 'success', message: `Clicked ${selector}` };
     },
-    type: async (selector, text, pressEnter = false) => {
-        const page = await getActivePage();
-        console.log(`[WebHawk] Typing into ${selector}`);
+    type: async (sessionId, selector, text, pressEnter = false) => {
+        const page = await getSessionPage(sessionId);
+        console.log(`[WebHawk] [Session: ${sessionId}] Typing into ${selector}`);
         await page.fill(selector, text, { timeout: 5000 });
         if (pressEnter) await page.keyboard.press('Enter');
         return { status: 'success', message: `Typed into ${selector}` };
     },
-    get_ax_tree: async () => {
-        const page = await getActivePage();
+    get_ax_tree: async (sessionId) => {
+        const page = await getSessionPage(sessionId);
         const snapshot = await page.accessibility.snapshot();
         return { status: 'success', axTree: snapshot };
     }
@@ -92,10 +105,10 @@ const browserActions = {
 // --- Main Execution Endpoint ---
 
 app.post('/execute-tool', async (req, res) => {
-    const { tool, args } = req.body;
+    const { tool, args, sessionId = 'default' } = req.body;
     if (!tool) return res.status(400).json({ error: 'Missing tool name' });
 
-    console.log(`[ECHO Engine] Executing: ${tool}`);
+    console.log(`[ECHO Engine] Executing: ${tool} (Session: ${sessionId})`);
 
     try {
         let result;
@@ -116,21 +129,24 @@ app.post('/execute-tool', async (req, res) => {
                 result = await executeShellCommand(args.command);
                 break;
             
-            // WebHawk 2.0 Implementation
+            // WebHawk 2.0 (Isolated)
             case 'browser_navigate':
-                result = await browserActions.navigate(args.url);
+                result = await browserActions.navigate(sessionId, args.url);
                 break;
             case 'browser_screenshot':
-                result = await browserActions.screenshot();
+                result = await browserActions.screenshot(sessionId);
                 break;
             case 'browser_click':
-                result = await browserActions.click(args.selector);
+                result = await browserActions.click(sessionId, args.selector);
                 break;
             case 'browser_type':
-                result = await browserActions.type(args.selector, args.text, args.pressEnter);
+                result = await browserActions.type(sessionId, args.selector, args.text, args.pressEnter);
                 break;
             case 'browser_get_ax_tree':
-                result = await browserActions.get_ax_tree();
+                result = await browserActions.get_ax_tree(sessionId);
+                break;
+            case 'browser_close_session':
+                result = await closeSession(sessionId);
                 break;
 
             default:
@@ -145,5 +161,5 @@ app.post('/execute-tool', async (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`🚀 ECHO Unified Tool Gateway running on http://localhost:${PORT}`);
-    console.log(`WebHawk 2.0 Agentic Browser: ACTIVE`);
+    console.log(`WebHawk 2.0 Context Isolation: ACTIVE`);
 });
