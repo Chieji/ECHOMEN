@@ -5,49 +5,47 @@
 declare module 'react' {
   export type Key = string | number;
   export type ReactText = string | number;
-  export type ReactNode = ReactText | boolean | null | undefined | ReactElement | ReactNode[];
+  export type ReactNode = ReactText | boolean | null | undefined | any;
 
-  export interface ReactElement<P = unknown, T = string | JSXElementConstructor<any>> {
+  export interface ReactElement<P = any, T = any> {
     type: T;
     props: P;
     key: Key | null;
   }
 
-  export type JSXElementConstructor<P> = ((props: P) => ReactElement | null) | (new (props: P) => unknown);
+  export type FC<P = any> = (props: P) => ReactElement | null;
 
-  export type FC<P = Record<string, never>> = (props: P) => ReactElement | null;
-
-  export interface SVGProps<T = SVGElement> {
+  export interface SVGProps<T = any> {
     className?: string;
     width?: number | string;
     height?: number | string;
     fill?: string;
     stroke?: string;
     viewBox?: string;
-    [key: string]: unknown;
+    [key: string]: any;
   }
 
-  export interface KeyboardEvent<T = Element> {
+  export interface KeyboardEvent<T = any> {
     currentTarget: T;
-    target: EventTarget | null;
+    target: any;
     key: string;
     preventDefault(): void;
   }
 
-  export interface ChangeEvent<T = Element> {
+  export interface ChangeEvent<T = any> {
     currentTarget: T;
-    target: EventTarget & T;
+    target: any;
     preventDefault(): void;
   }
 
-  export interface FormEvent<T = Element> {
+  export interface FormEvent<T = any> {
     currentTarget: T;
-    target: EventTarget;
+    target: any;
     preventDefault(): void;
   }
 
   export interface RefObject<T> {
-    current: T;
+    current: T | null;
   }
 
   export type Ref<T> = ((instance: T | null) => void) | RefObject<T | null> | null;
@@ -56,23 +54,26 @@ declare module 'react' {
   export function useEffect(effect: () => void | (() => void), deps?: readonly unknown[]): void;
   export function useLayoutEffect(effect: () => void | (() => void), deps?: readonly unknown[]): void;
   export function useMemo<T>(factory: () => T, deps?: readonly unknown[]): T;
-  export function useCallback<T extends (...args: never[]) => unknown>(fn: T, deps?: readonly unknown[]): T;
+  export function useCallback<T extends (...args: any[]) => unknown>(fn: T, deps?: readonly unknown[]): T;
+  
+  export function useRef<T>(value: T | null): RefObject<T | null>;
   export function useRef<T>(value: T): RefObject<T>;
   export function useRef<T = undefined>(value?: T): RefObject<T | undefined>;
-  export function forwardRef<T, P = Record<string, never>>(
-    render: (props: P, ref: Ref<T>) => ReactElement | null,
-  ): (props: P & { ref?: Ref<T> }) => ReactElement | null;
+
+  export function forwardRef<T, P = Record<string, any>>(
+    render: (props: P, ref: Ref<T>) => any
+  ): any;
 }
 
 declare module 'react/jsx-runtime' {
-  export function jsx(type: unknown, props: unknown, key?: string): unknown;
-  export function jsxs(type: unknown, props: unknown, key?: string): unknown;
-  export const Fragment: unique symbol;
+  export function jsx(type: any, props: any, key?: string): any;
+  export function jsxs(type: any, props: any, key?: string): any;
+  export const Fragment: any;
 }
 
 declare module 'react-dom/client' {
-  export function createRoot(container: Element | DocumentFragment): {
-    render(children: unknown): void;
+  export function createRoot(container: any): {
+    render(children: any): void;
     unmount(): void;
   };
 }
@@ -80,7 +81,7 @@ declare module 'react-dom/client' {
 declare namespace JSX {
   interface Element {}
   interface IntrinsicElements {
-    [elemName: string]: Record<string, unknown>;
+    [elemName: string]: any;
   }
   interface IntrinsicAttributes {
     key?: string | number;
