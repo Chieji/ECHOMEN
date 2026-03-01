@@ -196,8 +196,16 @@ const App: React.FC = () => {
                     addLog({ status: 'SUCCESS', message: 'ECHO: All tasks completed successfully.' });
                     setAgentStatus(AgentStatus.FINISHED);
                 },
-                onFail: (errorMessage) => {
-                    addLog({ status: 'ERROR', message: `ECHO: Execution failed. ${errorMessage}` });
+                onFail: (error) => {
+                    const detailSuffix = [
+                        error.details.code ? `code=${error.details.code}` : '',
+                        error.details.taskId ? `task=${error.details.taskId}` : '',
+                        error.details.toolName ? `tool=${error.details.toolName}` : '',
+                    ].filter(Boolean).join(', ');
+                    addLog({
+                        status: 'ERROR',
+                        message: `ECHO: Execution failed. ${error.message}${detailSuffix ? ` (${detailSuffix})` : ''}`,
+                    });
                     setAgentStatus(AgentStatus.ERROR);
                 }
             });

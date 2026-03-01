@@ -1,41 +1,88 @@
+/**
+ * Lightweight React typing fallback for environments where @types/react is unavailable.
+ * Keep this file intentionally minimal to avoid masking real typing issues.
+ */
 declare module 'react' {
-  const React: any;
-  export default React;
-  export = React;
+  export type Key = string | number;
+  export type ReactText = string | number;
+  export type ReactNode = ReactText | boolean | null | undefined | ReactElement | ReactNode[];
 
-  export type FC<P = any> = (props: P) => any;
-  export type ReactNode = any;
-  export type SVGProps<T = any> = any;
-  export type KeyboardEvent<T = any> = any;
-  export type ChangeEvent<T = any> = any;
-  export type FormEvent<T = any> = any;
-  export type Ref<T = any> = any;
+  export interface ReactElement<P = unknown, T = string | JSXElementConstructor<any>> {
+    type: T;
+    props: P;
+    key: Key | null;
+  }
 
-  export function useState<S = any>(initialState: S | (() => S)): [S, (value: S | ((prevState: S) => S)) => void];
-  export function useEffect(effect: any, deps?: any[]): void;
-  export function useLayoutEffect(effect: any, deps?: any[]): void;
-  export function useMemo<T = any>(factory: () => T, deps?: any[]): T;
-  export function useCallback<T extends (...args: any[]) => any>(fn: T, deps?: any[]): T;
-  export function useRef<T = any>(value?: T): { current: T };
-  export function forwardRef<T = any, P = any>(render: (props: P, ref: any) => any): any;
+  export type JSXElementConstructor<P> = ((props: P) => ReactElement | null) | (new (props: P) => unknown);
+
+  export type FC<P = Record<string, never>> = (props: P) => ReactElement | null;
+
+  export interface SVGProps<T = SVGElement> {
+    className?: string;
+    width?: number | string;
+    height?: number | string;
+    fill?: string;
+    stroke?: string;
+    viewBox?: string;
+    [key: string]: unknown;
+  }
+
+  export interface KeyboardEvent<T = Element> {
+    currentTarget: T;
+    target: EventTarget | null;
+    key: string;
+    preventDefault(): void;
+  }
+
+  export interface ChangeEvent<T = Element> {
+    currentTarget: T;
+    target: EventTarget & T;
+    preventDefault(): void;
+  }
+
+  export interface FormEvent<T = Element> {
+    currentTarget: T;
+    target: EventTarget;
+    preventDefault(): void;
+  }
+
+  export interface RefObject<T> {
+    current: T;
+  }
+
+  export type Ref<T> = ((instance: T | null) => void) | RefObject<T | null> | null;
+
+  export function useState<S>(initialState: S | (() => S)): [S, (value: S | ((prevState: S) => S)) => void];
+  export function useEffect(effect: () => void | (() => void), deps?: readonly unknown[]): void;
+  export function useLayoutEffect(effect: () => void | (() => void), deps?: readonly unknown[]): void;
+  export function useMemo<T>(factory: () => T, deps?: readonly unknown[]): T;
+  export function useCallback<T extends (...args: never[]) => unknown>(fn: T, deps?: readonly unknown[]): T;
+  export function useRef<T>(value: T): RefObject<T>;
+  export function useRef<T = undefined>(value?: T): RefObject<T | undefined>;
+  export function forwardRef<T, P = Record<string, never>>(
+    render: (props: P, ref: Ref<T>) => ReactElement | null,
+  ): (props: P & { ref?: Ref<T> }) => ReactElement | null;
 }
 
 declare module 'react/jsx-runtime' {
-  export const jsx: any;
-  export const jsxs: any;
-  export const Fragment: any;
+  export function jsx(type: unknown, props: unknown, key?: string): unknown;
+  export function jsxs(type: unknown, props: unknown, key?: string): unknown;
+  export const Fragment: unique symbol;
 }
 
 declare module 'react-dom/client' {
-  export const createRoot: any;
+  export function createRoot(container: Element | DocumentFragment): {
+    render(children: unknown): void;
+    unmount(): void;
+  };
 }
 
 declare namespace JSX {
+  interface Element {}
   interface IntrinsicElements {
-    [elemName: string]: any;
+    [elemName: string]: Record<string, unknown>;
   }
   interface IntrinsicAttributes {
-    key?: any;
-    [attrName: string]: any;
+    key?: string | number;
   }
 }
