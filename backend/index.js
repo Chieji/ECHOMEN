@@ -14,184 +14,128 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(bodyParser.json());
 
-// --- MCP Configuration & Discovery ---
-let DISCOVERED_MCPS = {};
+// --- Browser State Management ---
+let browser = null;
+let context = null;
+let page = null;
 
 /**
- * Scans a range of local ports to discover active MCP services.
+ * Ensures a browser instance is running and returns the active page.
  */
-const discoverMCPs = async () => {
-    console.log('[ECHO Discovery] Scanning for active protocols...');
-    const scanRange = [3002, 3003, 3004, 3005]; // Ports defined in docker-compose-mcp.yml
-    const newMcps = {};
-
-    for (const port of scanRange) {
-        const url = `http://localhost:${port}`;
-        try {
-            // Probe the endpoint for an ECHO heartbeat or standard MCP signal
-            const response = await fetch(`${url}/execute-tool`, { 
-                method: 'POST', 
-                timeout: 1000,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tool: 'heartbeat', args: {} })
-            }).catch(() => null);
-
-            if (response && (response.ok || response.status === 404)) {
-                // We found a live service. Mapping by port-based naming for now.
-                const name = port === 3002 ? 'git' : (port === 3003 ? 'playwright' : (port === 3004 ? 'sequential' : 'dockerhub'));
-                newMcps[`${name}_`] = url;
-                console.log(`[ECHO Discovery] ✓ Found ${name.toUpperCase()} protocol on ${url}`);
-            }
-        } catch (e) {
-            // Silent fail for inactive ports
-        }
+const getActivePage = async () => {
+    if (!browser) {
+        browser = await chromium.launch({ headless: true });
+        context = await browser.newContext({
+            viewport: { width: 1280, height: 800 },
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        });
     }
-
-    DISCOVERED_MCPS = newMcps;
+    if (!page) {
+        page = await context.newPage();
+    }
+    return page;
 };
-
-// Run discovery on startup and every 60 seconds
-discoverMCPs();
-setInterval(discoverMCPs, 60000);
 
 /**
  * Executes a shell command with hardened sanitization.
  */
 const executeShellCommand = (command) => {
-    // Hardened Security Guard: Only allow alphanumeric, spaces, and basic file path characters.
-    // Explicitly block any shell meta-characters that could lead to injection.
     const sanitizedCommand = command.trim();
     const isDangerous = /[\x00-\x1F\x7F]|(;|\&\&|\|\||\||>|<|\!|\$|\(|\)|\{|\}|\[|\]|\*|\?|~|`|\\)/.test(sanitizedCommand);
-    
-    if (isDangerous) {
-        return Promise.reject(new Error("Security Violation: Command contains restricted shell characters. Only direct commands are permitted."));
+    if (isDangerous || sanitizedCommand.includes('..')) {
+        return Promise.reject(new Error("Security Violation: Command contains restricted characters or traversal."));
     }
-
-    // Boundary Check: Prevent directory traversal attempts
-    if (sanitizedCommand.includes('..')) {
-        return Promise.reject(new Error("Security Violation: Directory traversal detected."));
-    }
-
     return new Promise((resolve, reject) => {
-        // We use exec here because it's a developer tool, but we've applied a strict regex filter above.
         exec(sanitizedCommand, { timeout: 60000, maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
-            if (error) {
-                reject(new Error(stderr || error.message));
-                return;
-            }
+            if (error) { reject(new Error(stderr || error.message)); return; }
             resolve(stdout);
         });
     });
 };
 
-/**
- * Browses the web using Playwright and extracts clean text content.
- */
-const browseWeb = async (url) => {
-    console.log(`[WebHawk] Navigating to: ${url}`);
-    const browser = await chromium.launch({ headless: true });
-    try {
-        const page = await browser.newPage();
+// --- Agentic Browser Actions (WebHawk 2.0) ---
+
+const browserActions = {
+    navigate: async (url) => {
+        const page = await getActivePage();
+        console.log(`[WebHawk] Navigating to: ${url}`);
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-        
-        const title = await page.title();
-        // Extract visible text content, ignoring scripts and styles
-        const content = await page.evaluate(() => {
-            const body = document.body.cloneNode(true);
-            const junk = body.querySelectorAll('script, style, nav, footer, iframe, noscript');
-            junk.forEach(el => el.remove());
-            return body.innerText.substring(0, 15000); // Limit to 15k chars for agent context
-        });
-
-        return { title, content };
-    } catch (error) {
-        console.error(`[WebHawk Error] ${url}:`, error.message);
-        throw error;
-    } finally {
-        await browser.close();
+        return { status: 'success', title: await page.title(), url: page.url() };
+    },
+    screenshot: async () => {
+        const page = await getActivePage();
+        const buffer = await page.screenshot({ fullPage: false });
+        // Return as base64 for the agent to "see" (if supported) or save as artifact
+        const base64 = buffer.toString('base64');
+        return { status: 'success', screenshot: base64 };
+    },
+    click: async (selector) => {
+        const page = await getActivePage();
+        console.log(`[WebHawk] Clicking: ${selector}`);
+        await page.click(selector, { timeout: 5000 });
+        return { status: 'success', message: `Clicked ${selector}` };
+    },
+    type: async (selector, text, pressEnter = false) => {
+        const page = await getActivePage();
+        console.log(`[WebHawk] Typing into ${selector}`);
+        await page.fill(selector, text, { timeout: 5000 });
+        if (pressEnter) await page.keyboard.press('Enter');
+        return { status: 'success', message: `Typed into ${selector}` };
+    },
+    get_ax_tree: async () => {
+        const page = await getActivePage();
+        const snapshot = await page.accessibility.snapshot();
+        return { status: 'success', axTree: snapshot };
     }
 };
 
-/**
- * Proxies a tool call to an external MCP service.
- */
-const proxyToMCP = async (mcpUrl, toolName, args) => {
-    try {
-        const response = await fetch(`${mcpUrl}/execute-tool`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tool: toolName, args })
-        });
+// --- Main Execution Endpoint ---
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `MCP Error: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        return data.result;
-    } catch (error) {
-        console.error(`Error proxying to MCP at ${mcpUrl}:`, error);
-        throw error;
-    }
-};
-
-// --- API Endpoints ---
-
-/**
- * Returns the currently discovered MCP services.
- */
-app.get('/discovery', (req, res) => {
-    res.json({ services: DISCOVERED_MCPS });
-});
-
-/**
- * Main execution endpoint for the ECHO agent.
- */
 app.post('/execute-tool', async (req, res) => {
     const { tool, args } = req.body;
-    
-    if (!tool) {
-        return res.status(400).json({ error: 'Missing tool name' });
-    }
+    if (!tool) return res.status(400).json({ error: 'Missing tool name' });
 
     console.log(`[ECHO Engine] Executing: ${tool}`);
 
     try {
         let result;
+        switch (tool) {
+            case 'readFile':
+                result = await fs.readFile(path.resolve(args.path), 'utf8');
+                break;
+            case 'writeFile':
+                const dir = path.dirname(path.resolve(args.path));
+                await fs.mkdir(dir, { recursive: true });
+                await fs.writeFile(path.resolve(args.path), args.content, 'utf8');
+                result = `File written successfully: ${args.path}`;
+                break;
+            case 'listFiles':
+                result = await fs.readdir(path.resolve(args.path));
+                break;
+            case 'executeShellCommand':
+                result = await executeShellCommand(args.command);
+                break;
+            
+            // WebHawk 2.0 Implementation
+            case 'browser_navigate':
+                result = await browserActions.navigate(args.url);
+                break;
+            case 'browser_screenshot':
+                result = await browserActions.screenshot();
+                break;
+            case 'browser_click':
+                result = await browserActions.click(args.selector);
+                break;
+            case 'browser_type':
+                result = await browserActions.type(args.selector, args.text, args.pressEnter);
+                break;
+            case 'browser_get_ax_tree':
+                result = await browserActions.get_ax_tree();
+                break;
 
-        // Check DISCOVERED_MCPS first
-        const mcpPrefix = Object.keys(DISCOVERED_MCPS).find(prefix => tool.startsWith(prefix));
-
-        if (mcpPrefix) {
-            const mcpUrl = DISCOVERED_MCPS[mcpPrefix];
-            result = await proxyToMCP(mcpUrl, tool, args);
-        } else {
-            // Handle internal tools
-            switch (tool) {
-                case 'readFile':
-                    result = await fs.readFile(path.resolve(args.path), 'utf8');
-                    break;
-                case 'writeFile':
-                    const dir = path.dirname(path.resolve(args.path));
-                    await fs.mkdir(dir, { recursive: true });
-                    await fs.writeFile(path.resolve(args.path), args.content, 'utf8');
-                    result = `File written successfully: ${args.path}`;
-                    break;
-                case 'listFiles':
-                    result = await fs.readdir(path.resolve(args.path));
-                    break;
-                case 'executeShellCommand':
-                    result = await executeShellCommand(args.command);
-                    break;
-                case 'browse_web':
-                    result = await browseWeb(args.url);
-                    break;
-                default:
-                    throw new Error(`Tool '${tool}' is not discovered or implemented.`);
-            }
+            default:
+                throw new Error(`Tool '${tool}' is not implemented.`);
         }
-
         res.json({ result });
     } catch (error) {
         console.error(`[ECHO Engine Error] ${tool}:`, error.message);
@@ -201,5 +145,5 @@ app.post('/execute-tool', async (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`🚀 ECHO Unified Tool Gateway running on http://localhost:${PORT}`);
-    console.log(`Discovery Mode: Active (Scanning ports 3002-3005)`);
+    console.log(`WebHawk 2.0 Agentic Browser: ACTIVE`);
 });

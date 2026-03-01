@@ -333,6 +333,13 @@ Your high-level objective is: "${task.title} - ${task.details}"
 
 You have access to the following tools: ${toolDeclarations.map(t => t.name).join(', ')}.
 
+[AGENTIC BROWSER PROTOCOL]
+When using browser tools, you must follow the Perceive-Reason-Act pattern:
+1. PERCEIVE: Use 'browser_navigate' to reach a page, then 'browser_screenshot' or 'browser_get_ax_tree' to understand the layout.
+2. REASON: Analyze the screenshot/tree to find the elements you need.
+3. ACT: Use 'browser_click' or 'browser_type' to interact.
+4. VERIFY: Always take another screenshot after an action to confirm success.
+
 [CURRENT CONTEXT]
 - Artifacts created so far:
 ${artifactList.length > 0 ? artifactList : "None"}
@@ -340,7 +347,7 @@ ${artifactList.length > 0 ? artifactList : "None"}
 Based on the history of your previous actions and observations, decide on the very next step. 
 You must think step-by-step and then choose one single tool to use.
 When you have a final result, like a block of code or a document, use the 'createArtifact' tool to save it.
-Do not guess or assume information; use tools like 'listFiles' or 'readFile' to get the facts.
+Do not guess or assume information; use tools like 'listFiles', 'readFile', or 'browser_screenshot' to get the facts.
 If you believe the high-level objective is complete, respond with a JSON object: {"isFinished": true, "finalThought": "your concluding thoughts"}.
 Otherwise, respond with a JSON object: {"thought": "your reasoning", "toolCall": {"name": "tool_name", "args": {...}}}.
 
@@ -355,7 +362,7 @@ What is your next action?
         contents: prompt,
         config: {
             responseMimeType: "application/json",
-            systemInstruction: "You are a methodical AI agent executor. Follow the ReAct (Reason-Act) pattern. Your response must be a single, valid JSON object representing your next thought and action, or a finalization signal.",
+            systemInstruction: "You are ECHO, an elite autonomous workstation agent. You follow the ReAct (Reason-Act) pattern with high-fidelity visual grounding. Your response must be a single, valid JSON object representing your next thought and action.",
         },
     });
     

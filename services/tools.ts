@@ -353,13 +353,39 @@ export const toolDeclarations: FunctionDeclaration[] = [
         }
     },
     {
-        name: 'browse_web',
-        description: 'Accesses a given URL and performs a specific task on its content, such as summarizing, extracting information, or answering a question based on the content.',
+        name: 'browser_navigate',
+        description: 'Navigates the WebHawk browser to a specific URL. This is the first step for any web-based task.',
         parameters: {
             type: Type.OBJECT, properties: {
-                url: { type: Type.STRING, description: 'The full URL to access (e.g., "https://www.example.com").' },
-                task_description: { type: Type.STRING, description: 'A clear and specific instruction on what to do with the content of the URL (e.g., "Summarize the main points of the article.", "Extract all the headlines.", "What is the price of the main product listed?").' }
-            }, required: ['url', 'task_description']
+                url: { type: Type.STRING, description: 'The full URL to navigate to.' }
+            }, required: ['url']
+        }
+    },
+    {
+        name: 'browser_screenshot',
+        description: 'Captures a screenshot of the current page. Use this to "see" the visual layout, find buttons, or verify an action was successful.',
+        parameters: {
+            type: Type.OBJECT, properties: {}, required: []
+        }
+    },
+    {
+        name: 'browser_click',
+        description: 'Clicks a specific element on the page using a CSS selector.',
+        parameters: {
+            type: Type.OBJECT, properties: {
+                selector: { type: Type.STRING, description: 'The CSS selector of the element to click (e.g., "button#login", "a.submit").' }
+            }, required: ['selector']
+        }
+    },
+    {
+        name: 'browser_type',
+        description: 'Types text into an input field and can optionally press Enter.',
+        parameters: {
+            type: Type.OBJECT, properties: {
+                selector: { type: Type.STRING, description: 'The CSS selector of the input field.' },
+                text: { type: Type.STRING, description: 'The text to type into the field.' },
+                pressEnter: { type: Type.BOOLEAN, description: 'Whether to press the Enter key after typing.' }
+            }, required: ['selector', 'text']
         }
     },
     {
@@ -504,7 +530,10 @@ export const availableTools: { [key: string]: (...args: any[]) => Promise<any> }
     writeFile: (args: { path: string; content: string }) => writeFile(args.path, args.content),
     listFiles: (args: { path: string }) => listFiles(args.path),
     executeShellCommand: (args: { command: string }) => executeShellCommand(args.command),
-    browse_web: (args: { url: string; task_description: string }) => browse_web(args.url, args.task_description),
+    browser_navigate: (args: { url: string }) => callBackendTool('browser_navigate', args),
+    browser_screenshot: () => callBackendTool('browser_screenshot', {}),
+    browser_click: (args: { selector: string }) => callBackendTool('browser_click', args),
+    browser_type: (args: { selector: string, text: string, pressEnter?: boolean }) => callBackendTool('browser_type', args),
     executeCode: (args: { language: 'javascript', code: string }) => executeCode(args.language, args.code),
     github_create_repo: (args: { name: string, description: string, is_private: boolean }) => github_create_repo(args.name, args.description, args.is_private),
     github_get_pr_details: (args: { pr_url: string }) => github_get_pr_details(args.pr_url),
