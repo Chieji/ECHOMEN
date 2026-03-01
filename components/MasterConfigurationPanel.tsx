@@ -14,7 +14,7 @@ import { SupabaseIcon } from './icons/SupabaseIcon';
 import { GenericApiIcon } from './icons/GenericApiIcon';
 import { AgentCreationModal } from './AgentCreationModal';
 // FIX: Added Service to the import from the central types file.
-import { CustomAgent, Playbook, AgentPreferences, AgentRole, TodoItem, Service, ModelProviderConfig } from '../types';
+import { CustomAgent, Playbook, AgentPreferences, AgentRole, TodoItem, Service, ModelProviderConfig, MemoryMode, PersistenceSettings } from '../types';
 import { PencilIcon } from './icons/PencilIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { PlusIcon } from './icons/PlusIcon';
@@ -40,8 +40,11 @@ import { PolygonIcon } from './icons/PolygonIcon';
 import { DaytonaIcon } from './icons/DaytonaIcon';
 import { CodeSandboxIcon } from './icons/CodeSandboxIcon';
 import { ServerIcon } from './icons/ServerIcon';
+import { CloudIcon } from './icons/CloudIcon';
+import { DatabaseIcon } from './icons/DatabaseIcon';
 // FIX: Import missing ChevronDownIcon.
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
+import { setSecureItem, getSecureItem, isSecureContext, migrateCredentials, removeSecureItem } from '../lib/secureStorage';
 
 
 interface MasterConfigurationPanelProps {
@@ -54,6 +57,13 @@ const initialServices: Service[] = [
     // Sandbox Environments
     { id: 'daytona', name: 'Daytona', icon: <DaytonaIcon className="w-6 h-6" />, inputs: [{ id: 'apiKey', label: 'API Key', type: 'password', placeholder: 'dt...' }], status: 'Not Connected' },
     { id: 'codesandbox', name: 'CodeSandbox', icon: <CodeSandboxIcon className="w-6 h-6" />, inputs: [{ id: 'apiKey', label: 'API Key', type: 'password', placeholder: 'csb...' }], status: 'Not Connected' },
+    
+    // Core Infrastructure
+    { id: 'firebase', name: 'Firebase Cloud Brain', icon: <CloudIcon className="w-6 h-6" />, inputs: [
+        { id: 'apiKey', label: 'API Key', type: 'password', placeholder: 'AIza...' },
+        { id: 'authDomain', label: 'Auth Domain', type: 'text', placeholder: 'echo-agent.firebaseapp.com' },
+        { id: 'projectId', label: 'Project ID', type: 'text', placeholder: 'echo-agent-123' }
+    ], status: 'Not Connected' },
 
     // Core LLM Providers
     { id: 'openai', name: 'OpenAI', icon: <OpenAiIcon className="w-6 h-6" />, inputs: [{ id: 'apiKey', label: 'API Key', type: 'password', placeholder: 'sk-...' }, { id: 'apiUrl', label: 'API URL (Optional)', type: 'text', placeholder: 'https://api.openai.com/v1' }], status: 'Not Connected' },
@@ -217,6 +227,17 @@ const defaultAgentModels = [
 export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> = ({ onClose, theme, setTheme }) => {
     const [services, setServices] = useState<Service[]>(() => {
         try {
+            // First try secure storage for credentials
+            const secureServices = getSecureItem('echo-services');
+            if (secureServices) {
+                const savedServices = JSON.parse(secureServices);
+                return initialServices.map(is => {
+                    const saved = savedServices.find((ss: Service) => ss.id === is.id);
+                    return saved ? { ...is, status: saved.status, inputs: saved.inputs || is.inputs } : is;
+                });
+            }
+
+            // Fallback to localStorage for legacy data
             const savedServicesJSON = localStorage.getItem('echo-services');
             if (savedServicesJSON) {
                 const savedServices = JSON.parse(savedServicesJSON);
@@ -495,6 +516,25 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
         setModelProviders(prev => prev.map(p => p.id === providerId ? { ...p, enabled: !p.enabled } : p));
     };
 
+    const [persistence, setPersistence] = useState<PersistenceSettings>(() => {
+        try {
+            const saved = localStorage.getItem('echo-persistence-settings');
+            if (saved) return JSON.parse(saved);
+        } catch (e) { console.error(e); }
+        return { mode: MemoryMode.LOCAL, isCloudConnected: false };
+    });
+
+    useEffect(() => {
+        localStorage.setItem('echo-persistence-settings', JSON.stringify(persistence));
+    }, [persistence]);
+
+    const handleToggleMemoryMode = () => {
+        setPersistence(prev => ({
+            ...prev,
+            mode: prev.mode === MemoryMode.LOCAL ? MemoryMode.CLOUD : MemoryMode.LOCAL
+        }));
+    };
+
     return (
         <>
             <motion.div
@@ -528,6 +568,29 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                 </div>
                             </div>
                         </Section>
+
+                        <Section title="Memory & Persistence" icon={<DatabaseIcon className="w-5 h-5" />}>
+                            <div className="bg-black/5 dark:bg-white/5 p-4 rounded-xl border border-black/10 dark:border-white/10">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <p className="text-sm font-bold text-zinc-800 dark:text-white">Memory Storage Mode</p>
+                                        <p className="text-[10px] text-gray-500 uppercase tracking-tighter">Current: {persistence.mode}</p>
+                                    </div>
+                                    <button 
+                                        onClick={handleToggleMemoryMode}
+                                        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${persistence.mode === MemoryMode.LOCAL ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600' : 'bg-cyan-500 text-white shadow-[0_0_12px_rgba(6,182,212,0.4)]'}`}
+                                    >
+                                        Switch to {persistence.mode === MemoryMode.LOCAL ? 'Cloud' : 'Local'}
+                                    </button>
+                                </div>
+                                <div className="text-[11px] text-gray-500 leading-relaxed italic">
+                                    {persistence.mode === MemoryMode.LOCAL 
+                                        ? "Local mode stores your agent's memories and playbooks privately in your browser's encrypted storage." 
+                                        : "Cloud mode uses Firebase Firestore to sync your agent's brain across all your devices."}
+                                </div>
+                            </div>
+                        </Section>
+
                         
                         <Section title="System Instructions" icon={<CommandLineIcon className="w-5 h-5" />}>
                             <textarea

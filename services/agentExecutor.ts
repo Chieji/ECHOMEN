@@ -1,4 +1,4 @@
-import { Task, LogEntry, SubStep, ToolCall, Artifact, CustomAgent, ExecutionError } from '../types';
+import { Task, LogEntry, SubStep, ToolCall, Artifact, CustomAgent, ExecutionError, MemoryMode, PersistenceSettings } from '../types';
 import { determineNextStep } from './planner';
 import { availableTools } from './tools';
 
@@ -34,11 +34,30 @@ export class AgentExecutor {
         this.callbacks = callbacks;
     }
 
+    private getMemoryMode(): MemoryMode {
+        try {
+            const saved = localStorage.getItem('echo-persistence-settings');
+            if (saved) {
+                const settings = JSON.parse(saved) as PersistenceSettings;
+                return settings.mode;
+            }
+        } catch (e) {
+            console.error("Failed to read memory mode, defaulting to LOCAL", e);
+        }
+        return MemoryMode.LOCAL;
+    }
+
     public async run(initialTasks: Task[], prompt: string, initialArtifacts: Artifact[]) {
         this.isStopped = false;
         this.tasks = [...initialTasks];
         this.currentArtifacts = [...initialArtifacts];
         this.llmCallCount = 0;
+
+        const memoryMode = this.getMemoryMode();
+        this.callbacks.onLog({ 
+            status: 'INFO', 
+            message: `[System] Agent initialized in ${memoryMode} memory mode.` 
+        });
 
         const activePromises = new Map<string, Promise<boolean>>();
 
@@ -286,8 +305,10 @@ export class AgentExecutor {
             if (toolCall.name === 'create_and_delegate_task_to_new_agent') {
                 const { agent_name, agent_instructions, task_description, agent_icon } = toolCall.args;
                 
+                // Real implementation: Create the custom agent and task, then push to the executor's state
+                const newAgentId = `agent-spawn-${Date.now()}`;
                 const newAgent: CustomAgent = {
-                    id: `agent-spawn-${Date.now()}`,
+                    id: newAgentId,
                     name: agent_name,
                     instructions: agent_instructions,
                     icon: agent_icon || 'Brain',
@@ -295,49 +316,82 @@ export class AgentExecutor {
                     enabled: true,
                     description: `Spawned by God Mode for: ${task.title}`
                 };
+
+                // Notify UI to add the new agent
                 this.callbacks.onAgentCreated(newAgent);
 
                 const newTask: Task = {
                     id: `task-sub-${Date.now()}`,
-                    title: `Delegated: ${agent_name}`,
+                    title: `Delegated Task: ${agent_name}`,
                     details: task_description,
                     status: 'Queued',
                     agent: { role: 'Executor', name: newAgent.name },
                     estimatedTime: '~5m',
-                    dependencies: [],
+                    dependencies: [], // Sub-tasks usually don't have dependencies within the parent's context
                     delegatorTaskId: task.id,
                     logs: [],
                     reviewHistory: [],
                     retryCount: 0,
                     maxRetries: 3,
+                    subSteps: []
                 };
 
-                const currentSubStep: SubStep = { thought, toolCall, observation: `Paused to delegate task.` };
+                const currentSubStep: SubStep = { 
+                    thought, 
+                    toolCall, 
+                    observation: `Task delegated to specialist agent '${agent_name}'. God Mode is now in 'Delegating' status, waiting for results.` 
+                };
                 subSteps.push(currentSubStep);
 
+                // Update parent task to 'Delegating' and wait
                 this.updateTask(task, { status: 'Delegating', subSteps: [...subSteps] });
                 
+                // Add the new task to the queue and re-trigger the executor loop
                 this.tasks.push(newTask);
                 this.callbacks.onTasksUpdate([...this.tasks]);
-                this.callbacks.onLog({ status: 'INFO', message: `[God Mode] Pausing and delegating task to new agent '${newAgent.name}'.` });
+                this.callbacks.onLog({ 
+                    status: 'INFO', 
+                    message: `[God Mode] 🚀 Spawning sub-agent '${agent_name}' to handle: "${task_description}"` 
+                });
                 
+                // The main run() loop will pick up this new 'Queued' task in the next iteration.
                 return; 
             }
 
             if (toolCall.name === 'createArtifact') {
-                const newArtifactData = {
+                const { title, type, content } = toolCall.args;
+                
+                // Real implementation: Create the artifact object and persist to filesystem
+                const newArtifactData: Omit<Artifact, 'id' | 'createdAt'> = {
                     taskId: task.id,
-                    title: toolCall.args.title,
-                    type: toolCall.args.type,
-                    content: toolCall.args.content
+                    title: title,
+                    type: type,
+                    content: content
                 };
+
+                // Notify UI to add to the artifacts panel
                 this.callbacks.onArtifactCreated(newArtifactData);
-                 this.currentArtifacts.push({
+
+                // Persist the artifact to the outputs/ directory as a file
+                const fileExtension = type === 'code' ? 'txt' : (type === 'markdown' ? 'md' : 'json');
+                const safeTitle = title.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                const artifactPath = `./outputs/artifact_${safeTitle}_${Date.now()}.${fileExtension}`;
+                
+                try {
+                    await availableTools.writeFile({ path: artifactPath, content: content });
+                    observation = `Artifact "${title}" created successfully and saved to ${artifactPath}.`;
+                    this.callbacks.onLog({ status: 'SUCCESS', message: `[Executor] ${observation}` });
+                } catch (error) {
+                    const writeError = error instanceof Error ? error.message : String(error);
+                    observation = `Artifact created in memory, but failed to save to disk: ${writeError}`;
+                    this.callbacks.onLog({ status: 'WARN', message: `[Executor] ${observation}` });
+                }
+
+                this.currentArtifacts.push({
                     ...newArtifactData,
                     id: `artifact-${Date.now()}`,
                     createdAt: new Date().toISOString()
                 });
-                observation = `Artifact "${toolCall.args.title}" created successfully.`;
             } else if (toolCall.name === 'executeCode') {
                 const { language, code } = toolCall.args;
                 try {

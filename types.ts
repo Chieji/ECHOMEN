@@ -5,6 +5,16 @@ export enum AgentMode {
     CHAT = 'CHAT',
 }
 
+export enum MemoryMode {
+    LOCAL = 'LOCAL',
+    CLOUD = 'CLOUD',
+}
+
+export interface PersistenceSettings {
+    mode: MemoryMode;
+    isCloudConnected: boolean;
+}
+
 export interface SessionStats {
     totalTokensUsed: number;
 }

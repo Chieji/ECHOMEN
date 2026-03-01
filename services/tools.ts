@@ -1,19 +1,21 @@
 import { FunctionDeclaration, Type } from "@google/genai";
 import { Service } from '../types';
+import { getSecureItem, setSecureItem, isSecureContext } from '../lib/secureStorage';
+import { saveMemory, retrieveMemory, deleteMemory } from '../lib/firebase_manager';
 
-const BACKEND_URL = 'http://localhost:3001/execute-tool';
+const BACKEND_URL = import.meta.env.VITE_CLOUD_ENGINE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/execute-tool';
 
 // --- Helper Functions ---
 
 /**
- * A centralized function to securely call the backend execution engine.
+ * A centralized function to securely call the ECHO Cloud Execution Engine.
  * @param toolName The name of the tool to execute.
  * @param args The arguments for the tool.
- * @returns The result from the backend.
- * @throws An error if the backend call fails.
+ * @returns The result from the engine.
  */
 const callBackendTool = async (toolName: string, args: object): Promise<any> => {
     try {
+        console.log(`[ECHO Cloud] Executing tool '${toolName}' via ${BACKEND_URL}`);
         const response = await fetch(BACKEND_URL, {
             method: 'POST',
             headers: {
@@ -24,23 +26,32 @@ const callBackendTool = async (toolName: string, args: object): Promise<any> => 
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error || `Backend error: ${response.statusText}`);
+            throw new Error(errorData.error || `Engine error: ${response.statusText}`);
         }
 
         const result = await response.json();
         return result.result;
     } catch (error) {
-        console.error(`Error calling backend for tool '${toolName}':`, error);
+        console.error(`Error calling engine for tool '${toolName}':`, error);
         if (error instanceof Error) {
-            throw new Error(`Failed to execute '${toolName}': ${error.message}. Is the ECHO Execution Engine running?`);
+            throw new Error(`Failed to execute '${toolName}': ${error.message}. Is the ECHO Cloud Engine online?`);
         }
         throw new Error(`An unknown error occurred while executing '${toolName}'.`);
     }
 };
 
 
-const checkAuth = (serviceId: string): boolean => {
+const checkAuth = async (serviceId: string): Promise<boolean> => {
     try {
+        // Try secure storage first
+        const secureServices = await getSecureItem('echo-services');
+        if (secureServices) {
+            const services: Partial<Service>[] = JSON.parse(secureServices);
+            const service = services.find(s => s.id === serviceId);
+            if (service) return service?.status === 'Connected';
+        }
+
+        // Fallback to localStorage for legacy data (non-credentials)
         const savedServicesJSON = localStorage.getItem('echo-services');
         if (savedServicesJSON) {
             const services: Partial<Service>[] = JSON.parse(savedServicesJSON);
@@ -53,12 +64,13 @@ const checkAuth = (serviceId: string): boolean => {
     return false;
 }
 
-const getSandboxToolRunner = (operation: string, args: object) => {
-    if (checkAuth('daytona')) {
+const getSandboxToolRunner = async (operation: string, args: object) => {
+    const daytonaAuth = await checkAuth('daytona');
+    if (daytonaAuth) {
         return callBackendTool(`daytona_${operation}`, args);
     }
-    if (checkAuth('codesandbox')) {
-        // Here you could add a log that it's using the fallback
+    const codesandboxAuth = await checkAuth('codesandbox');
+    if (codesandboxAuth) {
         return callBackendTool(`codesandbox_${operation}`, args);
     }
     throw new Error("No sandbox environment connected. Please connect Daytona or CodeSandbox in settings to manage files and execute commands.");
@@ -86,13 +98,82 @@ const executeCode = async (language: 'javascript', code: string): Promise<string
         return Promise.reject(new Error(`Unsupported language: ${language}. Only 'javascript' is available in the browser sandbox. For other languages, write to a file and use 'executeShellCommand'.`));
     }
 
-    // This tool remains client-side as it's for sandboxed web snippets.
+    // Security: Define dangerous patterns to block
+    const dangerousPatterns = [
+        /fetch\s*\(/i,
+        /XMLHttpRequest/i,
+        /import\s*\(/i,
+        /eval\s*\(/i,
+        /Function\s*\(/i,
+        /document\s*\./i,
+        /window\s*\./i,
+        /localStorage/i,
+        /sessionStorage/i,
+        /cookie/i,
+        /navigator\s*\./i,
+        /location\s*\./i,
+        /worker/i,
+        /importScripts/i,
+    ];
+
+    for (const pattern of dangerousPatterns) {
+        if (pattern.test(code)) {
+            return Promise.reject(new Error(`Code contains potentially dangerous operation: ${pattern.source}. For security, network access, DOM manipulation, and storage operations are not allowed in sandboxed code execution.`));
+        }
+    }
+
+    // Use Function constructor instead of eval for better isolation
+    // Wrap in IIFE to allow return statements
+    const wrappedCode = `
+        "use strict";
+        return (function() {
+            ${code}
+        })();
+    `;
+
     return new Promise((resolve, reject) => {
         const workerCode = `
             self.onmessage = function(e) {
                 try {
-                    const result = eval(e.data);
-                    self.postMessage({ success: true, result: result });
+                    const SafeMath = {
+                        abs: Math.abs, acos: Math.acos, acosh: Math.acosh,
+                        asin: Math.asin, asinh: Math.asinh, atan: Math.atan,
+                        atanh: Math.atanh, atan2: Math.atan2, cbrt: Math.cbrt,
+                        ceil: Math.ceil, clz32: Math.clz32, cos: Math.cos,
+                        cosh: Math.cosh, exp: Math.exp, expm1: Math.expm1,
+                        floor: Math.floor, fround: Math.fround, hypot: Math.hypot,
+                        imul: Math.imul, log: Math.log, log10: Math.log10,
+                        log1p: Math.log1p, log2: Math.log2, max: Math.max,
+                        min: Math.min, pow: Math.pow, random: Math.random,
+                        round: Math.round, sign: Math.sign, sin: Math.sin,
+                        sinh: Math.sinh, sqrt: Math.sqrt, tan: Math.tanh,
+                        tanh: Math.tanh, trunc: Math.trunc,
+                        PI: Math.PI, E: Math.E, LN10: Math.LN10,
+                        LOG10E: Math.LOG10E, SQRT1_2: Math.SQRT1_2, SQRT2: Math.SQRT2
+                    };
+                    const safeConsole = {
+                        log: function() { self.postMessage({ type: 'log', args: Array.from(arguments) }); },
+                        error: function() { self.postMessage({ type: 'error', args: Array.from(arguments) }); },
+                        warn: function() { self.postMessage({ type: 'warn', args: Array.from(arguments) }); },
+                        info: function() { self.postMessage({ type: 'info', args: Array.from(arguments) }); }
+                    };
+                    const SafeJSON = JSON;
+                    const SafeDate = Date;
+                    const SafeArray = Array;
+                    const SafeObject = Object;
+                    const SafeString = String;
+                    const SafeNumber = Number;
+                    const SafeBoolean = Boolean;
+                    const SafeRegExp = RegExp;
+                    const SafeMap = Map;
+                    const SafeSet = Set;
+                    const SafeWeakMap = WeakMap;
+                    const SafeWeakSet = WeakSet;
+                    const SafePromise = Promise;
+
+                    const fn = new Function('Math', 'console', 'JSON', 'Date', 'Array', 'Object', 'String', 'Number', 'Boolean', 'RegExp', 'Map', 'Set', 'WeakMap', 'WeakSet', 'Promise', e.data);
+                    const result = fn(SafeMath, safeConsole, SafeJSON, SafeDate, SafeArray, SafeObject, SafeString, SafeNumber, SafeBoolean, SafeRegExp, SafeMap, SafeSet, SafeWeakMap, SafeWeakSet, SafePromise);
+                    self.postMessage({ success: true, result: result !== undefined ? SafeJSON.stringify(result, null, 2) : 'undefined' });
                 } catch (error) {
                     self.postMessage({ success: false, error: error.message });
                 }
@@ -110,7 +191,7 @@ const executeCode = async (language: 'javascript', code: string): Promise<string
             clearTimeout(timeout);
             worker.terminate();
             if (e.data.success) {
-                resolve(JSON.stringify(e.data.result, null, 2) || 'undefined');
+                resolve(e.data.result);
             } else {
                 reject(new Error(e.data.error));
             }
@@ -122,34 +203,39 @@ const executeCode = async (language: 'javascript', code: string): Promise<string
             reject(new Error(e.message));
         };
 
-        worker.postMessage(code);
+        worker.postMessage(wrappedCode);
     });
 };
 
 // --- GitHub Tools ---
 
 const github_create_repo = async (name: string, description: string, is_private: boolean): Promise<any> => {
-    if (!checkAuth('github')) throw new Error("GitHub service not connected.");
+    const auth = await checkAuth('github');
+    if (!auth) throw new Error("GitHub service not connected.");
     return callBackendTool('github_create_repo', { name, description, is_private });
 };
 
 const github_get_pr_details = async (pr_url: string): Promise<any> => {
-    if (!checkAuth('github')) throw new Error("GitHub service not connected.");
+    const auth = await checkAuth('github');
+    if (!auth) throw new Error("GitHub service not connected.");
     return callBackendTool('github_get_pr_details', { pr_url });
 };
 
 const github_post_pr_comment = async (pr_url: string, comment: string): Promise<any> => {
-    if (!checkAuth('github')) throw new Error("GitHub service not connected.");
+    const auth = await checkAuth('github');
+    if (!auth) throw new Error("GitHub service not connected.");
     return callBackendTool('github_post_pr_comment', { pr_url, comment });
 };
 
 const github_merge_pr = async (pr_url: string, method: 'merge' | 'squash' | 'rebase'): Promise<any> => {
-    if (!checkAuth('github')) throw new Error("GitHub service not connected.");
+    const auth = await checkAuth('github');
+    if (!auth) throw new Error("GitHub service not connected.");
     return callBackendTool('github_merge_pr', { pr_url, method });
 };
 
 const github_create_file_in_repo = async (repo_name: string, path: string, content: string, commit_message: string): Promise<any> => {
-    if (!checkAuth('github')) throw new Error("GitHub service not connected.");
+    const auth = await checkAuth('github');
+    if (!auth) throw new Error("GitHub service not connected.");
     return callBackendTool('github_create_file_in_repo', { repo_name, path, content, commit_message });
 };
 
@@ -157,12 +243,14 @@ const github_create_file_in_repo = async (repo_name: string, path: string, conte
 // --- Memory Tools (Supabase Integration) ---
 
 const memory_save = async (key: string, value: string, tags: string[]): Promise<string> => {
-    if (!checkAuth('supabase')) throw new Error("Supabase service not connected for memory operations.");
+    const auth = await checkAuth('supabase');
+    if (!auth) throw new Error("Supabase service not connected for memory operations.");
     return callBackendTool('memory_save', { key, value, tags });
 };
 
 const memory_retrieve = async (key?: string, tags?: string[]): Promise<string> => {
-    if (!checkAuth('supabase')) throw new Error("Supabase service not connected for memory operations.");
+    const auth = await checkAuth('supabase');
+    if (!auth) throw new Error("Supabase service not connected for memory operations.");
     if (!key && (!tags || tags.length === 0)) {
         throw new Error("Must provide either a 'key' or 'tags' to retrieve memory.");
     }
@@ -170,7 +258,8 @@ const memory_retrieve = async (key?: string, tags?: string[]): Promise<string> =
 };
 
 const memory_delete = async (key: string): Promise<string> => {
-    if (!checkAuth('supabase')) throw new Error("Supabase service not connected for memory operations.");
+    const auth = await checkAuth('supabase');
+    if (!auth) throw new Error("Supabase service not connected for memory operations.");
     return callBackendTool('memory_delete', { key });
 };
 
@@ -245,10 +334,10 @@ export const toolDeclarations: FunctionDeclaration[] = [
     },
     {
         name: 'executeShellCommand',
-        description: 'Executes a command in a real shell inside the connected sandbox environment. This is a powerful tool for using system commands, developer tools, and scripts. Examples: `npm install`, `git clone <url>`, `docker build -t my-app .`, `python my_script.py`.',
+        description: 'Executes a command in a real shell inside the connected sandbox environment (or the local ECHO engine). This is a powerful tool for using system commands, developer tools, and scripts. \n\nExamples:\n- `npm install` (to install project dependencies)\n- `ls -R .` (to recursively list all files and subdirectories)\n- `git clone <url>` (to clone a repository)\n- `python3 my_script.py` (to run a Python script)\n- `curl -I https://www.google.com` (to test network connectivity)',
         parameters: {
             type: Type.OBJECT, properties: { 
-                command: { type: Type.STRING, description: 'The shell command to execute.' } 
+                command: { type: Type.STRING, description: 'The exact shell command to execute.' } 
             }, required: ['command']
         }
     },
@@ -327,18 +416,18 @@ export const toolDeclarations: FunctionDeclaration[] = [
     },
     {
         name: 'memory_save',
-        description: 'Stores a piece of structured information or a key-value pair into the agent\'s long-term memory via Supabase. Use this to persist learned information, user preferences, or project details.',
+        description: 'Stores a piece of structured information or a key-value pair into the agent\'s long-term memory via Supabase (or Firebase). Use this to persist learned information, user preferences, or project details.\n\nExample:\n- `key: "user_project_goals", value: "Build a React app that beats OpenClaw", tags: ["project", "goals"]`',
         parameters: {
             type: Type.OBJECT, properties: {
-                key: { type: Type.STRING, description: 'A unique identifier for the memory item (e.g., "user_project_goals").' },
+                key: { type: Type.STRING, description: 'A unique identifier for the memory item.' },
                 value: { type: Type.STRING, description: 'The content to be stored (e.g., a JSON string or a long text block).' },
-                tags: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'An array of strings for categorization (e.g., ["project", "config", "user_pref"]).' }
+                tags: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'An array of strings for categorization.' }
             }, required: ['key', 'value', 'tags']
         }
     },
     {
         name: 'memory_retrieve',
-        description: 'Retrieves a memory item based on its key or a set of tags from Supabase. At least one of key or tags must be provided.',
+        description: 'Retrieves a memory item based on its key or a set of tags. At least one of key or tags must be provided.\n\nExample:\n- `key: "user_project_goals"`\n- `tags: ["project"]` (to find all project-related memories)',
         parameters: {
             type: Type.OBJECT, properties: {
                 key: { type: Type.STRING, description: 'The unique identifier of the memory item to retrieve.' },
