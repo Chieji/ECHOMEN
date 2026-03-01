@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CloseIcon } from './icons/CloseIcon';
 import { GithubIcon } from './icons/GithubIcon';
 import { GoogleIcon } from './icons/GoogleIcon';
-// FIX: Service type is now imported from types.ts, not here.
 import { ServiceConnectionModal } from './ServiceConnectionModal';
 import { OpenAiIcon } from './icons/OpenAiIcon';
 import { AnthropicIcon } from './icons/AnthropicIcon';
@@ -13,7 +12,6 @@ import { CohereIcon } from './icons/CohereIcon';
 import { SupabaseIcon } from './icons/SupabaseIcon';
 import { GenericApiIcon } from './icons/GenericApiIcon';
 import { AgentCreationModal } from './AgentCreationModal';
-// FIX: Added Service to the import from the central types file.
 import { CustomAgent, Playbook, AgentPreferences, AgentRole, TodoItem, Service, ModelProviderConfig, MemoryMode, PersistenceSettings } from '../types';
 import { PencilIcon } from './icons/PencilIcon';
 import { TrashIcon } from './icons/TrashIcon';
@@ -42,7 +40,6 @@ import { CodeSandboxIcon } from './icons/CodeSandboxIcon';
 import { ServerIcon } from './icons/ServerIcon';
 import { CloudIcon } from './icons/CloudIcon';
 import { DatabaseIcon } from './icons/DatabaseIcon';
-// FIX: Import missing ChevronDownIcon.
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import { setSecureItem, getSecureItem, isSecureContext, migrateCredentials, removeSecureItem } from '../lib/secureStorage';
 
@@ -225,33 +222,38 @@ const defaultAgentModels = [
 ];
 
 export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> = ({ onClose, theme, setTheme }) => {
-    const [services, setServices] = useState<Service[]>(() => {
-        try {
-            // First try secure storage for credentials
-            const secureServices = getSecureItem('echo-services');
-            if (secureServices) {
-                const savedServices = JSON.parse(secureServices);
-                return initialServices.map(is => {
-                    const saved = savedServices.find((ss: Service) => ss.id === is.id);
-                    return saved ? { ...is, status: saved.status, inputs: saved.inputs || is.inputs } : is;
-                });
-            }
+    const [services, setServices] = useState<Service[]>(initialServices);
+    const [modelProviders, setModelProviders] = useState<ModelProviderConfig[]>(initialModelProviders);
 
-            // Fallback to localStorage for legacy data
-            const savedServicesJSON = localStorage.getItem('echo-services');
-            if (savedServicesJSON) {
-                const savedServices = JSON.parse(savedServicesJSON);
-                // Merge with initialServices to ensure all services are present, preserving status
-                return initialServices.map(is => {
-                    const saved = savedServices.find((ss: Service) => ss.id === is.id);
-                    return saved ? { ...is, status: saved.status } : is;
-                });
+    // Async data loading for secure credentials
+    useEffect(() => {
+        const loadSecureData = async () => {
+            try {
+                // First try secure storage for credentials
+                const secureServicesStr = await getSecureItem('echo-services');
+                if (secureServicesStr) {
+                    const savedServices = JSON.parse(secureServicesStr);
+                    setServices(prev => prev.map(is => {
+                        const saved = savedServices.find((ss: Service) => ss.id === is.id);
+                        return saved ? { ...is, status: saved.status, inputs: saved.inputs || is.inputs } : is;
+                    }));
+                } else {
+                    // Fallback to localStorage for legacy data
+                    const savedServicesJSON = localStorage.getItem('echo-services');
+                    if (savedServicesJSON) {
+                        const savedServices = JSON.parse(savedServicesJSON);
+                        setServices(prev => prev.map(is => {
+                            const saved = savedServices.find((ss: Service) => ss.id === is.id);
+                            return saved ? { ...is, status: saved.status } : is;
+                        }));
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to load secure services:", error);
             }
-        } catch (error) {
-            console.error("Failed to parse services from localStorage", error);
-        }
-        return initialServices;
-    });
+        };
+        loadSecureData();
+    }, []);
 
     const [selectedService, setSelectedService] = useState<Service | null>(null);
     const [systemInstruction, setSystemInstruction] = useState<string>("You are ECHO, an autonomous AI agent. You are direct, efficient, and action-oriented. Your goal is to execute tasks with ruthless precision.");
@@ -263,22 +265,11 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
     const [isModelModalOpen, setIsModelModalOpen] = useState(false);
     const [editingModel, setEditingModel] = useState<ModelProviderConfig | null>(null);
 
-    const [modelProviders, setModelProviders] = useState<ModelProviderConfig[]>(() => {
-        try {
-            const saved = localStorage.getItem('echo-model-providers');
-            if (saved) {
-                return JSON.parse(saved);
-            }
-        } catch (e) { console.error(e); }
-        return initialModelProviders;
-    });
-    
     const [agents, setAgents] = useState<CustomAgent[]>(() => {
         let savedAgents: CustomAgent[] = [];
         try {
             const savedAgentsJSON = localStorage.getItem('echo-custom-agents');
             if (savedAgentsJSON) {
-                // FIX: Explicitly cast the result of JSON.parse to CustomAgent[] to fix type error.
                 savedAgents = JSON.parse(savedAgentsJSON) as CustomAgent[];
             } else {
                 savedAgents = [{ id: 'agent-1', name: 'PR Review Agent', instructions: 'You are an expert code reviewer. Analyze the provided code diff and provide concise, actionable feedback focusing on best practices, potential bugs, and clarity.', icon: 'Pencil', description: 'Specializes in GitHub PR reviews.' }];
@@ -321,7 +312,6 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
         try {
             const savedPlaybooksJSON = localStorage.getItem('echo-playbooks');
             if (savedPlaybooksJSON) {
-                // FIX: Use a type guard to safely parse playbooks from localStorage.
                 const parsed = JSON.parse(savedPlaybooksJSON);
                 if (Array.isArray(parsed)) {
                     setPlaybooks(parsed as Playbook[]);
@@ -358,7 +348,6 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
     
     useEffect(() => {
         try {
-            // Persist only the ID and status of services to avoid storing sensitive info
             const servicesToSave = services.map(({ id, status }) => ({ id, status }));
             localStorage.setItem('echo-services', JSON.stringify(servicesToSave));
         } catch(error) {
@@ -409,7 +398,6 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
 
     const handleSaveService = (serviceId: string, values: { [key: string]: string }) => {
         console.log(`Saving service ${serviceId}`, values);
-        // Here you would typically encrypt and save the credentials
         setServices(prev => prev.map(s => s.id === serviceId ? { ...s, status: 'Connected' } : s));
         setSelectedService(null);
     };

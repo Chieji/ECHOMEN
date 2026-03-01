@@ -55,9 +55,17 @@ discoverMCPs();
 setInterval(discoverMCPs, 60000);
 
 /**
- * Executes a shell command and returns the output.
+ * Executes a shell command with basic sanitization.
  */
 const executeShellCommand = (command) => {
+    // Security Guard: Prevent escaping current context or chaining dangerous commands
+    const forbiddenPatterns = [';', '&&', '||', '|', '>', '<', '..', '~'];
+    const containsForbidden = forbiddenPatterns.some(pattern => command.includes(pattern));
+    
+    if (containsForbidden) {
+        return Promise.reject(new Error("Security Error: Potential command injection detected. Command contains forbidden characters."));
+    }
+
     return new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
             if (error) {

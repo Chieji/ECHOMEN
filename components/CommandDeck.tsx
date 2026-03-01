@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CommandCenter } from './CommandCenter';
 import { ExecutionDashboard } from './ExecutionDashboard';
@@ -10,8 +10,7 @@ import { Squares2X2Icon } from './icons/Squares2X2Icon';
 import { CommandLineIcon } from './icons/CommandLineIcon';
 import { ArchiveBoxIcon } from './icons/ArchiveBoxIcon';
 import { ClockIcon } from './icons/ClockIcon';
-
-import { CommandDeck } from './components/CommandDeck';
+import { BrainIcon } from './icons/BrainIcon';
 import { IntelligenceSidebar } from './IntelligenceSidebar';
 import { NoteEditor } from './NoteEditor';
 import { buildBacklinkMap, Connection } from '../lib/linkParser';
