@@ -16,7 +16,6 @@ import { GoogleGenAI } from "@google/genai";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import Groq from "groq-sdk";
-import Cohere from "cohere-ai";
 import { getSecureItem } from "./secureStorage";
 import { Service } from "../types";
 
@@ -294,7 +293,7 @@ export class AIBridge {
             return result;
         } catch (error) {
             console.error(`[AI Bridge] All providers failed, trying fallback chain`);
-            return await this.fallbackChain(providerOrTaskType, model, systemPrompt, userPrompt, tools);
+            return await this.fallbackChain(model, systemPrompt, userPrompt, tools);
         }
     }
 
@@ -334,7 +333,6 @@ export class AIBridge {
     }
 
     private static async fallbackChain(
-        providerOrTaskType: AIProvider | TaskType,
         model: string | null,
         systemPrompt: string,
         userPrompt: string,
@@ -659,7 +657,6 @@ export class AIBridge {
         if (!apiKey) throw new Error("Hugging Face API key not configured");
 
         const modelId = model || "meta-llama/Llama-3.3-70B-Instruct";
-        const prompt = `<|system|>\n${system}</s>\n<|user|>\n${user}</s>\n<|assistant|>`;
 
         const response = await fetch(`https://api-inference.huggingface.co/models/${modelId}/v1/chat/completions`, {
             method: "POST",

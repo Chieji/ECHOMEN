@@ -5,9 +5,9 @@
  * memory lifecycle, and validated decision pipeline.
  */
 
-import { MemoryManager, MemoryScope, WorkingMemory } from './MemoryManager';
-import { ToolRegistry, Tool, ToolResult, Context } from './ToolRegistry';
-import { DecisionPipeline, Decision, Intent, ActionOption } from './DecisionPipeline';
+import { MemoryManager } from './MemoryManager';
+import { ToolRegistry, ToolResult, Context } from './ToolRegistry';
+import { DecisionPipeline, Decision } from './DecisionPipeline';
 
 // ============================================================================
 // State Machine
@@ -222,15 +222,27 @@ export class ExecutionLoop {
   }
   
   private async act(decision: Decision): Promise<Observation> {
+    const tool = this.toolRegistry.get(decision.tool.name);
+    if (!tool) {
+        throw new Error(`Tool ${decision.tool.name} not found`);
+    }
+
+    const context: Context = {
+        sessionId: `session_${Date.now()}`,
+        permissions: ['read', 'write', 'execute'],
+        resources: new Map(),
+    };
+
     // Validate preconditions
     const preconditionsMet = await this.toolRegistry.validatePreconditions(
-      decision.tool,
-      decision.args
+      tool,
+      decision.args,
+      context
     );
     
     if (!preconditionsMet) {
       // Request human approval if needed
-      if (decision.tool.requiresApproval) {
+      if (tool.requiresApproval) {
         const approved = await this.requestHumanApproval(decision);
         if (!approved) {
           throw new Error('Action not approved by human');
@@ -239,14 +251,14 @@ export class ExecutionLoop {
     }
     
     // Execute tool with timeout
-    const timeout = decision.tool.timeout || 60000;
+    const timeout = tool.timeout || 60000;
     const result = await Promise.race([
-      this.toolRegistry.execute(decision.tool, decision.args),
+      this.toolRegistry.execute(tool.name, decision.args, context),
       this.timeout(timeout)
     ]);
     
     return {
-      tool: decision.tool.name,
+      tool: tool.name,
       args: decision.args,
       result,
       success: result.success,
@@ -280,10 +292,7 @@ export class ExecutionLoop {
     perception: Perception
   ): Promise<LoopResult> {
     // Evaluate outcome
-    const goalAchieved = this.evaluateGoalAchievement(
-      perception.goal,
-      feedback
-    );
+    const goalAchieved = this.evaluateGoalAchievement(feedback);
     
     // Extract learning
     if (feedback.success) {
@@ -300,7 +309,7 @@ export class ExecutionLoop {
         goalType: perception.goal.type,
         actions: [decision.tool.name],
         failure: feedback.error,
-        lesson: this.extractLesson(feedback.error),
+        lesson: this.extractLesson(feedback.error || 'Unknown error'),
         timestamp: Date.now()
       });
     }
@@ -336,12 +345,26 @@ export class ExecutionLoop {
       if (recoveryAction === 'retry') {
         await this.transitionTo('REASON');
         // Retry from reason state
-        return await this.executeLoop();
+        const result = await this.executeLoop();
+        return {
+            success: result.goalAchieved,
+            output: result.output,
+            actions: this.actionCount,
+            duration: Date.now() - this.startTime,
+            learning: result.learning
+        };
       } else if (recoveryAction === 'fallback') {
         // Use safe default
         await this.memory.write('working', 'usingFallback', true);
         await this.transitionTo('REASON');
-        return await this.executeLoop();
+        const result = await this.executeLoop();
+        return {
+            success: result.goalAchieved,
+            output: result.output,
+            actions: this.actionCount,
+            duration: Date.now() - this.startTime,
+            learning: result.learning
+        };
       }
     } catch (recoveryError) {
       // Recovery failed - abort
@@ -413,7 +436,7 @@ export class ExecutionLoop {
     });
   }
   
-  private evaluateGoalAchievement(goal: Goal, feedback: Feedback): boolean {
+  private evaluateGoalAchievement(feedback: Feedback): boolean {
     // Simple heuristic - can be made more sophisticated
     return feedback.success;
   }

@@ -109,7 +109,7 @@ export class MemoryManager {
     
     // Remove from indexes
     const scopeIndex = this.indexes.get(scope)!;
-    for (const [indexKey, keys] of scopeIndex.entries()) {
+    for (const [, keys] of scopeIndex.entries()) {
       const idx = keys.indexOf(key);
       if (idx !== -1) {
         keys.splice(idx, 1);
@@ -166,14 +166,14 @@ export class MemoryManager {
   // ============================================================================
   
   async cleanup(scope?: MemoryScope): Promise<void> {
-    const scopes = scope ? [scope] : ['working', 'shortterm', 'longterm', 'episodic'];
+    const scopes: MemoryScope[] = scope ? [scope] : ['working', 'shortterm', 'longterm', 'episodic'];
     
-    for (const scope of scopes) {
-      const scopeStorage = this.storage.get(scope)!;
+    for (const s of scopes) {
+      const scopeStorage = this.storage.get(s)!;
       
       for (const [key, entry] of scopeStorage.entries()) {
         if (this.isExpired(entry)) {
-          await this.delete(scope, key);
+          await this.delete(s, key);
         }
       }
     }
@@ -197,7 +197,7 @@ export class MemoryManager {
     // Group old entries by type
     const groups: Map<string, any[]> = new Map();
     
-    for (const [key, entry] of scopeStorage.entries()) {
+    for (const [, entry] of scopeStorage.entries()) {
       if (entry.timestamp < cutoff) {
         const type = this.extractType(entry.value);
         if (!groups.has(type)) {
@@ -329,6 +329,13 @@ export class MemoryManager {
     
     return usage;
   }
+
+  /**
+   * Internal access for helpers.
+   */
+  getScopeStorage(scope: MemoryScope): Map<string, MemoryEntry> {
+    return this.storage.get(scope)!;
+  }
 }
 
 // ============================================================================
@@ -362,6 +369,11 @@ export class WorkingMemory {
   }
   
   async getAll(): Promise<Map<string, any>> {
-    return this.memory.storage.get('working')!;
+    const storage = this.memory.getScopeStorage('working');
+    const result = new Map<string, any>();
+    for (const [key, entry] of storage.entries()) {
+        result.set(key, entry.value);
+    }
+    return result;
   }
 }

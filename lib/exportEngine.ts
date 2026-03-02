@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+// @ts-ignore
 import { saveAs } from 'file-saver'; // We'll assume this or use a basic link trigger
 import { Artifact, LogEntry } from '../types';
 

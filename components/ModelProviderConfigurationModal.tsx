@@ -32,7 +32,7 @@ export const ModelProviderConfigurationModal: React.FC<ModelProviderConfiguratio
     }, [providerConfig, isOpen]);
 
     const handleSave = () => {
-        if (!formData.config?.model_name.trim()) return;
+        if (!formData.config?.model_name?.trim()) return;
         onSave(formData as ModelProviderConfig);
     };
     
@@ -43,7 +43,10 @@ export const ModelProviderConfigurationModal: React.FC<ModelProviderConfiguratio
     const handleConfigChange = (field: string, value: any) => {
         setFormData(prev => ({
             ...prev,
-            config: { ...prev.config, [field]: value }
+            config: { 
+                ...(prev.config || { model_name: '' }), 
+                [field]: value 
+            } as ModelProviderConfig['config']
         }));
     };
 
@@ -67,7 +70,7 @@ export const ModelProviderConfigurationModal: React.FC<ModelProviderConfiguratio
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     >
                         <header className="flex-shrink-0 flex justify-between items-center mb-6 p-6 pb-0">
                             <div className="flex items-center gap-3">
@@ -83,17 +86,17 @@ export const ModelProviderConfigurationModal: React.FC<ModelProviderConfiguratio
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Provider</label>
-                                    <select value={formData.provider} onChange={(e) => handleChange('provider', e.target.value)} className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50">
-                                        <option>GEMINI</option>
-                                        <option>OLLAMA</option>
-                                        <option>HUGGING_FACE</option>
+                                    <select value={formData.provider} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleChange('provider', e.target.value)} className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50">
+                                        <option value="GEMINI">GEMINI</option>
+                                        <option value="OLLAMA">OLLAMA</option>
+                                        <option value="HUGGING_FACE">HUGGING_FACE</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Type</label>
-                                    <select value={formData.type} onChange={(e) => handleChange('type', e.target.value)} className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50">
-                                        <option>LOCAL</option>
-                                        <option>CLOUD</option>
+                                    <select value={formData.type} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleChange('type', e.target.value)} className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50">
+                                        <option value="LOCAL">LOCAL</option>
+                                        <option value="CLOUD">CLOUD</option>
                                     </select>
                                 </div>
                             </div>
@@ -103,7 +106,7 @@ export const ModelProviderConfigurationModal: React.FC<ModelProviderConfiguratio
                                 <input
                                     type="text"
                                     value={formData.config?.model_name || ''}
-                                    onChange={(e) => handleConfigChange('model_name', e.target.value)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleConfigChange('model_name', e.target.value)}
                                     placeholder="e.g., llama3:8b or gemini-2.5-flash"
                                     className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
                                 />
@@ -113,7 +116,7 @@ export const ModelProviderConfigurationModal: React.FC<ModelProviderConfiguratio
                                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Description</label>
                                 <textarea
                                     value={formData.description || ''}
-                                    onChange={(e) => handleChange('description', e.target.value)}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('description', e.target.value)}
                                     placeholder="A brief summary of the model's purpose."
                                     rows={2}
                                     className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
@@ -125,7 +128,7 @@ export const ModelProviderConfigurationModal: React.FC<ModelProviderConfiguratio
                                 <input
                                     type="text"
                                     value={formData.config?.api_key_env_var || ''}
-                                    onChange={(e) => handleConfigChange('api_key_env_var', e.target.value)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleConfigChange('api_key_env_var', e.target.value)}
                                     placeholder="e.g., GEMINI_API_KEY"
                                     className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
                                 />
@@ -135,7 +138,7 @@ export const ModelProviderConfigurationModal: React.FC<ModelProviderConfiguratio
                                 <input
                                     type="text"
                                     value={formData.config?.base_url || ''}
-                                    onChange={(e) => handleConfigChange('base_url', e.target.value)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleConfigChange('base_url', e.target.value)}
                                     placeholder="http://localhost:11434/api/generate"
                                     className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
                                 />
@@ -145,7 +148,7 @@ export const ModelProviderConfigurationModal: React.FC<ModelProviderConfiguratio
                                 <input
                                     type="text"
                                     value={formData.config?.endpoint_url || ''}
-                                    onChange={(e) => handleConfigChange('endpoint_url', e.target.value)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleConfigChange('endpoint_url', e.target.value)}
                                     placeholder="https://api-inference.huggingface.co/models/..."
                                     className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
                                 />

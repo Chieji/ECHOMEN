@@ -7,7 +7,7 @@ interface SystemStatusIndicatorProps {
 }
 
 export const SystemStatusIndicator: React.FC<SystemStatusIndicatorProps> = ({ tasks, agentStatus }) => {
-    const { statusText, statusColor, pulse, activeTaskCount } = useMemo(() => {
+    const { statusText, statusColor, pulse } = useMemo(() => {
         const activeTasks = tasks.filter(t => !['Done', 'Error'].includes(t.status)).length;
 
         switch (agentStatus) {

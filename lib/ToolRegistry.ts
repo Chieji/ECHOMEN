@@ -195,6 +195,7 @@ export class ToolRegistry {
   // ============================================================================
   
   async applyEffects(tool: Tool, result: ToolResult, context: Context): Promise<void> {
+    console.log(`[ToolRegistry] Applying effects for ${tool.name}, result success: ${result.success}`);
     for (const effect of tool.effects) {
       try {
         console.log(
@@ -221,8 +222,9 @@ export class ToolRegistry {
   }
   
   async rollback(tool: Tool, context: Context): Promise<void> {
+    console.log(`[ToolRegistry] Rolling back effects for ${tool.name} in context ${context.sessionId}`);
     // Rollback effects in reverse order
-    for (const effect of tool.effects.reverse()) {
+    for (const effect of [...tool.effects].reverse()) {
       if (effect.reversible && effect.rollback) {
         try {
           await effect.rollback();
@@ -316,9 +318,9 @@ export class ToolRegistry {
   // ============================================================================
   
   private async recoverPrecondition(
-    precondition: Precondition,
-    context: Context,
-    args: any
+    _precondition: Precondition,
+    _context: Context,
+    _args: any
   ): Promise<boolean> {
     // Placeholder for precondition recovery
     // Could involve requesting permissions, creating resources, etc.
@@ -373,7 +375,7 @@ interface ToolExecution {
 export const PreconditionFactory = {
   resourceExists: (resourcePath: string): Precondition => ({
     type: 'resource',
-    check: async (context, args) => {
+    check: async (context, _args) => {
       // Check if resource exists
       return context.resources.has(resourcePath);
     },
@@ -383,7 +385,7 @@ export const PreconditionFactory = {
   
   hasPermission: (permission: string): Precondition => ({
     type: 'permission',
-    check: async (context, args) => {
+    check: async (context, _args) => {
       return context.permissions.includes(permission);
     },
     message: `Missing permission: ${permission}`,
@@ -392,7 +394,7 @@ export const PreconditionFactory = {
   
   stateEquals: (key: string, value: any): Precondition => ({
     type: 'state',
-    check: async (context, args) => {
+    check: async (context, _args) => {
       return context.resources.get(key) === value;
     },
     message: `State ${key} does not equal ${value}`,
@@ -401,7 +403,7 @@ export const PreconditionFactory = {
   
   dataValid: (validator: (args: any) => boolean): Precondition => ({
     type: 'data',
-    check: async (context, args) => {
+    check: async (_context, args) => {
       return validator(args);
     },
     message: 'Data validation failed',

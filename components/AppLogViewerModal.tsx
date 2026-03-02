@@ -36,7 +36,7 @@ export const AppLogViewerModal: React.FC<AppLogViewerModalProps> = ({ app, isOpe
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e: any) => e.stopPropagation()}
                     >
                         <header className="flex justify-between items-center mb-4 flex-shrink-0">
                             <div className="flex items-center gap-3">

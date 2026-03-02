@@ -74,7 +74,7 @@ export const ServiceConnectionModal: React.FC<ServiceConnectionModalProps> = ({ 
     };
 
     const handleSave = () => {
-        if (isSaveDisabled) return;
+        if (!service || isSaveDisabled) return;
 
         let hasErrors = false;
         const newErrors: { [key: string]: string | null } = {};
@@ -98,8 +98,9 @@ export const ServiceConnectionModal: React.FC<ServiceConnectionModalProps> = ({ 
     };
 
     const handleDisconnect = () => {
+        if (!service) return;
         onDisconnect(service.id);
-    }
+    };
     
     if (!service) return null;
 
@@ -119,7 +120,7 @@ export const ServiceConnectionModal: React.FC<ServiceConnectionModalProps> = ({ 
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     >
                         <header className="flex justify-between items-center mb-6">
                             <div className="flex items-center gap-3">
@@ -151,7 +152,7 @@ export const ServiceConnectionModal: React.FC<ServiceConnectionModalProps> = ({ 
                                             type={input.type}
                                             id={input.id}
                                             value={formState[input.id] || ''}
-                                            onChange={(e) => handleInputChange(input.id, e.target.value)}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(input.id, e.target.value)}
                                             onBlur={() => handleBlur(input.id)}
                                             placeholder={input.placeholder}
                                             className={`w-full bg-black/40 border rounded-lg px-3 py-2 pl-8 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 transition-colors ${

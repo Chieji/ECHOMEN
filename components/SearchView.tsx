@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Index } from 'flexsearch';
 import { Artifact, LogEntry } from '../types';
@@ -56,7 +56,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ artifacts, logs, onSelec
     const index = useMemo(() => {
         const idx = new Index({
             tokenize: "forward",
-            optimize: true,
+            
             resolution: 9
         });
         
@@ -81,7 +81,7 @@ export const SearchView: React.FC<SearchViewProps> = ({ artifacts, logs, onSelec
                 <input 
                     autoFocus
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
+                    onChange={(e: any) => setQuery(e.target.value)}
                     placeholder="Search across ECHO's memory..."
                     className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00D4FF]/50 transition-all text-lg"
                 />

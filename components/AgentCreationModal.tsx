@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloseIcon } from './icons/CloseIcon';
-import { CustomAgent, ModelProviderConfig, ChildAgentTemplate } from '../types';
+import { CustomAgent, ModelProviderConfig } from '../types';
 import { AgentsIcon } from './icons/AgentsIcon';
 import { AgentIcon, PREDEFINED_ICONS } from './AgentIcon';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';

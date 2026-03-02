@@ -1,9 +1,8 @@
 import { FunctionDeclaration, Type } from "@google/genai";
-import { Service, ToolArguments, ToolResult } from '../types';
-import { getSecureItem, setSecureItem, isSecureContext } from '../lib/secureStorage';
+import { ToolArguments } from '../types';
 import { saveMemory, retrieveMemory, deleteMemory } from '../lib/firebase_manager';
 
-const BACKEND_URL = import.meta.env.VITE_CLOUD_ENGINE_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/execute-tool';
+const BACKEND_URL = (import.meta as any).env?.VITE_CLOUD_ENGINE_URL || (import.meta as any).env?.VITE_BACKEND_URL || 'http://localhost:3001/execute-tool';
 
 // --- Helper Functions ---
 
@@ -38,7 +37,7 @@ const callBackendTool = async <K extends keyof ToolArguments>(
 /**
  * Client-side JavaScript execution in a sandboxed environment.
  */
-const executeCode = async (language: 'javascript', code: string): Promise<string> => {
+export const executeCode = async (language: 'javascript', code: string): Promise<string> => {
     if (language === 'javascript') {
         try {
             // Capture console.log output
@@ -63,39 +62,39 @@ const executeCode = async (language: 'javascript', code: string): Promise<string
 /**
  * Standard tool implementations using the hardened backend bridge.
  */
-const readFile = (path: string) => callBackendTool('readFile', { path });
-const writeFile = (path: string, content: string) => callBackendTool('writeFile', { path, content });
-const listFiles = (path: string) => callBackendTool('listFiles', { path });
-const executeShellCommand = (command: string) => callBackendTool('executeShellCommand', { command });
+export const readFile = (path: string) => callBackendTool('readFile', { path });
+export const writeFile = (path: string, content: string) => callBackendTool('writeFile', { path, content });
+export const listFiles = (path: string) => callBackendTool('listFiles', { path });
+export const executeShellCommand = (command: string) => callBackendTool('executeShellCommand', { command });
 
 // GitHub helper functions
-const githubCreateRepo = async (name: string, description?: string, is_private?: boolean) => {
+export const githubCreateRepo = async (name: string, description: string, is_private: boolean) => {
     return callBackendTool('github_create_repo', { name, description, is_private });
 };
 
-const githubGetPrDetails = async (owner: string, repo: string, prNumber: number) => {
-    return callBackendTool('github_get_pr_details', { owner, repo, prNumber });
+export const githubGetPrDetails = async (pr_url: string) => {
+    return callBackendTool('github_get_pr_details', { pr_url });
 };
 
-const githubPostPrComment = async (owner: string, repo: string, prNumber: number, body: string) => {
-    return callBackendTool('github_post_pr_comment', { owner, repo, prNumber, body });
+export const githubPostPrComment = async (pr_url: string, comment: string) => {
+    return callBackendTool('github_post_pr_comment', { pr_url, comment });
 };
 
-const githubMergePr = async (owner: string, repo: string, prNumber: number, mergeMethod?: string) => {
-    return callBackendTool('github_merge_pr', { owner, repo, prNumber, merge_method: mergeMethod });
+export const githubMergePr = async (pr_url: string, method: 'merge' | 'squash' | 'rebase') => {
+    return callBackendTool('github_merge_pr', { pr_url, method });
 };
 
-const githubCreateFileInRepo = async (owner: string, repo: string, path: string, content: string, message: string, branch?: string) => {
-    return callBackendTool('github_create_file_in_repo', { owner, repo, path, content, message, branch });
+export const githubCreateFileInRepo = async (repo_name: string, path: string, content: string, commit_message: string) => {
+    return callBackendTool('github_create_file_in_repo', { repo_name, path, content, commit_message });
 };
 
 // Data analysis helper functions
-const dataAnalyze = async (input_file_path: string, analysis_script?: string) => {
+export const dataAnalyze = async (input_file_path: string, analysis_script: string) => {
     return callBackendTool('data_analyze', { input_file_path, analysis_script });
 };
 
-const dataVisualize = async (input_file_path: string, chart_type?: string) => {
-    return callBackendTool('data_visualize', { input_file_path, chart_type });
+export const dataVisualize = async (input_file_path: string, visualization_script: string, output_image_path: string) => {
+    return callBackendTool('data_visualize', { input_file_path, visualization_script, output_image_path });
 };
 
 /**
@@ -240,7 +239,7 @@ export const toolDeclarations: FunctionDeclaration[] = [
                 description: { type: Type.STRING, description: 'A short description of the repository' },
                 is_private: { type: Type.BOOLEAN, description: 'Whether the repository should be private' }
             },
-            required: ['name']
+            required: ['name', 'description', 'is_private']
         }
     },
     {
@@ -249,11 +248,9 @@ export const toolDeclarations: FunctionDeclaration[] = [
         parameters: {
             type: Type.OBJECT,
             properties: {
-                owner: { type: Type.STRING, description: 'The repository owner (user or organization)' },
-                repo: { type: Type.STRING, description: 'The repository name' },
-                prNumber: { type: Type.INTEGER, description: 'The Pull Request number' }
+                pr_url: { type: Type.STRING, description: 'The Pull Request URL' }
             },
-            required: ['owner', 'repo', 'prNumber']
+            required: ['pr_url']
         }
     },
     {
@@ -262,12 +259,10 @@ export const toolDeclarations: FunctionDeclaration[] = [
         parameters: {
             type: Type.OBJECT,
             properties: {
-                owner: { type: Type.STRING, description: 'The repository owner' },
-                repo: { type: Type.STRING, description: 'The repository name' },
-                prNumber: { type: Type.INTEGER, description: 'The Pull Request number' },
-                body: { type: Type.STRING, description: 'The comment text' }
+                pr_url: { type: Type.STRING, description: 'The Pull Request URL' },
+                comment: { type: Type.STRING, description: 'The comment text' }
             },
-            required: ['owner', 'repo', 'prNumber', 'body']
+            required: ['pr_url', 'comment']
         }
     },
     {
@@ -276,12 +271,10 @@ export const toolDeclarations: FunctionDeclaration[] = [
         parameters: {
             type: Type.OBJECT,
             properties: {
-                owner: { type: Type.STRING, description: 'The repository owner' },
-                repo: { type: Type.STRING, description: 'The repository name' },
-                prNumber: { type: Type.INTEGER, description: 'The Pull Request number' },
-                merge_method: { type: Type.STRING, description: 'Merge method: "merge", "squash", or "rebase"' }
+                pr_url: { type: Type.STRING, description: 'The Pull Request URL' },
+                method: { type: Type.STRING, description: 'Merge method: "merge", "squash", or "rebase"' }
             },
-            required: ['owner', 'repo', 'prNumber']
+            required: ['pr_url', 'method']
         }
     },
     {
@@ -290,14 +283,12 @@ export const toolDeclarations: FunctionDeclaration[] = [
         parameters: {
             type: Type.OBJECT,
             properties: {
-                owner: { type: Type.STRING, description: 'The repository owner' },
-                repo: { type: Type.STRING, description: 'The repository name' },
+                repo_name: { type: Type.STRING, description: 'The repository name' },
                 path: { type: Type.STRING, description: 'The file path in the repository' },
-                content: { type: Type.STRING, description: 'The file content (will be base64 encoded)' },
-                message: { type: Type.STRING, description: 'The commit message' },
-                branch: { type: Type.STRING, description: 'The branch to create/update the file in' }
+                content: { type: Type.STRING, description: 'The file content' },
+                commit_message: { type: Type.STRING, description: 'The commit message' }
             },
-            required: ['owner', 'repo', 'path', 'content', 'message']
+            required: ['repo_name', 'path', 'content', 'commit_message']
         }
     },
     {
@@ -310,7 +301,7 @@ export const toolDeclarations: FunctionDeclaration[] = [
                 value: { type: Type.STRING, description: 'The memory content to store' },
                 tags: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Tags for categorizing the memory' }
             },
-            required: ['key', 'value']
+            required: ['key', 'value', 'tags']
         }
     },
     {
@@ -345,7 +336,7 @@ export const toolDeclarations: FunctionDeclaration[] = [
                 input_file_path: { type: Type.STRING, description: 'Path to the data file to analyze' },
                 analysis_script: { type: Type.STRING, description: 'JavaScript analysis script to execute' }
             },
-            required: ['input_file_path']
+            required: ['input_file_path', 'analysis_script']
         }
     },
     {
@@ -355,9 +346,10 @@ export const toolDeclarations: FunctionDeclaration[] = [
             type: Type.OBJECT,
             properties: {
                 input_file_path: { type: Type.STRING, description: 'Path to the data file' },
-                chart_type: { type: Type.STRING, description: 'Type of chart: "bar", "line", "pie", "scatter"' }
+                visualization_script: { type: Type.STRING, description: 'Visualization script' },
+                output_image_path: { type: Type.STRING, description: 'Path for the output image' }
             },
-            required: ['input_file_path']
+            required: ['input_file_path', 'visualization_script', 'output_image_path']
         }
     },
     {
@@ -368,9 +360,9 @@ export const toolDeclarations: FunctionDeclaration[] = [
             properties: {
                 title: { type: Type.STRING, description: 'Title of the artifact' },
                 content: { type: Type.STRING, description: 'The artifact content' },
-                type: { type: Type.STRING, description: 'Artifact type: "code", "document", "image", etc.' }
+                type: { type: Type.STRING, description: 'Artifact type: "code", "markdown", "live-preview"' }
             },
-            required: ['title']
+            required: ['title', 'content', 'type']
         }
     },
     {
@@ -379,11 +371,12 @@ export const toolDeclarations: FunctionDeclaration[] = [
         parameters: {
             type: Type.OBJECT,
             properties: {
-                task: { type: Type.STRING, description: 'The task description to delegate' },
-                agentName: { type: Type.STRING, description: 'Name for the new agent' },
-                context: { type: Type.STRING, description: 'Context to pass to the new agent' }
+                agent_name: { type: Type.STRING, description: 'Name for the new agent' },
+                agent_instructions: { type: Type.STRING, description: 'Instructions for the agent' },
+                task_description: { type: Type.STRING, description: 'The task description to delegate' },
+                agent_icon: { type: Type.STRING, description: 'Optional icon for the agent' }
             },
-            required: ['task']
+            required: ['agent_name', 'agent_instructions', 'task_description']
         }
     },
     {

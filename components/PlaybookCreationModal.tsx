@@ -44,7 +44,7 @@ export const PlaybookCreationModal: React.FC<PlaybookCreationModalProps> = ({ is
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e: any) => e.stopPropagation()}
                     >
                         <header className="flex-shrink-0 flex justify-between items-center mb-6 p-6 pb-0">
                             <div className="flex items-center gap-3">
@@ -66,7 +66,7 @@ export const PlaybookCreationModal: React.FC<PlaybookCreationModalProps> = ({ is
                                 <input
                                     type="text"
                                     value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    onChange={(e: any) => setName(e.target.value)}
                                     placeholder="A short, memorable name for this task"
                                     className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/50"
                                 />
@@ -75,7 +75,7 @@ export const PlaybookCreationModal: React.FC<PlaybookCreationModalProps> = ({ is
                                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Description</label>
                                 <textarea
                                     value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
+                                    onChange={(e: any) => setDescription(e.target.value)}
                                     placeholder="What does this playbook do? (Optional)"
                                     rows={3}
                                     className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/50"

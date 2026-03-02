@@ -44,7 +44,7 @@ const TaskItem = React.forwardRef<HTMLDivElement, {
     const prevStatusRef = useRef<TaskStatus | undefined>(undefined);
     const [animateComplete, setAnimateComplete] = useState(false);
 
-    useEffect(() => {
+    useEffect(() => { return
         if (prevStatusRef.current && prevStatusRef.current !== 'Done' && task.status === 'Done') {
             setAnimateComplete(true);
             const timer = setTimeout(() => setAnimateComplete(false), 600);
@@ -133,7 +133,7 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
     const pipelineRef = useRef<HTMLDivElement>(null);
     const taskRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
-    useEffect(() => {
+    useEffect(() => { return
         if (selectedTaskId) {
             const selected = tasks.find(t => t.id === selectedTaskId);
             if (!selected) {

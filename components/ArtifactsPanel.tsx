@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { CloseIcon } from './icons/CloseIcon';
 import { Artifact } from '../types';
 import { ArchiveBoxIcon } from './icons/ArchiveBoxIcon';
@@ -104,7 +104,7 @@ export const ArtifactsPanel: React.FC<ArtifactsPanelProps> = ({ artifacts, onClo
                 animate={{ x: '0%' }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e: any) => e.stopPropagation()}
             >
                 <header className="p-6 flex justify-between items-center border-b border-black/10 dark:border-white/10 flex-shrink-0">
                     <h2 className="flex items-center gap-3 text-xl font-bold text-zinc-800 dark:text-gray-100">

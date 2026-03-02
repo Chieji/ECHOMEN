@@ -94,7 +94,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
                             <input 
                                 autoFocus
                                 value={query}
-                                onChange={(e) => setQuery(e.target.value)}
+                                onChange={(e: any) => setQuery(e.target.value)}
                                 placeholder="Execute a command or search brain..."
                                 className="w-full bg-transparent text-white placeholder-gray-600 focus:outline-none text-lg"
                             />

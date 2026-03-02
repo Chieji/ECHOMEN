@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Mention from '@tiptap/extension-mention';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Artifact } from '../types';
 
 interface NoteEditorProps {
     initialContent?: string;
@@ -29,22 +27,19 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ initialContent = '', onS
                 },
                 suggestion: {
                     char: '[[',
-                    items: ({ query }) => {
+                    items: ({ query }: { query: string }) => {
                         return availableNotes
                             .filter(note => note.title.toLowerCase().startsWith(query.toLowerCase()))
                             .slice(0, 5);
                     },
                     render: () => {
-                        let component: any;
-                        let popup: any;
-
                         return {
-                            onStart: (props) => {
+                            onStart: (props: { query: string }) => {
                                 // Logic for rendering the autocomplete dropdown would go here
                                 // For the MVP, we are focusing on the extension configuration
                                 console.log("Suggestion started for:", props.query);
                             },
-                            onUpdate: (props) => {
+                            onUpdate: (props: { query: string }) => {
                                 console.log("Suggestion updated:", props.query);
                             },
                             onExit: () => {

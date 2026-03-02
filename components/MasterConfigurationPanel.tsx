@@ -41,7 +41,7 @@ import { ServerIcon } from './icons/ServerIcon';
 import { CloudIcon } from './icons/CloudIcon';
 import { DatabaseIcon } from './icons/DatabaseIcon';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
-import { setSecureItem, getSecureItem, isSecureContext, migrateCredentials, removeSecureItem } from '../lib/secureStorage';
+import { getSecureItem } from '../lib/secureStorage';
 
 
 interface MasterConfigurationPanelProps {
@@ -538,7 +538,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                     animate={{ x: '0%' }}
                     exit={{ x: '100%' }}
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 >
                     <header className="p-6 flex justify-between items-center border-b border-black/10 dark:border-white/10 flex-shrink-0">
                         <h2 className="text-xl font-bold text-zinc-800 dark:text-gray-100">Settings</h2>
@@ -582,7 +582,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                         <input 
                                             type="text" 
                                             value={persistence.fileSearchStoreId || ''}
-                                            onChange={(e) => setPersistence(prev => ({ ...prev, fileSearchStoreId: e.target.value }))}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setPersistence(prev => ({ ...prev, fileSearchStoreId: e.target.value }))}
                                             placeholder="fileSearchStores/store_..."
                                             className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-echo-cyan/50 text-xs font-mono"
                                         />
@@ -624,7 +624,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                         <Section title="System Instructions" icon={<CommandLineIcon className="w-5 h-5" />}>
                             <textarea
                                 value={systemInstruction}
-                                onChange={(e) => setSystemInstruction(e.target.value)}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSystemInstruction(e.target.value)}
                                 placeholder="Define the AI's core behavior, personality, and constraints..."
                                 rows={4}
                                 className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50 text-sm"
@@ -639,7 +639,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                 <input
                                     type="text"
                                     value={newTodoText}
-                                    onChange={(e) => setNewTodoText(e.target.value)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTodoText(e.target.value)}
                                     placeholder="Add a new objective..."
                                     className="flex-grow bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-1.5 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50 text-sm"
                                 />
@@ -771,7 +771,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                         <select
                                             id={`agent-pref-${role}`}
                                             value={agentPreferences[role] || ''}
-                                            onChange={(e) => handlePreferenceChange(role, e.target.value)}
+                                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handlePreferenceChange(role, e.target.value)}
                                             className="bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-1 text-zinc-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50 text-sm w-48"
                                         >
                                             <option value="">Default</option>

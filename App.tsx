@@ -19,7 +19,6 @@ const App: React.FC = () => {
     // UI State
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isPaletteOpen, setIsPaletteOpen] = useState(false);
-    const [isPlaybookModalOpen, setIsPlaybookModalOpen] = useState(false);
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
     const [agentStatus, setAgentStatus] = useState<AgentStatus>(AgentStatus.IDLE);
     
@@ -30,8 +29,6 @@ const App: React.FC = () => {
     const [agents, setAgents] = useState<CustomAgent[]>([]);
     const [sessionStats, setSessionStats] = useState<SessionStats>({ totalTokensUsed: 0 });
     const [services, setServices] = useState<Service[]>([]);
-    const [currentPrompt, setCurrentPrompt] = useState<string>('');
-    const [playbookCandidate, setPlaybookCandidate] = useState<{ suggestedName: string; tasks: Task[]; triggerPrompt: string } | null>(null);
 
     const executorRef = useRef<AgentExecutor | null>(null);
 
@@ -91,7 +88,6 @@ const App: React.FC = () => {
         
         setTasks([]);
         setLiveLogs([]);
-        setCurrentPrompt(prompt);
         setAgentStatus(AgentStatus.RUNNING);
         addLog({ status: 'INFO', message: `[User] Received directive: "${prompt}"` });
 

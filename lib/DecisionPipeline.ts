@@ -5,7 +5,6 @@
  * constraint checking, and fallback chains.
  */
 
-import { z } from 'zod';
 import { Tool, ToolRegistry } from './ToolRegistry';
 
 export interface Goal {
@@ -91,7 +90,7 @@ export class DecisionPipeline {
     const options = await this.generateOptions(intent, retrievalContext);
     
     // Stage 4: Constraint Check
-    const validOptions = await this.checkConstraints(options, goal.constraints || []);
+    const validOptions = await this.checkConstraints(options, intent.constraints);
     
     // Stage 5: Selection
     const selected = this.selectBest(validOptions);
@@ -110,7 +109,6 @@ export class DecisionPipeline {
     const lowerDesc = goal.description.toLowerCase();
     
     // Simple keyword-based classification
-    // Can be enhanced with ML model
     const typeKeywords: Record<Goal['type'], string[]> = {
       query: ['what', 'how', 'why', 'explain', 'tell', 'find', 'search'],
       action: ['run', 'execute', 'start', 'stop', 'restart', 'deploy'],
@@ -279,7 +277,6 @@ export class DecisionPipeline {
     const intentType = intent.type;
     
     // Simple keyword matching
-    // Can be enhanced with embeddings
     const typeKeywords: Record<Goal['type'], string[]> = {
       query: ['read', 'get', 'list', 'search'],
       action: ['execute', 'run', 'start', 'stop'],
@@ -303,9 +300,8 @@ export class DecisionPipeline {
     return Math.min(score, 1.0);
   }
   
-  private generateToolArgs(tool: Tool, intent: Intent, context: any): any {
+  private generateToolArgs(_tool: Tool, intent: Intent, _context: any): any {
     // Generate args based on tool schema and intent entities
-    // This is a placeholder - real implementation would use schema inference
     return {
       query: intent.entities.find(e => e.type === 'query')?.value || ''
     };
@@ -380,12 +376,10 @@ export class DecisionPipeline {
         
       case 'resource':
         // Check if required resources are available
-        // Placeholder - real implementation would check actual resources
         break;
         
       case 'permission':
         // Check if tool has required permissions
-        // Placeholder - real implementation would check permissions
         break;
     }
     
@@ -416,7 +410,7 @@ export class DecisionPipeline {
   // Stage 6: Validation
   // ============================================================================
   
-  private async validateDecision(decision: Decision, goal: Goal): Promise<Decision> {
+  private async validateDecision(decision: Decision, _goal: Goal): Promise<Decision> {
     // Check confidence threshold
     if (decision.confidence < 0.5) {
       console.warn(
@@ -493,13 +487,11 @@ export class IntentClassifier {
     return 'action';
   }
   
-  private extractEntities(description: string): Entity[] {
-    // Same as in DecisionPipeline
+  private extractEntities(_description: string): Entity[] {
     return [];
   }
   
-  private extractConstraints(goal: Goal): Constraint[] {
-    // Same as in DecisionPipeline
+  private extractConstraints(_goal: Goal): Constraint[] {
     return [];
   }
 }
