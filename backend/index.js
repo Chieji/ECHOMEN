@@ -53,16 +53,55 @@ const closeSession = async (sessionId) => {
 
 /**
  * Executes a shell command with hardened sanitization.
+ * 
+ * SECURITY NOTE: This function uses allowlist-based validation.
+ * Only simple, single commands without shell operators are permitted.
+ * For production, consider using execFile with explicit arguments
+ * or a containerized execution environment.
  */
 const executeShellCommand = (command) => {
+    // Reject empty or non-string input
+    if (typeof command !== 'string' || !command.trim()) {
+        return Promise.reject(new Error("Security Violation: Invalid command input"));
+    }
+    
     const sanitizedCommand = command.trim();
+    
+    // Blocklist: reject dangerous characters and patterns
+    // This prevents command injection, chaining, and path traversal
     const isDangerous = /[\x00-\x1F\x7F]|(;|\&\&|\|\||\||>|<|\!|\$|\(|\)|\{|\}|\[|\]|\*|\?|~|`|\\)/.test(sanitizedCommand);
     if (isDangerous || sanitizedCommand.includes('..')) {
+        console.warn(`[Security] Blocked dangerous command: ${sanitizedCommand}`);
         return Promise.reject(new Error("Security Violation: Command contains restricted characters or traversal."));
     }
+    
+    // Allowlist: only permit simple alphanumeric commands with basic args
+    // Pattern: command followed by optional space-separated arguments
+    const allowedPattern = /^[a-zA-Z0-9_./:-]+(\s+[a-zA-Z0-9_./:@%+-]+)*$/;
+    if (!allowedPattern.test(sanitizedCommand)) {
+        console.warn(`[Security] Blocked non-allowed command: ${sanitizedCommand}`);
+        return Promise.reject(new Error("Security Violation: Command format not allowed."));
+    }
+    
+    // Additional check: block known dangerous commands
+    const dangerousCommands = ['rm', 'sudo', 'su', 'chmod', 'chown', 'curl', 'wget', 'nc', 'netcat'];
+    const baseCommand = sanitizedCommand.split(/\s+/)[0].toLowerCase();
+    if (dangerousCommands.includes(baseCommand)) {
+        console.warn(`[Security] Blocked dangerous command: ${baseCommand}`);
+        return Promise.reject(new Error(`Security Violation: '${baseCommand}' is not permitted.`));
+    }
+    
     return new Promise((resolve, reject) => {
-        exec(sanitizedCommand, { timeout: 60000, maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
-            if (error) { reject(new Error(stderr || error.message)); return; }
+        exec(sanitizedCommand, { 
+            timeout: 60000, 
+            maxBuffer: 1024 * 1024,
+            shell: '/bin/sh' // Use minimal shell
+        }, (error, stdout, stderr) => {
+            if (error) { 
+                console.error(`[Command Error] ${sanitizedCommand}: ${stderr || error.message}`);
+                reject(new Error(stderr || error.message)); 
+                return; 
+            }
             resolve(stdout);
         });
     });
