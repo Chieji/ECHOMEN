@@ -1,8 +1,8 @@
 import { FunctionDeclaration, Type } from "@google/genai";
-import { ToolArguments } from '../types';
+import { ToolArguments, ImportMeta } from '../types';
 import { saveMemory, retrieveMemory, deleteMemory } from '../lib/firebase_manager';
 
-const BACKEND_URL = (import.meta as any).env?.VITE_CLOUD_ENGINE_URL || (import.meta as any).env?.VITE_BACKEND_URL || 'http://localhost:3001/execute-tool';
+const BACKEND_URL = (import.meta as ImportMeta).env?.VITE_CLOUD_ENGINE_URL || (import.meta as ImportMeta).env?.VITE_BACKEND_URL || 'http://localhost:3001/execute-tool';
 
 // --- Helper Functions ---
 
@@ -12,7 +12,7 @@ const BACKEND_URL = (import.meta as any).env?.VITE_CLOUD_ENGINE_URL || (import.m
 const callBackendTool = async <K extends keyof ToolArguments>(
     toolName: K,
     args: ToolArguments[K]
-): Promise<any> => {
+): Promise<unknown> => {
     try {
         console.log(`[ECHO Engine] Executing '${toolName}' via ${BACKEND_URL}`);
         const response = await fetch(BACKEND_URL, {
@@ -44,16 +44,17 @@ export const executeCode = async (language: 'javascript', code: string): Promise
             let output = '';
             const originalLog = console.log;
             console.log = (...args) => { output += args.join(' ') + '\n'; };
-            
+
             // Execute in sandbox
             const result = await eval(`(async () => { ${code} })()`);
-            
+
             // Restore console.log
             console.log = originalLog;
-            
+
             return output + (result !== undefined ? String(result) : '');
-        } catch (error: any) {
-            return `Error: ${error.message}`;
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            return `Error: ${errorMessage}`;
         }
     }
     return 'Only JavaScript execution is supported';
@@ -395,7 +396,7 @@ export const toolDeclarations: FunctionDeclaration[] = [
 /**
  * Typed implementation map for the AgentExecutor.
  */
-export const availableTools: { [K in keyof ToolArguments]: (args: ToolArguments[K]) => Promise<any> } = {
+export const availableTools: { [K in keyof ToolArguments]: (args: ToolArguments[K]) => Promise<unknown> } = {
     readFile: (args) => callBackendTool('readFile', args),
     writeFile: (args) => callBackendTool('writeFile', args),
     listFiles: (args) => callBackendTool('listFiles', args),

@@ -17,20 +17,14 @@ import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import Groq from "groq-sdk";
 import { getSecureItem } from "./secureStorage";
-import { Service } from "../types";
+import { Service, ToolCallDefinition, AIResponseData, AIUsage } from "../types";
 
 export type AIProvider = 'google' | 'openai' | 'anthropic' | 'groq' | 'cohere' | 'openrouter' | 'together' | 'mistral' | 'huggingface';
 
 export type TaskType = 'chat' | 'reasoning' | 'code' | 'data' | 'general';
 
-export interface AIResponse {
-    text: string;
-    toolCalls?: any[];
-    usage: {
-        totalTokens: number;
-    };
+export interface AIResponse extends AIResponseData {
     provider: AIProvider;
-    model: string;
 }
 
 export interface ProviderConfig {
@@ -114,33 +108,34 @@ async function withRetry<T>(
     provider: AIProvider,
     config: RetryConfig = DEFAULT_RETRY_CONFIG
 ): Promise<T> {
-    let lastError: Error | null = null;
+    let lastError: Error | unknown = null;
     const rateLimiter = getRateLimiter(provider);
 
     for (let attempt = 0; attempt < config.maxRetries; attempt++) {
         try {
             await rateLimiter.acquire();
             return await operation();
-        } catch (error: any) {
+        } catch (error) {
             lastError = error;
-            
-            if (error.status === 429 || error.status === 'rate_limit_error') {
+
+            const errorStatus = (error as { status?: number | string }).status;
+            if (errorStatus === 429 || errorStatus === 'rate_limit_error') {
                 console.warn(`[AI Bridge] Rate limited by ${provider}, attempt ${attempt + 1}/${config.maxRetries}`);
                 await exponentialBackoff(attempt, config);
                 continue;
             }
-            
+
             if (attempt === config.maxRetries - 1) break;
-            
-            if (error.status >= 500) {
+
+            if (typeof errorStatus === 'number' && errorStatus >= 500) {
                 await exponentialBackoff(attempt, config);
                 continue;
             }
-            
+
             throw error;
         }
     }
-    
+
     throw lastError;
 }
 
@@ -259,7 +254,7 @@ export class AIBridge {
         model: string | null,
         systemPrompt: string,
         userPrompt: string,
-        tools: any[] = []
+        tools: ToolCallDefinition[] = []
     ): Promise<AIResponse> {
         await this.initialize();
 
@@ -306,7 +301,7 @@ export class AIBridge {
         model: string,
         system: string,
         user: string,
-        tools: any[]
+        tools: ToolCallDefinition[]
     ): Promise<AIResponse> {
         switch (provider) {
             case 'google':
@@ -336,7 +331,7 @@ export class AIBridge {
         model: string | null,
         systemPrompt: string,
         userPrompt: string,
-        tools: any[]
+        tools: ToolCallDefinition[]
     ): Promise<AIResponse> {
         const providers = this.getAvailableProviders();
         
@@ -365,7 +360,7 @@ export class AIBridge {
         return null;
     }
 
-    private static async generateGemini(model: string, system: string, user: string, tools: any[]): Promise<AIResponse> {
+    private static async generateGemini(model: string, system: string, user: string, tools: ToolCallDefinition[]): Promise<AIResponse> {
         const config = this.providers.get('google');
         const apiKey = config?.apiKey || '';
         
@@ -414,19 +409,19 @@ export class AIBridge {
         };
     }
 
-    private static async generateOpenAI(model: string, system: string, user: string, tools: any[]): Promise<AIResponse> {
+    private static async generateOpenAI(model: string, system: string, user: string, tools: ToolCallDefinition[]): Promise<AIResponse> {
         const config = this.providers.get('openai');
         const apiKey = config?.apiKey || '';
-        
+
         if (!apiKey) throw new Error("OpenAI API key not configured");
-        
+
         const client = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
-        
-        const messages: any[] = [
+
+        const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
             { role: "system", content: system },
             { role: "user", content: user }
         ];
-        
+
         const response = await client.chat.completions.create({
             model: model || "gpt-4o",
             messages,
@@ -444,23 +439,23 @@ export class AIBridge {
         };
     }
 
-    private static async generateAnthropic(model: string, system: string, user: string, tools: any[]): Promise<AIResponse> {
+    private static async generateAnthropic(model: string, system: string, user: string, tools: ToolCallDefinition[]): Promise<AIResponse> {
         const config = this.providers.get('anthropic');
         const apiKey = config?.apiKey || '';
-        
+
         if (!apiKey) throw new Error("Anthropic API key not configured");
-        
+
         const client = new Anthropic({ apiKey });
-        
+
         const response = await client.messages.create({
-            model: model || "claude-3.5-sonnet-20241022",
+            model: model || "claude-3-5-sonnet-20241022",
             max_tokens: 4096,
             system,
             messages: [{ role: "user", content: user }],
-            tools: tools as any,
+            tools: tools as Anthropic.MessageCreateParams.Tool[],
         });
 
-        const content = response.content[0] as any;
+        const content = response.content[0] as Anthropic.TextBlock;
         return {
             text: content?.text || "",
             usage: { totalTokens: response.usage.input_tokens + response.usage.output_tokens },
@@ -469,19 +464,19 @@ export class AIBridge {
         };
     }
 
-    private static async generateGroq(model: string, system: string, user: string, tools: any[]): Promise<AIResponse> {
+    private static async generateGroq(model: string, system: string, user: string, tools: ToolCallDefinition[]): Promise<AIResponse> {
         const config = this.providers.get('groq');
         const apiKey = config?.apiKey || '';
-        
+
         if (!apiKey) throw new Error("Groq API key not configured");
-        
+
         const client = new Groq({ apiKey });
-        
-        const messages: any[] = [
+
+        const messages: Groq.Chat.Completions.ChatCompletionMessageParam[] = [
             { role: "system", content: system },
             { role: "user", content: user }
         ];
-        
+
         const response = await client.chat.completions.create({
             model: model || "llama-3.3-70b-versatile",
             messages,
@@ -499,7 +494,7 @@ export class AIBridge {
         };
     }
 
-    private static async generateCohere(model: string, system: string, user: string, _tools: any[]): Promise<AIResponse> {
+    private static async generateCohere(model: string, system: string, user: string, _tools: ToolCallDefinition[]): Promise<AIResponse> {
         const config = this.providers.get('cohere');
         const apiKey = config?.apiKey || '';
         
@@ -534,7 +529,7 @@ export class AIBridge {
         };
     }
 
-    private static async generateOpenRouter(model: string, system: string, user: string, tools: any[]): Promise<AIResponse> {
+    private static async generateOpenRouter(model: string, system: string, user: string, tools: ToolCallDefinition[]): Promise<AIResponse> {
         const config = this.providers.get('openrouter');
         const apiKey = config?.apiKey || '';
         
@@ -574,7 +569,7 @@ export class AIBridge {
         };
     }
 
-    private static async generateTogether(model: string, system: string, user: string, _tools: any[]): Promise<AIResponse> {
+    private static async generateTogether(model: string, system: string, user: string, _tools: ToolCallDefinition[]): Promise<AIResponse> {
         const config = this.providers.get('together');
         const apiKey = config?.apiKey || '';
 
@@ -611,7 +606,7 @@ export class AIBridge {
         };
     }
 
-    private static async generateMistral(model: string, system: string, user: string, tools: any[]): Promise<AIResponse> {
+    private static async generateMistral(model: string, system: string, user: string, tools: ToolCallDefinition[]): Promise<AIResponse> {
         const config = this.providers.get('mistral');
         const apiKey = config?.apiKey || '';
 
@@ -650,7 +645,7 @@ export class AIBridge {
         };
     }
 
-    private static async generateHuggingFace(model: string, system: string, user: string, _tools: any[]): Promise<AIResponse> {
+    private static async generateHuggingFace(model: string, system: string, user: string, _tools: ToolCallDefinition[]): Promise<AIResponse> {
         const config = this.providers.get('huggingface');
         const apiKey = config?.apiKey || '';
 

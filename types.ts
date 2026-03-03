@@ -49,10 +49,53 @@ export interface ToolArguments {
     askUser: { question: string };
 }
 
-export interface ToolResult<T = any> {
+export interface ToolResult<T = unknown> {
     status: 'success' | 'error';
     result?: T;
     error?: string;
+}
+
+// --- AI Bridge Types ---
+
+export interface ToolCallDefinition {
+    name: string;
+    description: string;
+    parameters: {
+        type: string;
+        properties: Record<string, { type: string; description: string }>;
+        required: string[];
+    };
+}
+
+export interface ToolCallResponse {
+    name: string;
+    arguments: Record<string, unknown>;
+}
+
+export interface AIUsage {
+    totalTokens: number;
+    inputTokens?: number;
+    outputTokens?: number;
+}
+
+export interface AIResponseData {
+    text: string;
+    toolCalls?: ToolCallResponse[];
+    usage: AIUsage;
+    provider: string;
+    model: string;
+}
+
+// --- Import Meta Types ---
+
+export interface ImportMetaEnv {
+    VITE_CLOUD_ENGINE_URL?: string;
+    VITE_BACKEND_URL?: string;
+    [key: string]: string | undefined;
+}
+
+export interface ImportMeta {
+    env: ImportMetaEnv;
 }
 
 export interface Message {

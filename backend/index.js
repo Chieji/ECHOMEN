@@ -14,40 +14,116 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(bodyParser.json());
 
-// --- Isolated Browser Context Management ---
+// --- Isolated Browser Context Management (Task-Level Isolation) ---
+// Each task gets its own browser context to prevent data leakage between parallel tasks.
+// The browser instance is shared (singleton), but contexts and pages are task-specific.
+
 let browser = null;
-const activeContexts = new Map(); // sessionId -> { context, page }
+const taskContexts = new Map(); // taskId -> { context, page, createdAt }
 
 /**
- * Retrieves or creates an isolated browser context for a specific session.
+ * Gets or creates an isolated browser context for a specific taskId.
+ * This ensures parallel tasks within the same session cannot interfere with each other.
+ * @param {string} taskId - Unique identifier for the task (e.g., "session123_task456")
+ * @returns {Promise<import('playwright').Page>} - The page instance for this task
  */
-const getSessionPage = async (sessionId = 'default') => {
+const getTaskPage = async (taskId = 'default') => {
     if (!browser) {
-        browser = await chromium.launch({ headless: true });
-    }
-
-    if (!activeContexts.has(sessionId)) {
-        console.log(`[ECHO Engine] Creating isolated context for session: ${sessionId}`);
-        const context = await browser.newContext({
-            viewport: { width: 1280, height: 800 },
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        console.log('[ECHO Engine] Launching browser instance...');
+        browser = await chromium.launch({ 
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox'] // Container safety
         });
-        const page = await context.newPage();
-        activeContexts.set(sessionId, { context, page });
     }
 
-    return activeContexts.get(sessionId).page;
+    if (!taskContexts.has(taskId)) {
+        console.log(`[ECHO Engine] Creating isolated context for task: ${taskId}`);
+        try {
+            const context = await browser.newContext({
+                viewport: { width: 1280, height: 800 },
+                userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                // Additional isolation settings
+                ignoreHTTPSErrors: false,
+                javaScriptEnabled: true
+            });
+            const page = await context.newPage();
+            taskContexts.set(taskId, { 
+                context, 
+                page, 
+                createdAt: Date.now() 
+            });
+        } catch (error) {
+            console.error(`[ECHO Engine] Failed to create context for task ${taskId}:`, error.message);
+            throw new Error(`Browser context creation failed: ${error.message}`);
+        }
+    }
+
+    return taskContexts.get(taskId).page;
 };
 
 /**
- * Closes and cleans up a session context.
+ * Closes and cleans up a specific task's browser context.
+ * This should be called after each task completes to prevent memory leaks.
+ * @param {string} taskId - The task identifier to cleanup
+ * @returns {Promise<void>}
+ */
+const closeTaskContext = async (taskId) => {
+    if (taskContexts.has(taskId)) {
+        const { context } = taskContexts.get(taskId);
+        try {
+            await context.close();
+            taskContexts.delete(taskId);
+            console.log(`[ECHO Engine] Purged context for task: ${taskId}`);
+        } catch (error) {
+            console.error(`[ECHO Engine] Error closing context for task ${taskId}:`, error.message);
+            // Still delete from map to prevent stale references
+            taskContexts.delete(taskId);
+        }
+    }
+};
+
+/**
+ * Cleans up all active task contexts (e.g., on shutdown or session end).
+ * @returns {Promise<void>}
+ */
+const cleanupAllTaskContexts = async () => {
+    const taskIds = Array.from(taskContexts.keys());
+    console.log(`[ECHO Engine] Cleaning up ${taskIds.length} active task context(s)...`);
+    
+    for (const taskId of taskIds) {
+        await closeTaskContext(taskId);
+    }
+    
+    if (browser) {
+        await browser.close();
+        browser = null;
+        console.log('[ECHO Engine] Browser instance closed.');
+    }
+};
+
+/**
+ * Legacy wrapper for backward compatibility - maps sessionId to a unique taskId.
+ * @deprecated Use getTaskPage with explicit taskId instead
+ */
+const getSessionPage = async (sessionId = 'default') => {
+    const taskId = `${sessionId}_legacy_${Date.now()}`;
+    return getTaskPage(taskId);
+};
+
+/**
+ * Legacy wrapper for backward compatibility.
+ * @deprecated Use closeTaskContext with explicit taskId instead
  */
 const closeSession = async (sessionId) => {
-    if (activeContexts.has(sessionId)) {
-        const { context } = activeContexts.get(sessionId);
-        await context.close();
-        activeContexts.delete(sessionId);
-        console.log(`[ECHO Engine] Purged context for session: ${sessionId}`);
+    // Find and close all contexts matching this sessionId prefix
+    const taskIdsToClose = [];
+    for (const taskId of taskContexts.keys()) {
+        if (taskId.startsWith(sessionId)) {
+            taskIdsToClose.push(taskId);
+        }
+    }
+    for (const taskId of taskIdsToClose) {
+        await closeTaskContext(taskId);
     }
 };
 
@@ -107,35 +183,61 @@ const executeShellCommand = (command) => {
     });
 };
 
-// --- Agentic Browser Actions (WebHawk 2.0) ---
+// --- Agentic Browser Actions (WebHawk 2.0 - Task Isolated) ---
+// All browser actions now use taskId for complete isolation between parallel tasks.
 
 const browserActions = {
-    navigate: async (sessionId, url) => {
-        const page = await getSessionPage(sessionId);
-        console.log(`[WebHawk] [Session: ${sessionId}] Navigating to: ${url}`);
+    /**
+     * Navigate to a URL within the task's isolated browser context.
+     * @param {string} taskId - Unique task identifier
+     * @param {string} url - URL to navigate to
+     */
+    navigate: async (taskId, url) => {
+        const page = await getTaskPage(taskId);
+        console.log(`[WebHawk] [Task: ${taskId}] Navigating to: ${url}`);
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
         return { status: 'success', title: await page.title(), url: page.url() };
     },
-    screenshot: async (sessionId) => {
-        const page = await getSessionPage(sessionId);
+    /**
+     * Capture a screenshot within the task's isolated browser context.
+     * @param {string} taskId - Unique task identifier
+     */
+    screenshot: async (taskId) => {
+        const page = await getTaskPage(taskId);
         const buffer = await page.screenshot({ fullPage: false });
         return { status: 'success', screenshot: buffer.toString('base64') };
     },
-    click: async (sessionId, selector) => {
-        const page = await getSessionPage(sessionId);
-        console.log(`[WebHawk] [Session: ${sessionId}] Clicking: ${selector}`);
+    /**
+     * Click an element within the task's isolated browser context.
+     * @param {string} taskId - Unique task identifier
+     * @param {string} selector - CSS selector to click
+     */
+    click: async (taskId, selector) => {
+        const page = await getTaskPage(taskId);
+        console.log(`[WebHawk] [Task: ${taskId}] Clicking: ${selector}`);
         await page.click(selector, { timeout: 5000 });
         return { status: 'success', message: `Clicked ${selector}` };
     },
-    type: async (sessionId, selector, text, pressEnter = false) => {
-        const page = await getSessionPage(sessionId);
-        console.log(`[WebHawk] [Session: ${sessionId}] Typing into ${selector}`);
+    /**
+     * Type text into an element within the task's isolated browser context.
+     * @param {string} taskId - Unique task identifier
+     * @param {string} selector - CSS selector to type into
+     * @param {string} text - Text to type
+     * @param {boolean} pressEnter - Whether to press Enter after typing
+     */
+    type: async (taskId, selector, text, pressEnter = false) => {
+        const page = await getTaskPage(taskId);
+        console.log(`[WebHawk] [Task: ${taskId}] Typing into ${selector}`);
         await page.fill(selector, text, { timeout: 5000 });
         if (pressEnter) await page.keyboard.press('Enter');
         return { status: 'success', message: `Typed into ${selector}` };
     },
-    get_ax_tree: async (sessionId) => {
-        const page = await getSessionPage(sessionId);
+    /**
+     * Get accessibility tree within the task's isolated browser context.
+     * @param {string} taskId - Unique task identifier
+     */
+    get_ax_tree: async (taskId) => {
+        const page = await getTaskPage(taskId);
         const snapshot = await page.accessibility.snapshot();
         return { status: 'success', axTree: snapshot };
     }
@@ -393,10 +495,14 @@ const dataTools = {
 // --- Main Execution Endpoint ---
 
 app.post('/execute-tool', async (req, res) => {
-    const { tool, args, sessionId = 'default' } = req.body;
+    const { tool, args, sessionId = 'default', taskId, ephemeral = true } = req.body;
     if (!tool) return res.status(400).json({ error: 'Missing tool name' });
 
-    console.log(`[ECHO Engine] Executing: ${tool} (Session: ${sessionId})`);
+    // Generate taskId if not provided (for backward compatibility with sessionId)
+    // Format: sessionId_timestamp_randomId ensures uniqueness for parallel tasks
+    const effectiveTaskId = taskId || `${sessionId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    console.log(`[ECHO Engine] Executing: ${tool} (Task: ${effectiveTaskId}, Session: ${sessionId})`);
 
     try {
         let result;
@@ -417,25 +523,35 @@ app.post('/execute-tool', async (req, res) => {
                 result = await executeShellCommand(args.command);
                 break;
 
-            // WebHawk 2.0 (Isolated)
+            // WebHawk 2.0 (Task Isolated)
             case 'browser_navigate':
-                result = await browserActions.navigate(sessionId, args.url);
+                result = await browserActions.navigate(effectiveTaskId, args.url);
                 break;
             case 'browser_screenshot':
-                result = await browserActions.screenshot(sessionId);
+                result = await browserActions.screenshot(effectiveTaskId);
                 break;
             case 'browser_click':
-                result = await browserActions.click(sessionId, args.selector);
+                result = await browserActions.click(effectiveTaskId, args.selector);
                 break;
             case 'browser_type':
-                result = await browserActions.type(sessionId, args.selector, args.text, args.pressEnter);
+                result = await browserActions.type(effectiveTaskId, args.selector, args.text, args.pressEnter);
                 break;
             case 'browser_get_ax_tree':
-                result = await browserActions.get_ax_tree(sessionId);
+                result = await browserActions.get_ax_tree(effectiveTaskId);
                 break;
             case 'browser_close_session':
-                await closeSession(sessionId);
-                result = { status: 'success', message: `Session ${sessionId} closed` };
+                // Close all contexts for this session (legacy) or specific task
+                if (taskId) {
+                    await closeTaskContext(effectiveTaskId);
+                } else {
+                    await closeSession(sessionId);
+                }
+                result = { status: 'success', message: `Context(s) for ${sessionId} closed` };
+                break;
+            case 'browser_cleanup_task':
+                // Explicit task cleanup (ephemeral mode)
+                await closeTaskContext(effectiveTaskId);
+                result = { status: 'success', message: `Task ${effectiveTaskId} cleaned up` };
                 break;
 
             // GitHub Tools
@@ -466,15 +582,58 @@ app.post('/execute-tool', async (req, res) => {
             default:
                 throw new Error(`Tool '${tool}' is not implemented.`);
         }
+        
+        // Ephemeral cleanup: automatically clean up browser context after task completion
+        // This prevents memory leaks and ensures fresh contexts for each task
+        if (ephemeral && tool.startsWith('browser_') && tool !== 'browser_close_session' && tool !== 'browser_cleanup_task') {
+            await closeTaskContext(effectiveTaskId);
+            console.log(`[ECHO Engine] Ephemeral cleanup completed for task: ${effectiveTaskId}`);
+        }
+        
         res.json({ result });
     } catch (error) {
         console.error(`[ECHO Engine Error] ${tool}:`, error.message);
+        // Ensure cleanup even on error
+        if (tool.startsWith('browser_')) {
+            await closeTaskContext(effectiveTaskId).catch(() => {});
+        }
         res.status(500).json({ error: error.message });
     }
 });
 
 app.listen(PORT, () => {
     console.log(`🚀 ECHO Unified Tool Gateway running on http://localhost:${PORT}`);
-    console.log(`WebHawk 2.0 Context Isolation: ACTIVE`);
+    console.log(`WebHawk 2.0 Context Isolation: ACTIVE (Task-Level)`);
     console.log(`GitHub Tools: ${process.env.GITHUB_TOKEN ? 'ENABLED' : 'DISABLED (no token)'}`);
+});
+
+// --- Graceful Shutdown Handler ---
+// Ensures all browser contexts are properly cleaned up on server shutdown
+
+const gracefulShutdown = async (signal) => {
+    console.log(`\n[ECHO Engine] Received ${signal}. Initiating graceful shutdown...`);
+    try {
+        await cleanupAllTaskContexts();
+        console.log('[ECHO Engine] All browser contexts closed. Shutdown complete.');
+        process.exit(0);
+    } catch (error) {
+        console.error('[ECHO Engine] Error during shutdown:', error.message);
+        process.exit(1);
+    }
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Cleanup on uncaught exceptions
+process.on('uncaughtException', async (error) => {
+    console.error('[ECHO Engine] Uncaught Exception:', error);
+    await cleanupAllTaskContexts().catch(() => {});
+    process.exit(1);
+});
+
+process.on('unhandledRejection', async (reason, promise) => {
+    console.error('[ECHO Engine] Unhandled Rejection at:', promise, 'reason:', reason);
+    await cleanupAllTaskContexts().catch(() => {});
+    process.exit(1);
 });
