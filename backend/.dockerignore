@@ -1,0 +1,64 @@
+# Backend Docker Ignore File
+# Specific to backend build context
+
+# Dependencies (installed during build)
+node_modules/
+npm-debug.log*
+
+# Test files
+test/
+tests/
+*.test.js
+*.spec.js
+coverage/
+
+# Logs
+*.log
+logs/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*~
+
+# Git
+.git/
+
+# Documentation
+*.md
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Docker files (not needed inside)
+Dockerfile*
+.dockerignore
+
+# Frontend source (not needed for backend)
+../components/
+../hooks/
+../lib/
+../services/
+../types/
+../App.tsx
+../index.html
+../index.tsx
+../vite.config.ts
+../tsconfig.json
+
+# Other project directories
+../brain/
+../outputs/
+../architecture/
+../plans/
+../reviews/
+../scripts/
+.devcontainer/
+
+# Large files
+*.deb
+*.tar.gz
+*.zip

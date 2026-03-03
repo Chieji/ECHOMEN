@@ -1,0 +1,149 @@
+# ECHOMEN Docker Compose Configuration
+# Production-ready containerization with security hardening
+# Addresses: Command Execution Sandbox Bypass security recommendation
+
+version: '3.8'
+
+services:
+  # ==========================================================================
+  # ECHO Backend Service
+  # ==========================================================================
+  echomen-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: echomen-backend
+    restart: unless-stopped
+    
+    # Port mapping: Host:Container
+    ports:
+      - "3001:3001"
+    
+    # Environment variables (load from .env.example or .env)
+    env_file:
+      - .env.example
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      # Optional: GitHub token for GitHub tools
+      # - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      # Optional: API keys for AI providers
+      - API_KEY=${API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    
+    # Volume mounts for persistence
+    volumes:
+      # Logs volume for debugging and monitoring
+      - echomen-logs:/app/logs
+      # Browser cache volume (Playwright)
+      - echomen-browser-cache:/app/.browser
+      # Optional: Mount host directory for file operations (read-only by default)
+      # - ./workspace:/app/workspace:ro
+    
+    # Resource limits to prevent DoS and control costs
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    
+    # Security configurations
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /app/tmp:size=64M,mode=1777
+      - /tmp:size=32M,mode=1777
+    
+    # Network configuration
+    networks:
+      - echomen-network
+    
+    # Health check (defined in Dockerfile, but can override here)
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Dependencies
+    depends_on: []
+
+  # ==========================================================================
+  # ECHO Frontend Service (Optional - Static Build)
+  # ==========================================================================
+  echomen-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: echomen-frontend
+    restart: unless-stopped
+    
+    # Port mapping for Vite dev server
+    ports:
+      - "5173:5173"
+    
+    # Environment variables
+    environment:
+      - NODE_ENV=production
+      - VITE_BACKEND_URL=http://echomen-backend:3001
+    
+    # Volume for hot reload during development (comment out for production)
+    # volumes:
+    #   - .:/app
+    #   - /app/node_modules
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    
+    # Security configurations
+    security_opt:
+      - no-new-privileges:true
+    
+    networks:
+      - echomen-network
+    
+    # Depends on backend for API access
+    depends_on:
+      - echomen-backend
+
+# ==========================================================================
+# Named Volumes
+# ==========================================================================
+volumes:
+  echomen-logs:
+    driver: local
+    name: echomen-logs
+  echomen-browser-cache:
+    driver: local
+    name: echomen-browser-cache
+
+# ==========================================================================
+# Network Configuration
+# ==========================================================================
+networks:
+  echomen-network:
+    driver: bridge
+    name: echomen-network
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
