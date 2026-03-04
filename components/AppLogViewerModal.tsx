@@ -14,7 +14,7 @@ const logStatusColors = {
     SUCCESS: 'text-green-400',
     ERROR: 'text-red-400',
     WARN: 'text-yellow-400',
-    INFO: 'text-[#00D4FF]',
+    INFO: 'text-echo-cyan',
 }
 
 export const AppLogViewerModal: React.FC<AppLogViewerModalProps> = ({ app, isOpen, onClose }) => {
@@ -31,7 +31,7 @@ export const AppLogViewerModal: React.FC<AppLogViewerModalProps> = ({ app, isOpe
                     onClick={onClose}
                 >
                     <motion.div
-                        className="w-full max-w-2xl bg-[#141414] border-2 border-[#00D4FF]/50 rounded-xl p-6 shadow-2xl shadow-black/50 flex flex-col max-h-[80vh]"
+                        className="w-full max-w-2xl bg-echo-surface-elevated border-2 border-echo-cyan/50 rounded-xl p-6 flex flex-col max-h-[80vh]"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
@@ -40,7 +40,7 @@ export const AppLogViewerModal: React.FC<AppLogViewerModalProps> = ({ app, isOpe
                     >
                         <header className="flex justify-between items-center mb-4 flex-shrink-0">
                             <div className="flex items-center gap-3">
-                                <div className="text-[#00D4FF]"><RocketIcon className="w-6 h-6" /></div>
+                                <div className="text-echo-cyan"><RocketIcon className="w-6 h-6" /></div>
                                 <h3 className="text-xl font-bold text-white">Deployment Logs: {app.name}</h3>
                             </div>
                             <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">

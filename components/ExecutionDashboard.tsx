@@ -8,6 +8,7 @@ import { ReviewerIcon } from './icons/ReviewerIcon';
 import { SynthesizerIcon } from './icons/SynthesizerIcon';
 import { AgentOrchestration } from './AgentOrchestration';
 import { LiveTerminal } from './LiveTerminal';
+import { TerminalDisplay } from './TerminalDisplay';
 import { BrainIcon } from './icons/BrainIcon';
 import { PlugIcon } from './icons/PlugIcon';
 import { WebHawkIcon } from './icons/WebHawkIcon';
@@ -314,7 +315,7 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                                                     </div>
                                                     <p className="text-sm italic text-gray-600 dark:text-gray-300 pl-7 pb-2">"{step.thought}"</p>
                                                     
-                                                    <div className="flex items-center gap-2 text-cyan-600 dark:text-[#00D4FF]">
+                                                    <div className="flex items-center gap-2 text-cyan-600 dark:text-echo-cyan">
                                                         <PlugIcon className="w-5 h-5" />
                                                         <h5 className="font-bold">Action</h5>
                                                     </div>
@@ -372,10 +373,16 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                     </motion.div>
                 )}
             </AnimatePresence>
-             
-             <div>
-                <h2 className="text-sm font-medium text-gray-300 mb-2">Live Terminal</h2>
-                <LiveTerminal logs={liveLogs} />
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div>
+                    <h2 className="text-sm font-medium text-gray-300 mb-2">Live Terminal</h2>
+                    <LiveTerminal logs={liveLogs} />
+                </div>
+                <div>
+                    <h2 className="text-sm font-medium text-gray-300 mb-2">Reference</h2>
+                    <TerminalDisplay />
+                </div>
             </div>
         </div>
     );

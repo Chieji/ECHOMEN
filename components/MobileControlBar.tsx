@@ -24,8 +24,8 @@ const ControlButton: React.FC<{
     isActive?: boolean;
     onClick?: () => void;
     activeColorClass?: string;
-}> = ({ icon, label, isActive = false, onClick, activeColorClass = 'text-[#00D4FF]' }) => (
-    <button onClick={onClick} className={`flex flex-col items-center gap-1.5 p-2 rounded-lg transition-all duration-200 ${isActive ? `${activeColorClass} bg-black/5 dark:bg-white/5` : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'}`}>
+}> = ({ icon, label, isActive = false, onClick, activeColorClass = 'text-echo-cyan' }) => (
+    <button onClick={onClick} className={`flex flex-col items-center gap-1.5 p-2 rounded-lg transition-all duration-200 ${isActive ? `${activeColorClass} bg-echo-surface-elevated` : 'text-gray-500 hover:text-gray-300 hover:bg-echo-surface-elevated'}`}>
         {icon}
         <span className="text-xs font-medium">{label}</span>
     </button>
@@ -33,9 +33,9 @@ const ControlButton: React.FC<{
 
 
 export const MobileControlBar: React.FC<MobileControlBarProps> = ({ agentMode, setAgentMode, isWebToolActive, onWebToolClick, onClearChat }) => {
-    
+
     return (
-        <div className="border-t border-black/10 dark:border-white/10 mt-2 pt-2 px-2 flex justify-between items-center">
+        <div className="border-t border-echo-border mt-2 pt-2 px-2 flex justify-between items-center">
             {/* Left Group: Mode & Agents */}
             <div className="flex items-center gap-1">
                 <ControlButton
@@ -43,14 +43,14 @@ export const MobileControlBar: React.FC<MobileControlBarProps> = ({ agentMode, s
                     label="Action"
                     isActive={agentMode === AgentMode.ACTION}
                     onClick={() => setAgentMode(AgentMode.ACTION)}
-                    activeColorClass="text-[#00D4FF]"
+                    activeColorClass="text-echo-cyan"
                 />
                 <ControlButton
                     icon={<ChatIcon className="w-5 h-5" />}
                     label="Chat"
                     isActive={agentMode === AgentMode.CHAT}
                     onClick={() => setAgentMode(AgentMode.CHAT)}
-                    activeColorClass="text-[#8B5CF6]"
+                    activeColorClass="text-purple-500"
                 />
                 {agentMode === AgentMode.CHAT && (
                     <ControlButton
@@ -64,7 +64,7 @@ export const MobileControlBar: React.FC<MobileControlBarProps> = ({ agentMode, s
                     label="Agents"
                 />
             </div>
-            
+
             {/* Center Group: Tools */}
             <div className="flex items-center gap-1">
                  <ControlButton

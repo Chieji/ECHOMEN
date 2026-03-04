@@ -21,18 +21,18 @@ const CodeArtifact: React.FC<{ artifact: Artifact }> = ({ artifact }) => {
     };
 
     return (
-        <div className="bg-black/20 dark:bg-black/40 rounded-lg border border-black/10 dark:border-white/10 overflow-hidden">
-            <div className="flex justify-between items-center p-3 bg-black/10 dark:bg-black/20 border-b border-black/10 dark:border-white/10">
-                <h4 className="font-semibold text-zinc-800 dark:text-gray-200">{artifact.title}</h4>
+        <div className="bg-echo-surface rounded-lg border border-echo-border overflow-hidden">
+            <div className="flex justify-between items-center p-3 bg-echo-surface-elevated border-b border-echo-border">
+                <h4 className="font-semibold text-gray-200">{artifact.title}</h4>
                 <button
                     onClick={handleCopy}
-                    className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-md transition-colors ${copied ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-gray-300 hover:bg-white/20'}`}
+                    className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-md transition-colors ${copied ? 'bg-green-500/20 text-green-400' : 'bg-echo-surface-elevated text-gray-300 hover:bg-echo-surface'}`}
                 >
                     {copied ? <ClipboardCheckIcon className="w-4 h-4" /> : <DocumentTextIcon className="w-4 h-4" />}
                     {copied ? 'Copied!' : 'Copy'}
                 </button>
             </div>
-            <pre className="p-4 text-xs font-mono text-zinc-700 dark:text-gray-300 overflow-x-auto">
+            <pre className="p-4 text-xs font-mono text-gray-300 overflow-x-auto">
                 <code>{artifact.content}</code>
             </pre>
         </div>
@@ -50,9 +50,9 @@ const LivePreviewArtifact: React.FC<{ artifact: Artifact }> = ({ artifact }) => 
     };
 
     return (
-        <div className="bg-black/20 dark:bg-black/40 rounded-lg border border-black/10 dark:border-white/10 overflow-hidden">
-            <div className="flex justify-between items-center p-3 bg-black/10 dark:bg-black/20 border-b border-black/10 dark:border-white/10">
-                <h4 className="font-semibold text-zinc-800 dark:text-gray-200">{artifact.title}</h4>
+        <div className="bg-echo-surface rounded-lg border border-echo-border overflow-hidden">
+            <div className="flex justify-between items-center p-3 bg-echo-surface-elevated border-b border-echo-border">
+                <h4 className="font-semibold text-gray-200">{artifact.title}</h4>
             </div>
             <div className="p-4">
                 <h5 className="text-sm font-semibold mb-2 text-gray-400">Live Preview</h5>
@@ -60,27 +60,27 @@ const LivePreviewArtifact: React.FC<{ artifact: Artifact }> = ({ artifact }) => 
                     srcDoc={code}
                     title="Live Preview"
                     sandbox="allow-scripts"
-                    className="w-full h-48 rounded-md bg-white border border-black/10 dark:border-white/10"
+                    className="w-full h-48 rounded-md bg-white border border-echo-border"
                 />
             </div>
-             <div className="p-4 border-t border-black/10 dark:border-white/10">
+             <div className="p-4 border-t border-echo-border">
                 <h5 className="text-sm font-semibold mb-2 text-gray-400">Execution Result</h5>
-                <pre className="p-3 text-xs font-mono text-zinc-700 dark:text-gray-300 overflow-x-auto bg-black/20 rounded-md">
+                <pre className="p-3 text-xs font-mono text-gray-300 overflow-x-auto bg-echo-surface-elevated rounded-md">
                     <code>{result}</code>
                 </pre>
             </div>
-            <div className="p-4 border-t border-black/10 dark:border-white/10">
+            <div className="p-4 border-t border-echo-border">
                  <div className="flex justify-between items-center mb-2">
                     <h5 className="text-sm font-semibold text-gray-400">Source Code</h5>
                     <button
                         onClick={handleCopy}
-                        className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-md transition-colors ${copied ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-gray-300 hover:bg-white/20'}`}
+                        className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-md transition-colors ${copied ? 'bg-green-500/20 text-green-400' : 'bg-echo-surface-elevated text-gray-300 hover:bg-echo-surface'}`}
                     >
                         {copied ? <ClipboardCheckIcon className="w-4 h-4" /> : <DocumentTextIcon className="w-4 h-4" />}
                         {copied ? 'Copied!' : 'Copy Code'}
                     </button>
                 </div>
-                <pre className="p-3 text-xs font-mono text-zinc-700 dark:text-gray-300 overflow-x-auto bg-black/20 rounded-md max-h-48">
+                <pre className="p-3 text-xs font-mono text-gray-300 overflow-x-auto bg-echo-surface-elevated rounded-md max-h-48">
                     <code>{code}</code>
                 </pre>
             </div>
@@ -99,27 +99,27 @@ export const ArtifactsPanel: React.FC<ArtifactsPanelProps> = ({ artifacts, onClo
             onClick={onClose}
         >
             <motion.div
-                className="w-full max-w-2xl h-full bg-zinc-100 dark:bg-[#0F0F0F] border-l-2 border-green-500/50 shadow-2xl flex flex-col"
+                className="w-full max-w-2xl h-full bg-echo-surface border-l border-echo-border flex flex-col"
                 initial={{ x: '100%' }}
                 animate={{ x: '0%' }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 onClick={(e: any) => e.stopPropagation()}
             >
-                <header className="p-6 flex justify-between items-center border-b border-black/10 dark:border-white/10 flex-shrink-0">
-                    <h2 className="flex items-center gap-3 text-xl font-bold text-zinc-800 dark:text-gray-100">
-                        <ArchiveBoxIcon className="w-6 h-6 text-green-500" />
+                <header className="p-6 flex justify-between items-center border-b border-echo-border flex-shrink-0">
+                    <h2 className="flex items-center gap-3 text-xl font-bold text-gray-100">
+                        <ArchiveBoxIcon className="w-6 h-6 text-echo-cyan" />
                         Generated Artifacts
                     </h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-black dark:hover:text-white transition-colors">
+                    <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
                         <CloseIcon className="w-6 h-6" />
                     </button>
                 </header>
-                
+
                 <div className="p-6 flex-grow overflow-y-auto">
                     {artifacts.length === 0 ? (
                          <div className="flex flex-col items-center justify-center h-full text-center p-4 text-gray-500">
-                            <ArchiveBoxIcon className="w-20 h-20 text-zinc-300 dark:text-zinc-700 mb-4" />
+                            <ArchiveBoxIcon className="w-20 h-20 text-gray-600 mb-4" />
                             <h3 className="text-lg font-bold">No Artifacts Generated</h3>
                             <p className="max-w-sm mt-1">When an agent produces a final output like a code file or report, it will appear here.</p>
                         </div>
@@ -130,11 +130,11 @@ export const ArtifactsPanel: React.FC<ArtifactsPanelProps> = ({ artifacts, onClo
                                     case 'live-preview':
                                         return <LivePreviewArtifact key={artifact.id} artifact={artifact} />;
                                     case 'code':
-                                    case 'markdown': // Render markdown as code for now
+                                    case 'markdown':
                                         return <CodeArtifact key={artifact.id} artifact={artifact} />;
                                     default:
                                         return (
-                                            <div key={artifact.id} className="border p-4 rounded-lg">
+                                            <div key={artifact.id} className="border border-echo-border p-4 rounded-lg">
                                                 <h4 className="font-bold">{artifact.title}</h4>
                                                 <p className="text-sm">{artifact.content}</p>
                                             </div>

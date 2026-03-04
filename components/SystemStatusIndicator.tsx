@@ -14,14 +14,14 @@ export const SystemStatusIndicator: React.FC<SystemStatusIndicatorProps> = ({ ta
             case AgentStatus.RUNNING:
                 return {
                     statusText: `${activeTasks} Active Task${activeTasks !== 1 ? 's' : ''}`,
-                    statusColor: 'text-cyan-600 dark:text-[#00D4FF]',
+                    statusColor: 'text-echo-cyan',
                     pulse: true,
                     activeTaskCount: activeTasks,
                 };
             case AgentStatus.SYNTHESIZING:
                 return {
                     statusText: 'Synthesizing Playbook',
-                    statusColor: 'text-[#8B5CF6]',
+                    statusColor: 'text-purple-400',
                     pulse: true,
                     activeTaskCount: activeTasks,
                 };

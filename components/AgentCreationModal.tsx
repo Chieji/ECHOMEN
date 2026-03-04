@@ -120,7 +120,7 @@ export const AgentCreationModal = ({ agent, isOpen, onClose, onSave, modelProvid
                     onClick={onClose}
                 >
                     <motion.div
-                        className="w-full max-w-2xl bg-white/90 dark:bg-[#141414]/90 backdrop-blur-lg border-2 border-cyan-600/50 dark:border-[#00D4FF]/50 rounded-xl shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
+                        className="w-full max-w-2xl bg-white/90 dark:bg-[#141414]/90 backdrop-blur-lg border-2 border-cyan-600/50 dark:border-echo-cyan/50 rounded-xl shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
@@ -129,7 +129,7 @@ export const AgentCreationModal = ({ agent, isOpen, onClose, onSave, modelProvid
                     >
                         <header className="flex-shrink-0 flex justify-between items-center mb-6 p-6 pb-0">
                             <div className="flex items-center gap-3">
-                                <div className="text-cyan-600 dark:text-[#00D4FF]"><AgentsIcon className="w-6 h-6" /></div>
+                                <div className="text-cyan-600 dark:text-echo-cyan"><AgentsIcon className="w-6 h-6" /></div>
                                 <h3 className="text-xl font-bold text-zinc-800 dark:text-white">{title}</h3>
                             </div>
                             <button onClick={onClose} className="text-gray-500 hover:text-black dark:hover:text-white transition-colors">
@@ -147,7 +147,7 @@ export const AgentCreationModal = ({ agent, isOpen, onClose, onSave, modelProvid
                                             value={formData.name || ''}
                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFormChange('name', e.target.value)}
                                             placeholder="e.g., Python Code Generator"
-                                            className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
+                                            className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-echo-cyan/50"
                                         />
                                     </div>
                                     <div>
@@ -157,7 +157,7 @@ export const AgentCreationModal = ({ agent, isOpen, onClose, onSave, modelProvid
                                                 <button 
                                                     key={iconName}
                                                     onClick={() => handleFormChange('icon', iconName)}
-                                                    className={`p-2 rounded-lg transition-colors ${formData.icon === iconName ? 'bg-cyan-600/20 ring-2 ring-cyan-600 dark:bg-[#00D4FF]/30 dark:ring-[#00D4FF]' : 'hover:bg-black/10 dark:hover:bg-white/10'}`}
+                                                    className={`p-2 rounded-lg transition-colors ${formData.icon === iconName ? 'bg-cyan-600/20 ring-2 ring-cyan-600 dark:bg-echo-cyan/30 dark:ring-echo-cyan' : 'hover:bg-black/10 dark:hover:bg-white/10'}`}
                                                 >
                                                     <AgentIcon icon={iconName} className="w-6 h-6 mx-auto text-gray-500 dark:text-gray-300" />
                                                 </button>
@@ -171,7 +171,7 @@ export const AgentCreationModal = ({ agent, isOpen, onClose, onSave, modelProvid
                                             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleFormChange('description', e.target.value)}
                                             placeholder="A brief summary of the agent's purpose."
                                             rows={2}
-                                            className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
+                                            className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-echo-cyan/50"
                                         />
                                     </div>
                                 </div>
@@ -183,7 +183,7 @@ export const AgentCreationModal = ({ agent, isOpen, onClose, onSave, modelProvid
                                         <select
                                             value={formData.llm_profile_id || ''}
                                             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleFormChange('llm_profile_id', e.target.value)}
-                                            className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
+                                            className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-echo-cyan/50"
                                         >
                                             <option value="">-- Select a Model --</option>
                                             {modelProviders.filter(p => p.enabled).map(p => (
@@ -200,7 +200,7 @@ export const AgentCreationModal = ({ agent, isOpen, onClose, onSave, modelProvid
                                             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleFormChange('instructions', e.target.value)}
                                             placeholder="Define the agent's purpose, capabilities, and personality..."
                                             rows={6}
-                                            className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50 font-mono text-sm"
+                                            className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-echo-cyan/50 font-mono text-sm"
                                         />
                                     </div>
                                 </div>
@@ -214,7 +214,7 @@ export const AgentCreationModal = ({ agent, isOpen, onClose, onSave, modelProvid
                                             value={(formData.capabilities || []).join(', ')}
                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleListChange('capabilities', e.target.value)}
                                             placeholder="e.g., PLANNING, CODE_EXECUTION"
-                                            className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
+                                            className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-echo-cyan/50"
                                         />
                                     </div>
                                     <div>
@@ -224,7 +224,7 @@ export const AgentCreationModal = ({ agent, isOpen, onClose, onSave, modelProvid
                                             value={(formData.enabled_tools || []).join(', ')}
                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleListChange('enabled_tools', e.target.value)}
                                             placeholder="e.g., CODE_INTERPRETER, GOOGLE_SEARCH"
-                                            className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
+                                            className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-echo-cyan/50"
                                         />
                                     </div>
                                  </div>
@@ -237,7 +237,7 @@ export const AgentCreationModal = ({ agent, isOpen, onClose, onSave, modelProvid
                                             type="checkbox"
                                             checked={!!formData.delegation_enabled}
                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFormChange('delegation_enabled', e.target.checked)}
-                                            className="w-5 h-5 rounded bg-zinc-300 dark:bg-zinc-700 border-zinc-400 dark:border-zinc-600 text-cyan-600 dark:text-[#00D4FF] focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
+                                            className="w-5 h-5 rounded bg-zinc-300 dark:bg-zinc-700 border-zinc-400 dark:border-zinc-600 text-cyan-600 dark:text-echo-cyan focus:ring-cyan-600/50 dark:focus:ring-echo-cyan/50"
                                         />
                                     </div>
                                      <div>
@@ -247,7 +247,7 @@ export const AgentCreationModal = ({ agent, isOpen, onClose, onSave, modelProvid
                                             value={formData.review_policy || ''}
                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFormChange('review_policy', e.target.value)}
                                             placeholder="e.g., CRITIQUE_DEBUG_AND_REFINE"
-                                            className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
+                                            className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-echo-cyan/50"
                                         />
                                     </div>
                                     <div>
@@ -257,7 +257,7 @@ export const AgentCreationModal = ({ agent, isOpen, onClose, onSave, modelProvid
                                             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setChildTemplateJson(e.target.value)}
                                             placeholder={'{\n  "llm_profile_id": "ollama-llama3-8b",\n  "default_tools": ["CODE_INTERPRETER"]\n}'}
                                             rows={8}
-                                            className={`w-full bg-black/5 dark:bg-black/40 border rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 font-mono text-sm ${jsonError ? 'border-red-500 focus:ring-red-500' : 'border-black/10 dark:border-white/10 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50'}`}
+                                            className={`w-full bg-black/5 dark:bg-black/40 border rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 font-mono text-sm ${jsonError ? 'border-red-500 focus:ring-red-500' : 'border-black/10 dark:border-white/10 focus:ring-cyan-600/50 dark:focus:ring-echo-cyan/50'}`}
                                         />
                                         {jsonError && <p className="text-red-500 text-xs mt-1">{jsonError}</p>}
                                     </div>
@@ -269,7 +269,7 @@ export const AgentCreationModal = ({ agent, isOpen, onClose, onSave, modelProvid
                             <button
                                 onClick={handleSave}
                                 disabled={!formData.name?.trim() || !formData.instructions?.trim()}
-                                className="bg-cyan-600 hover:bg-cyan-700 text-white dark:bg-[#00D4FF] dark:hover:bg-[#00b8e6] dark:text-black font-bold py-2 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="bg-cyan-600 hover:bg-cyan-700 text-white dark:bg-echo-cyan dark:hover:bg-cyan-400 dark:text-black font-bold py-2 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {buttonLabel}
                             </button>

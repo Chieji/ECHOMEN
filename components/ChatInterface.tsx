@@ -163,7 +163,7 @@ export const ChatInterface = ({ messages, onSuggestionClick, onEditMessage, onAc
                                     initial={{ opacity: 0, y: 20, scale: 0.95 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                 >
-                                    <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center bg-cyan-600 dark:bg-[#00D4FF]">
+                                    <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center bg-cyan-600 dark:bg-echo-cyan">
                                         <LogoIcon className="w-5 h-5 text-black" />
                                     </div>
                                     <div className="relative p-4 rounded-2xl max-w-lg bg-white dark:bg-[#181818] shadow-md w-full border border-cyan-500/30">
@@ -202,7 +202,7 @@ export const ChatInterface = ({ messages, onSuggestionClick, onEditMessage, onAc
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 transition={{ duration: 0.3, delay: 0.05, type: 'spring', stiffness: 200, damping: 25 }}
                             >
-                                <div className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center ${msg.sender === 'user' ? 'bg-[#FF6B00]' : 'bg-cyan-600 dark:bg-[#00D4FF]'}`}>
+                                <div className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center ${msg.sender === 'user' ? 'bg-[#FF6B00]' : 'bg-cyan-600 dark:bg-echo-cyan'}`}>
                                     {msg.sender === 'agent' && <LogoIcon className="w-5 h-5 text-black" />}
                                 </div>
                                 <div className={`relative p-4 rounded-2xl max-w-lg shadow-md w-full ${msg.sender === 'user' ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100' : 'bg-white dark:bg-[#181818] text-zinc-800 dark:text-zinc-100'}`}>

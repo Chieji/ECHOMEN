@@ -2,16 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Header } from './components/Header';
 import { MasterConfigurationPanel } from './components/MasterConfigurationPanel';
 import { AnimatePresence } from 'framer-motion';
-import { Task, LogEntry, AgentStatus, Artifact, CustomAgent, Service, SessionStats } from './types';
+import { Task, LogEntry, AgentStatus, Artifact, CustomAgent, Service, SessionStats, Message, AgentMode } from './types';
 import { createInitialPlan, clarifyAndCorrectPrompt } from './services/planner';
 import { ExecutionStatusBar } from './components/ExecutionStatusBar';
 import { AgentExecutor } from './services/agentExecutor';
 import { CommandDeck } from './components/CommandDeck';
 import { CommandPalette } from './components/CommandPalette';
+import { ChatInterface } from './components/ChatInterface';
 
 /**
  * ECHO Main Application Entry
- * 
+ *
  * Orchestrates the multi-agent system, handles global state,
  * and manages the elite workstation UI.
  */
@@ -19,9 +20,11 @@ const App: React.FC = () => {
     // UI State
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+    const [triggerAgentsModal, setTriggerAgentsModal] = useState(false);
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
     const [agentStatus, setAgentStatus] = useState<AgentStatus>(AgentStatus.IDLE);
-    
+    const [agentMode, setAgentMode] = useState<AgentMode>(AgentMode.ACTION);
+
     // Data State
     const [tasks, setTasks] = useState<Task[]>([]);
     const [liveLogs, setLiveLogs] = useState<LogEntry[]>([]);
@@ -29,6 +32,7 @@ const App: React.FC = () => {
     const [agents, setAgents] = useState<CustomAgent[]>([]);
     const [sessionStats, setSessionStats] = useState<SessionStats>({ totalTokensUsed: 0 });
     const [services, setServices] = useState<Service[]>([]);
+    const [messages, setMessages] = useState<Message[]>([]);
 
     const executorRef = useRef<AgentExecutor | null>(null);
 
@@ -69,7 +73,7 @@ const App: React.FC = () => {
         const newLog = { ...log, timestamp: new Date().toISOString() };
         setLiveLogs(prev => [...prev.slice(-100), newLog]);
     };
-    
+
     const handleCreateArtifact = (artifactData: Omit<Artifact, 'id' | 'createdAt'>) => {
         const newArtifact: Artifact = {
             ...artifactData,
@@ -83,9 +87,74 @@ const App: React.FC = () => {
         setAgents(prev => [...prev, newAgent]);
     };
 
+    // --- Chat Mode Handlers ---
+
+    const handleSuggestionClick = (prompt: string) => {
+        const userMessage: Message = {
+            id: `msg-${Date.now()}`,
+            text: prompt,
+            sender: 'user',
+            timestamp: new Date().toISOString(),
+            type: 'chat',
+        };
+        setMessages(prev => [...prev, userMessage]);
+
+        // Simulate agent response (in a real app, this would call the LLM)
+        setTimeout(() => {
+            const agentMessage: Message = {
+                id: `msg-${Date.now()}-agent`,
+                text: `I understand you want to: "${prompt}". This is a chat mode response. In a full implementation, this would connect to the AI provider.`,
+                sender: 'agent',
+                timestamp: new Date().toISOString(),
+                type: 'chat',
+            };
+            setMessages(prev => [...prev, agentMessage]);
+        }, 500);
+    };
+
+    const handleEditMessage = (messageId: string, newText: string) => {
+        setMessages(prev => prev.map(msg =>
+            msg.id === messageId ? { ...msg, text: newText } : msg
+        ));
+    };
+
+    const handleAcceptAction = (messageId: string, prompt: string) => {
+        // Remove the action prompt and switch to action mode with the prompt
+        setMessages(prev => prev.filter(msg => msg.id !== messageId));
+        setAgentMode(AgentMode.ACTION);
+        handleSendCommand(prompt);
+    };
+
+    const handleDeclineAction = (messageId: string) => {
+        setMessages(prev => prev.filter(msg => msg.id !== messageId));
+    };
+
     const handleSendCommand = async (prompt: string) => {
         if (!prompt.trim()) return;
-        
+
+        // In chat mode, just add the message and get a response
+        if (agentMode === AgentMode.CHAT) {
+            const userMessage: Message = {
+                id: `msg-${Date.now()}-user`,
+                text: prompt,
+                sender: 'user',
+                timestamp: new Date().toISOString(),
+                type: 'chat',
+            };
+            setMessages(prev => [...prev, userMessage]);
+
+            // Simulate agent response (in real app, this would call the LLM)
+            const agentMessage: Message = {
+                id: `msg-${Date.now()}-agent`,
+                text: `Processing your request: "${prompt}"... This is a chat mode response. The actual AI response would be generated here.`,
+                sender: 'agent',
+                timestamp: new Date().toISOString(),
+                type: 'chat',
+            };
+            setMessages(prev => [...prev, agentMessage]);
+            return;
+        }
+
         setTasks([]);
         setLiveLogs([]);
         setAgentStatus(AgentStatus.RUNNING);
@@ -134,21 +203,35 @@ const App: React.FC = () => {
                 onSettingsClick={() => setIsSettingsOpen(true)}
                 onHistoryClick={() => {}}
                 onArtifactsClick={() => {}}
+                onModeChange={setAgentMode}
+                currentMode={agentMode}
                 tasks={tasks}
                 agentStatus={agentStatus}
                 sessionStats={sessionStats}
             />
 
             <main className="flex-grow overflow-hidden relative">
-                <CommandDeck
-                    tasks={tasks}
-                    logs={liveLogs}
-                    artifacts={artifacts}
-                    services={services}
-                    sessionStats={sessionStats}
-                    onCommand={handleSendCommand}
-                    onCancelTask={(id) => executorRef.current?.cancelTask(id)}
-                />
+                {agentMode === AgentMode.CHAT ? (
+                    <ChatInterface
+                        messages={messages}
+                        onSuggestionClick={handleSuggestionClick}
+                        onEditMessage={handleEditMessage}
+                        onAcceptAction={handleAcceptAction}
+                        onDeclineAction={handleDeclineAction}
+                    />
+                ) : (
+                    <CommandDeck
+                        tasks={tasks}
+                        logs={liveLogs}
+                        artifacts={artifacts}
+                        services={services}
+                        sessionStats={sessionStats}
+                        messages={messages}
+                        onCommand={handleSendCommand}
+                        onCancelTask={(id) => executorRef.current?.cancelTask(id)}
+                        onClearChat={() => setMessages([])}
+                    />
+                )}
             </main>
 
             <ExecutionStatusBar tasks={tasks} agentStatus={agentStatus} onStopExecution={() => executorRef.current?.cancelTask('')} />

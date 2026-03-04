@@ -4,13 +4,19 @@ import { CommandCenter } from './CommandCenter';
 import { ExecutionDashboard } from './ExecutionDashboard';
 import { ArtifactsPanel } from './ArtifactsPanel';
 import { EchoBrain } from './EchoBrain';
-import { Task, LogEntry, Artifact, Service, SessionStats } from '../types';
+import { Task, LogEntry, Artifact, Service, SessionStats, Message } from '../types';
 import { Squares2X2Icon } from './icons/Squares2X2Icon';
 import { ArchiveBoxIcon } from './icons/ArchiveBoxIcon';
 import { BrainIcon } from './icons/BrainIcon';
 import { IntelligenceSidebar } from './IntelligenceSidebar';
 import { NoteEditor } from './NoteEditor';
+import { AppDeployments } from './AppDeployments';
+import { RocketIcon } from './icons/RocketIcon';
+import { TerminalDisplay } from './TerminalDisplay';
+import { CommandLineIcon } from './icons/CommandLineIcon';
 import { buildBacklinkMap } from '../lib/linkParser';
+import { HistoryPanel } from './HistoryPanel';
+import { ClockIcon } from './icons/ClockIcon';
 
 interface CommandDeckProps {
     tasks: Task[];
@@ -18,16 +24,19 @@ interface CommandDeckProps {
     artifacts: Artifact[];
     services: Service[];
     sessionStats: SessionStats;
+    messages: Message[];
     onCommand: (prompt: string) => void;
     onCancelTask: (taskId: string) => void;
+    onClearChat: () => void;
 }
 
 export const CommandDeck = ({
-    tasks, logs, artifacts, services, sessionStats, onCommand, onCancelTask
+    tasks, logs, artifacts, services, sessionStats, messages, onCommand, onCancelTask, onClearChat
 }: CommandDeckProps): React.ReactElement => {
-    const [activeTab, setActiveTab] = useState<'board' | 'artifacts' | 'history' | 'brain'>('board');
+    const [activeTab, setActiveTab] = useState<'board' | 'artifacts' | 'history' | 'brain' | 'deployments' | 'terminal'>('board');
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [currentNoteContent, setCurrentNoteContent] = useState('');
-    
+
     // Neural Link: Calculate backlinks in real-time
     const backlinkMap = useMemo(() => {
         const items = artifacts.map(a => ({ id: a.title, content: a.content }));
@@ -103,10 +112,33 @@ export const CommandDeck = ({
                                 <BrainIcon className="w-4 h-4" />
                                 Notes
                             </button>
+                            <button
+                                onClick={() => setActiveTab('deployments')}
+                                className={`flex items-center gap-2 text-xs font-medium transition-colors ${activeTab === 'deployments' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                            >
+                                <RocketIcon className="w-4 h-4" />
+                                Deployments
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('terminal')}
+                                className={`flex items-center gap-2 text-xs font-medium transition-colors ${activeTab === 'terminal' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                            >
+                                <CommandLineIcon className="w-4 h-4" />
+                                Terminal
+                            </button>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-green-500" />
-                            <span className="text-xs text-gray-500">Ready</span>
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => setIsHistoryOpen(true)}
+                                className="flex items-center gap-2 text-xs font-medium text-gray-500 hover:text-gray-300 transition-colors"
+                            >
+                                <ClockIcon className="w-4 h-4" />
+                                History
+                            </button>
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-green-500" />
+                                <span className="text-xs text-gray-500">Ready</span>
+                            </div>
                         </div>
                     </nav>
 
@@ -157,6 +189,40 @@ export const CommandDeck = ({
                                     />
                                 </motion.div>
                             )}
+                            {activeTab === 'deployments' && (
+                                <motion.div
+                                    key="deployments"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="h-full p-4 overflow-y-auto"
+                                >
+                                    <div className="echo-surface border border-echo-border rounded-lg p-4 h-full">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-lg font-semibold text-white">App Deployments</h2>
+                                            <span className="text-xs text-gray-500">Manage your deployed applications</span>
+                                        </div>
+                                        <AppDeployments />
+                                    </div>
+                                </motion.div>
+                            )}
+                            {activeTab === 'terminal' && (
+                                <motion.div
+                                    key="terminal"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="h-full p-4 overflow-y-auto"
+                                >
+                                    <div className="echo-surface border border-echo-border rounded-lg p-4 h-full">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-lg font-semibold text-white">Terminal</h2>
+                                            <span className="text-xs text-gray-500">Command reference</span>
+                                        </div>
+                                        <TerminalDisplay />
+                                    </div>
+                                </motion.div>
+                            )}
                         </AnimatePresence>
                     </div>
                 </div>
@@ -170,6 +236,18 @@ export const CommandDeck = ({
                 currentNoteTitle="Active Note"
                 onSelectResult={(res) => console.log("Selected result:", res)}
             />
+
+            {/* History Panel Modal */}
+            <AnimatePresence>
+                {isHistoryOpen && (
+                    <HistoryPanel
+                        tasks={tasks}
+                        messages={messages}
+                        onClose={() => setIsHistoryOpen(false)}
+                        onClearChat={onClearChat}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 };

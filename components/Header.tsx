@@ -3,7 +3,9 @@ import { LogoIcon } from './icons/LogoIcon';
 import { DocumentTextIcon } from './icons/DocumentTextIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
 import { ArchiveBoxIcon } from './icons/ArchiveBoxIcon';
-import { Task, AgentStatus, SessionStats } from '../types';
+import { MessageBubbleIcon } from './icons/MessageBubbleIcon';
+import { CommandLineIcon } from './icons/CommandLineIcon';
+import { Task, AgentStatus, SessionStats, AgentMode } from '../types';
 import { SystemStatusIndicator } from './SystemStatusIndicator';
 import { TokenUsageIndicator } from './TokenUsageIndicator';
 
@@ -14,9 +16,11 @@ interface HeaderProps {
     tasks: Task[];
     agentStatus: AgentStatus;
     sessionStats: SessionStats;
+    currentMode: AgentMode;
+    onModeChange: (mode: AgentMode) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onSettingsClick, onHistoryClick, onArtifactsClick, tasks, agentStatus, sessionStats }) => {
+export const Header: React.FC<HeaderProps> = ({ onSettingsClick, onHistoryClick, onArtifactsClick, tasks, agentStatus, sessionStats, currentMode, onModeChange }) => {
     return (
         <header className="flex-none h-14 bg-echo-surface border-b border-echo-border px-4 flex justify-between items-center">
             <div className="flex items-center gap-3">
@@ -24,6 +28,34 @@ export const Header: React.FC<HeaderProps> = ({ onSettingsClick, onHistoryClick,
                 <h1 className="text-base font-semibold text-white">ECHO</h1>
 
                 <div className="h-5 w-px bg-echo-border mx-1"></div>
+
+                {/* Mode Toggle */}
+                <div className="flex items-center bg-echo-void rounded-lg p-1 border border-echo-border">
+                    <button
+                        onClick={() => onModeChange(AgentMode.ACTION)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                            currentMode === AgentMode.ACTION
+                                ? 'bg-echo-cyan text-black'
+                                : 'text-gray-400 hover:text-white hover:bg-echo-surface-elevated'
+                        }`}
+                        title="Action Mode"
+                    >
+                        <CommandLineIcon className="w-4 h-4" />
+                        <span className="hidden sm:inline">Action</span>
+                    </button>
+                    <button
+                        onClick={() => onModeChange(AgentMode.CHAT)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                            currentMode === AgentMode.CHAT
+                                ? 'bg-echo-cyan text-black'
+                                : 'text-gray-400 hover:text-white hover:bg-echo-surface-elevated'
+                        }`}
+                        title="Chat Mode"
+                    >
+                        <MessageBubbleIcon className="w-4 h-4" />
+                        <span className="hidden sm:inline">Chat</span>
+                    </button>
+                </div>
 
                 <button onClick={onArtifactsClick} title="View Artifacts" className="p-2 rounded-md text-gray-500 hover:text-white hover:bg-echo-surface-elevated transition-colors">
                     <ArchiveBoxIcon className="w-5 h-5" />
