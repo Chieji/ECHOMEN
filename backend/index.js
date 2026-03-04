@@ -6,13 +6,148 @@ const path = require('path');
 const { exec } = require('child_process');
 const { chromium } = require('playwright');
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const CSRF = require('csrf');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+// ============================================================================
+// SECURITY CONFIGURATION
+// ============================================================================
+
+// CSRF Protection Setup
+const csrf = new CSRF();
+const csrfSecretStore = new Map(); // In-memory secret storage per session
+const CSRF_SECRET_LIFETIME = 24 * 60 * 60 * 1000; // 24 hours
+
+// Generate or retrieve CSRF secret for a session
+function getCsrfSecret(sessionId) {
+    const existing = csrfSecretStore.get(sessionId);
+    if (!existing || Date.now() - existing.createdAt > CSRF_SECRET_LIFETIME) {
+        const newEntry = { secret: csrf.secretSync(), createdAt: Date.now() };
+        csrfSecretStore.set(sessionId, newEntry);
+        return newEntry.secret;
+    }
+    return existing.secret;
+}
+
+// Rate Limiting Configuration
+const limiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 100, // 100 requests per minute per IP
+    message: { error: 'Too many requests, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+        return req.ip || req.connection.remoteAddress || 'unknown';
+    }
+});
+
+// Cleanup expired CSRF secrets periodically (every hour)
+setInterval(() => {
+    const now = Date.now();
+    for (const [sessionId, entry] of csrfSecretStore.entries()) {
+        if (now - entry.createdAt > CSRF_SECRET_LIFETIME) {
+            csrfSecretStore.delete(sessionId);
+        }
+    }
+}, 60 * 60 * 1000);
+
+// ============================================================================
+// SECURITY MIDDLEWARE
+// ============================================================================
+
+// Rate limiting middleware - applies to all routes
+app.use(limiter);
+
+// Security Headers Middleware - applies to all responses
+app.use((req, res, next) => {
+    // Prevent MIME type sniffing
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    // Prevent clickjacking
+    res.setHeader('X-Frame-Options', 'DENY');
+    // XSS protection for older browsers
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    // Enforce HTTPS
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    // Content Security Policy
+    res.setHeader('Content-Security-Policy', "default-src 'self'");
+    // Referrer Policy
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    // Remove X-Powered-By header
+    res.removeHeader('X-Powered-By');
+    next();
+});
+
+// CORS Configuration with credentials for CSRF cookies
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Authorization'],
+    exposedHeaders: ['X-CSRF-Token']
+}));
+
 app.use(bodyParser.json());
+
+// ============================================================================
+// CSRF TOKEN ENDPOINT
+// ============================================================================
+
+/**
+ * GET /api/csrf-token
+ * Returns a CSRF token for the current session.
+ * Clients must include this token in X-CSRF-Token header for state-changing requests.
+ */
+app.get('/api/csrf-token', (req, res) => {
+    const sessionId = req.headers['x-session-id'] || req.query.sessionId || 'default';
+    const secret = getCsrfSecret(sessionId);
+    const token = csrf.create(secret);
+    
+    res.json({
+        token,
+        expiresIn: CSRF_SECRET_LIFETIME
+    });
+});
+
+// ============================================================================
+// CSRF VALIDATION MIDDLEWARE
+// ============================================================================
+
+/**
+ * Middleware to validate CSRF tokens on state-changing operations.
+ * Applied to POST, PUT, DELETE requests.
+ * GET requests are excluded as they should be idempotent.
+ */
+const validateCsrfToken = (req, res, next) => {
+    // Skip validation for OPTIONS (preflight) requests
+    if (req.method === 'OPTIONS') {
+        return next();
+    }
+
+    const sessionId = req.headers['x-session-id'] || req.query.sessionId || 'default';
+    const token = req.headers['x-csrf-token'] || req.body._csrf;
+
+    if (!token) {
+        return res.status(403).json({
+            error: 'CSRF token missing',
+            message: 'A valid CSRF token is required for state-changing operations. Request one from /api/csrf-token'
+        });
+    }
+
+    const secret = getCsrfSecret(sessionId);
+    
+    if (!csrf.verify(secret, token)) {
+        return res.status(403).json({
+            error: 'CSRF token invalid',
+            message: 'The provided CSRF token is invalid or has expired. Request a new token from /api/csrf-token'
+        });
+    }
+
+    next();
+};
 
 // ============================================================================
 // CONTENT SANITIZATION MODULE - Indirect Prompt Injection Guardrails
@@ -773,7 +908,8 @@ const dataTools = {
 
 // --- Main Execution Endpoint ---
 
-app.post('/execute-tool', async (req, res) => {
+// Apply CSRF validation to the execute-tool endpoint (state-changing operation)
+app.post('/execute-tool', validateCsrfToken, async (req, res) => {
     const { tool, args, sessionId = 'default', taskId, ephemeral = true } = req.body;
     if (!tool) return res.status(400).json({ error: 'Missing tool name' });
 
