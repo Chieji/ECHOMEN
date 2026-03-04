@@ -50,7 +50,7 @@ const AgentNode: React.FC<{ role: AgentRole, status: NodeStatus }> = ({ role, st
                 transform: `translate(-50%, -50%)`,
             }}
         >
-            <div className={`relative w-16 h-16 bg-zinc-300/20 dark:bg-black/50 border-2 rounded-full flex items-center justify-center transition-all duration-300 ${config.color} ${config.glow}`}>
+            <div className={`relative w-16 h-16 bg-echo-surface-elevated border-2 rounded-full flex items-center justify-center transition-all ${config.color}`}>
                 <div className={`${config.textColor}`}>{roleIcons[role]}</div>
                 {config.icon}
             </div>
