@@ -20,7 +20,6 @@ const App: React.FC = () => {
     // UI State
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isPaletteOpen, setIsPaletteOpen] = useState(false);
-    const [triggerAgentsModal, setTriggerAgentsModal] = useState(false);
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
     const [agentStatus, setAgentStatus] = useState<AgentStatus>(AgentStatus.IDLE);
     const [agentMode, setAgentMode] = useState<AgentMode>(AgentMode.ACTION);

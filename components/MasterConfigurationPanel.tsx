@@ -12,6 +12,7 @@ import { CohereIcon } from './icons/CohereIcon';
 import { SupabaseIcon } from './icons/SupabaseIcon';
 import { GenericApiIcon } from './icons/GenericApiIcon';
 import { AgentCreationModal } from './AgentCreationModal';
+import { PlaybookCreationModal } from './PlaybookCreationModal';
 import { CustomAgent, Playbook, AgentPreferences, AgentRole, TodoItem, Service, ModelProviderConfig, MemoryMode, PersistenceSettings } from '../types';
 import { PencilIcon } from './icons/PencilIcon';
 import { TrashIcon } from './icons/TrashIcon';
@@ -403,6 +404,9 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
 
     const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
     const [editingAgent, setEditingAgent] = useState<CustomAgent | null>(null);
+    const [isPlaybookModalOpen, setIsPlaybookModalOpen] = useState(false);
+    const [playbookSuggestedName, setPlaybookSuggestedName] = useState('');
+    const [playbookTriggerPrompt, setPlaybookTriggerPrompt] = useState('');
 
     const handleSaveService = (serviceId: string, values: { [key: string]: string }) => {
         console.log(`Saving service ${serviceId}`, values);
@@ -456,6 +460,25 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
         if (window.confirm("Are you sure you want to delete all learned playbooks? This action cannot be undone.")) {
             setPlaybooks([]);
         }
+    };
+
+    const handleOpenPlaybookModal = () => {
+        setPlaybookSuggestedName(`Playbook-${new Date().toISOString().slice(0, 10)}`);
+        setPlaybookTriggerPrompt('');
+        setIsPlaybookModalOpen(true);
+    };
+
+    const handleSavePlaybook = (name: string, description: string) => {
+        const newPlaybook: Playbook = {
+            id: `playbook-${Date.now()}`,
+            name,
+            description,
+            triggerPrompt: playbookTriggerPrompt || 'Manual creation',
+            tasks: [],
+            createdAt: new Date().toISOString(),
+        };
+        setPlaybooks(prev => [...prev, newPlaybook]);
+        setIsPlaybookModalOpen(false);
     };
 
     const handleAddTodo = (e: React.FormEvent) => {
@@ -700,13 +723,21 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                 ))}
                                 {Array.isArray(playbooks) && playbooks.length === 0 && <p className="text-sm text-center text-gray-500 py-2">No playbooks learned yet.</p>}
                             </div>
-                            <button
-                                onClick={handleClearAllPlaybooks}
-                                disabled={!Array.isArray(playbooks) || playbooks.length === 0}
-                                className="mt-3 w-full bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:bg-red-900/50 dark:hover:bg-red-900/80 dark:text-red-300 font-semibold py-2 px-4 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Clear All Playbooks
-                            </button>
+                            <div className="flex gap-2 mt-3">
+                                <button
+                                    onClick={handleOpenPlaybookModal}
+                                    className="flex-1 bg-echo-cyan/10 hover:bg-echo-cyan/20 text-echo-cyan font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
+                                >
+                                    + Create Playbook
+                                </button>
+                                <button
+                                    onClick={handleClearAllPlaybooks}
+                                    disabled={!Array.isArray(playbooks) || playbooks.length === 0}
+                                    className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:bg-red-900/50 dark:hover:bg-red-900/80 dark:text-red-300 font-semibold py-2 px-4 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Clear All
+                                </button>
+                            </div>
                         </Section>
                         
                          <Section title="Agent Management" icon={<AgentsIcon className="w-5 h-5" />}>
@@ -913,6 +944,18 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                         isOpen={isModelModalOpen}
                         onClose={() => setIsModelModalOpen(false)}
                         onSave={handleSaveModel}
+                    />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {isPlaybookModalOpen && (
+                    <PlaybookCreationModal
+                        isOpen={isPlaybookModalOpen}
+                        onClose={() => setIsPlaybookModalOpen(false)}
+                        onSave={handleSavePlaybook}
+                        suggestedName={playbookSuggestedName}
+                        triggerPrompt={playbookTriggerPrompt}
                     />
                 )}
             </AnimatePresence>

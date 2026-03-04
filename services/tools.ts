@@ -1,8 +1,8 @@
 import { FunctionDeclaration, Type } from "@google/genai";
-import { ToolArguments, ImportMeta } from '../types';
+import { ToolArguments } from '../types';
 import { saveMemory, retrieveMemory, deleteMemory } from '../lib/firebase_manager';
 
-const BACKEND_URL = (import.meta as ImportMeta).env?.VITE_CLOUD_ENGINE_URL || (import.meta as ImportMeta).env?.VITE_BACKEND_URL || 'http://localhost:3001/execute-tool';
+const BACKEND_URL = (import.meta as any).env?.VITE_CLOUD_ENGINE_URL || (import.meta as any).env?.VITE_BACKEND_URL || 'http://localhost:3001/execute-tool';
 
 // --- Helper Functions ---
 
@@ -419,6 +419,6 @@ export const availableTools: { [K in keyof ToolArguments]: (args: ToolArguments[
     data_analyze: (args) => callBackendTool('data_analyze', args),
     data_visualize: (args) => callBackendTool('data_visualize', args),
     createArtifact: (args) => Promise.resolve(`Artifact ${args.title} created.`),
-    create_and_delegate_task_to_new_agent: (args) => Promise.resolve("Task delegated."),
+    create_and_delegate_task_to_new_agent: (_args) => Promise.resolve("Task delegated."),
     askUser: (args) => Promise.resolve(`Question asked: ${args.question}`),
 };

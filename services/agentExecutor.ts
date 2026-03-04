@@ -1,4 +1,4 @@
-import { Task, LogEntry, SubStep, Artifact, CustomAgent, ExecutionError, MemoryMode, PersistenceSettings, ToolCall } from '../types';
+import { Task, LogEntry, SubStep, Artifact, CustomAgent, ExecutionError, MemoryMode, PersistenceSettings } from '../types';
 import { determineNextStep } from './planner';
 import { availableTools } from './tools';
 
@@ -12,10 +12,6 @@ const PRIVILEGED_TOOLS = [
     'memory_delete',
     'github_merge_pr'
 ];
-
-interface ToolCallWithApproval extends ToolCall {
-    requiresApproval?: boolean;
-}
 
 interface AgentExecutorCallbacks {
     onTaskUpdate: (task: Task) => void;

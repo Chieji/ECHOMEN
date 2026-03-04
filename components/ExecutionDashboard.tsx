@@ -1,7 +1,7 @@
 import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloseIcon } from './icons/CloseIcon';
-import { Task, LogEntry, TaskStatus } from '../types';
+import { Task, LogEntry } from '../types';
 import { PlannerIcon } from './icons/PlannerIcon';
 import { ExecutorIcon } from './icons/ExecutorIcon';
 import { ReviewerIcon } from './icons/ReviewerIcon';
@@ -42,18 +42,7 @@ const TaskItem = React.forwardRef<HTMLDivElement, {
     isDimmed: boolean;
 }>(({ task, onClick, highlight, isDimmed }, ref): React.ReactElement => {
     const config = statusConfig[task.status];
-    const prevStatusRef = useRef<TaskStatus | undefined>(undefined);
-    const [animateComplete, setAnimateComplete] = useState(false);
 
-    useEffect(() => { return
-        if (prevStatusRef.current && prevStatusRef.current !== 'Done' && task.status === 'Done') {
-            setAnimateComplete(true);
-            const timer = setTimeout(() => setAnimateComplete(false), 600);
-            return () => clearTimeout(timer);
-        }
-        prevStatusRef.current = task.status;
-    }, [task.status]);
-    
     let highlightClass = '';
     switch(highlight) {
         case 'selected':
@@ -124,19 +113,19 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
     const pipelineRef = useRef<HTMLDivElement>(null);
     const taskRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
-    useEffect(() => { return
+    useEffect(() => {
         if (selectedTaskId) {
-            const selected = tasks.find(t => t.id === selectedTaskId);
-            if (!selected) {
+            const selectedTask = tasks.find(t => t.id === selectedTaskId);
+            if (!selectedTask) {
                 setRelatedTaskIds({ dependencies: [], dependents: [] });
                 return;
             }
 
-            const deps = selected.dependencies;
+            const deps = selectedTask.dependencies;
             const dependents = tasks
                 .filter(t => t.dependencies.includes(selectedTaskId))
                 .map(t => t.id);
-                
+
             setRelatedTaskIds({ dependencies: deps, dependents: dependents });
         } else {
             setRelatedTaskIds({ dependencies: [], dependents: [] });

@@ -17,7 +17,7 @@ import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import Groq from "groq-sdk";
 import { getSecureItem } from "./secureStorage";
-import { Service, ToolCallDefinition, AIResponseData, AIUsage } from "../types";
+import { Service, ToolCallDefinition, AIResponseData } from "../types";
 
 export type AIProvider = 'google' | 'openai' | 'anthropic' | 'groq' | 'cohere' | 'openrouter' | 'together' | 'mistral' | 'huggingface';
 
@@ -380,10 +380,10 @@ export class AIBridge {
                 contents,
                 config: {
                     systemInstruction,
-                    tools: tools.map(t => ({ functionDeclarations: t })),
+                    tools: tools.map(t => ({ functionDeclarations: [t] })) as any,
                 },
             });
-            
+
             resultText = result.text || "";
             if (result.usageMetadata) {
                 totalTokens = result.usageMetadata.totalTokenCount || 0;
@@ -432,7 +432,7 @@ export class AIBridge {
         const choice = response.choices[0];
         return {
             text: choice.message.content || "",
-            toolCalls: choice.message.tool_calls,
+            toolCalls: choice.message.tool_calls as any,
             usage: { totalTokens: response.usage?.total_tokens || 0 },
             provider: 'openai',
             model,
@@ -452,7 +452,7 @@ export class AIBridge {
             max_tokens: 4096,
             system,
             messages: [{ role: "user", content: user }],
-            tools: tools as Anthropic.MessageCreateParams.Tool[],
+            tools: tools as any,
         });
 
         const content = response.content[0] as Anthropic.TextBlock;
@@ -472,10 +472,10 @@ export class AIBridge {
 
         const client = new Groq({ apiKey });
 
-        const messages: Groq.Chat.Completions.ChatCompletionMessageParam[] = [
+        const messages = [
             { role: "system", content: system },
             { role: "user", content: user }
-        ];
+        ] as any;
 
         const response = await client.chat.completions.create({
             model: model || "llama-3.3-70b-versatile",
@@ -487,7 +487,7 @@ export class AIBridge {
         const choice = response.choices[0];
         return {
             text: choice.message.content || "",
-            toolCalls: choice.message.tool_calls,
+            toolCalls: choice.message.tool_calls as any,
             usage: { totalTokens: response.usage?.total_tokens || 0 },
             provider: 'groq',
             model,

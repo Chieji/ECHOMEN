@@ -2,12 +2,10 @@
  * Secure Storage Library for ECHOMEN
  *
  * NOTE: This implementation provides OBFUSCATION, not absolute security.
- * The encryption key is stored in sessionStorage to prevent persistence 
+ * The encryption key is stored in sessionStorage to prevent persistence
  * across browser restarts, but it is still vulnerable to XSS.
  * For production, derive the key from a user passphrase per session.
  */
-
-import { Service } from '../types';
 
 const ENCRYPTION_ALGORITHM = 'AES-GCM';
 const KEY_LENGTH = 256;
@@ -111,6 +109,6 @@ export function isSecureContext(): boolean {
 }
 
 // Minimal migration from old naming if necessary
-export async function migrateCredentials(oldServices: Service[]) {
+export async function migrateCredentials() {
     console.log("[Security] Migration initialized...");
 }
