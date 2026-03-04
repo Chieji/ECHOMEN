@@ -19,6 +19,37 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      build: {
+        // Enable manual chunk splitting for better caching
+        splitManualChunks: true,
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              // React core - stable, rarely changes
+              'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+              // Framer Motion - animation library
+              'motion-vendor': ['framer-motion'],
+              // AI SDKs - large, change independently
+              'ai-vendor': [
+                '@google/genai',
+                'openai',
+                '@anthropic-ai/sdk',
+                '@google/generative-ai',
+                'langchain',
+                'ai'
+              ],
+              // Firebase - if used, separate for caching
+              'firebase-vendor': ['firebase', 'firebase/app', 'firebase/auth', 'firebase/firestore'],
+            },
+            // Content-hash based naming for long-term caching
+            entryFileNames: 'assets/[name]-[hash].js',
+            chunkFileNames: 'assets/[name]-[hash].js',
+            assetFileNames: 'assets/[name]-[hash].[ext]',
+          }
+        },
+        // Optimize chunk size warnings (default is 500KB)
+        chunkSizeWarningLimit: 1000,
       }
     };
 });

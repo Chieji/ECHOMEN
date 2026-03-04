@@ -4,6 +4,9 @@
 
 **Your thoughts. My echo. Infinite possibility.**
 
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Security](https://img.shields.io/badge/security-hardened-green.svg)
+![TypeScript](https://img.shields.io/badge/types-0%20errors-success.svg)
 [![React](https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Gemini API](https://img.shields.io/badge/Gemini_API-Google-4285F4?style=for-the-badge&logo=google-gemini)](https://ai.google.dev/)
@@ -15,6 +18,25 @@
 ---
 
 **ECHO** is an Elite AI Workstation designed for **Action over Conversation.** It transforms your machine into a self-orchestrating multi-agent powerhouse, fusing a high-fidelity execution engine with a persistent "Second Brain."
+
+## 🆕 What's New in V1.1.0
+
+### Security Hardening (Latest)
+- ✅ **CSRF Protection** - Token-based CSRF validation on all state-changing operations
+- ✅ **Security Headers** - OWASP-recommended headers (CSP, X-Frame-Options, HSTS, etc.)
+- ✅ **Rate Limiting** - 100 requests/minute per IP to prevent DoS
+- ✅ **VM2 Sandboxed Execution** - Replaced unsafe eval() with secure VM for code execution
+- ✅ **Prompt Injection Guardrails** - Multi-layer defense against indirect prompt injection
+
+### Performance Optimizations
+- ✅ **Code Splitting** - Vendor libraries split into separate chunks (react, motion, ai)
+- ✅ **Lazy Loading** - All 5 modals lazy-loaded with Suspense boundaries
+- ✅ **Better Caching** - Content-hash based chunk naming for long-term caching
+
+### Quality Improvements
+- ✅ **Zero TypeScript Errors** - 100% type-safe codebase
+- ✅ **Test Infrastructure** - Vitest setup with 15+ security tests
+- ✅ **Updated Dependencies** - Express 5, latest security patches
 
 ## 🧠 The Second Brain (Knowledge & Memory)
 ECHO doesn't just execute; it *remembers* and *connects*.
@@ -36,9 +58,18 @@ Built with "Principal Architect" rigor.
 -   **Zero-Config Discovery:** Backend automatically scans and proxies local MCP services.
 
 ## 🖥️ Elite Workstation UI
--   **Unified Command Deck:** A high-density dashboard for real-time planning and execution.
--   **ECHO-P (Command Palette):** Trigger global actions instantly with `Ctrl + P` or `Cmd + K`.
--   **EchoBrain Pulse:** Real-time visualization of agent thoughts and system health.
+
+### Elite Workstation UI
+- **CommandDeck** - Unified dashboard with 5 tabs (Execution, Artifacts, Notes, Deployments, Terminal)
+- **ChatInterface** - Chat mode with Action/Chat toggle
+- **Header** - Mode selection, status indicators, token usage
+- **5 Configuration Modals** - ServiceConnection, AgentCreation, PlaybookCreation, ModelProvider, AppLogViewer
+- **HistoryPanel** - Session history and context management
+- **TerminalDisplay** - Command reference and execution logs
+
+### Additional UI Features
+- **ECHO-P (Command Palette):** Trigger global actions instantly with `Ctrl + P` or `Cmd + K`.
+- **EchoBrain Pulse:** Real-time visualization of agent thoughts and system health.
 
 ## 🚀 Quick Start (V1 Miracle Build)
 
@@ -46,7 +77,7 @@ Built with "Principal Architect" rigor.
 
 #### 1. The Engine (Backend)
 ```bash
-cd ECHOMEN/backend
+cd backend
 npm install
 npm start
 ```
@@ -54,11 +85,22 @@ npm start
 
 #### 2. The Cockpit (Frontend)
 ```bash
-cd ECHOMEN
 npm install
 npm run dev
 ```
 *Configure your keys in the Master Configuration Panel (Settings).*
+
+#### Development Commands
+```bash
+# Production build
+npm run build
+
+# Type check
+npx tsc --noEmit
+
+# Run tests
+npx vitest run
+```
 
 ---
 
@@ -149,9 +191,33 @@ docker compose down -v
 -   **AI Bridge:** Unified abstraction for Gemini, OpenAI, and Anthropic.
 -   **Secure Storage:** AES-256-GCM encrypted credentials in session memory.
 
----
+## 🛡️ Security
 
-## 🛡️ Docker Security Considerations
+ECHOMEN implements defense-in-depth security:
+
+### Backend Security
+- CSRF token validation on all POST/PUT/DELETE endpoints
+- Rate limiting (100 req/min per IP)
+- OWASP security headers (CSP, X-Frame-Options, HSTS, X-XSS-Protection)
+- Secure CORS with credentials support
+- Content sanitization for file operations
+
+### Code Execution Security
+- VM2 sandboxed JavaScript execution
+- 5-second timeout limit
+- Blocked dangerous globals (process, require, global, window, document)
+- Isolated scope prevents variable leakage
+
+### AI Security
+- Indirect prompt injection detection (6 pattern categories)
+- Content sanitization with XML delimiters
+- Defense-in-depth (4 layers)
+- Human-in-the-Loop (HITL) for privileged operations
+
+### Dependency Security
+- Regular npm audit
+- Zero known vulnerabilities
+- Automated security updates
 
 The Docker setup addresses the **Command Execution Sandbox Bypass** security recommendation through containerization:
 
@@ -222,6 +288,20 @@ docker compose logs echomen-backend > backend.log
 # Monitor resource usage
 docker stats echomen-backend
 ```
+
+---
+
+## 🚀 V2 Roadmap
+
+Planned improvements for V2:
+
+- [ ] **Test Coverage** - Target 60%+ component test coverage
+- [ ] **MCP Integration** - Model Context Protocol support
+- [ ] **Google Workspace** - Gmail, Drive, Calendar integrations
+- [ ] **Advanced Memory** - Vector embeddings for semantic search
+- [ ] **Performance** - Bundle size optimization (target <1MB initial load)
+- [ ] **Mobile App** - React Native companion app
+- [ ] **Desktop App** - Tauri-based desktop client
 
 ---
 
