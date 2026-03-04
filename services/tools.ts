@@ -1,6 +1,7 @@
 import { FunctionDeclaration, Type } from "@google/genai";
 import { ToolArguments } from '../types';
 import { saveMemory, retrieveMemory, deleteMemory } from '../lib/firebase_manager';
+import { VM } from 'vm2';
 
 const BACKEND_URL = (import.meta as any).env?.VITE_CLOUD_ENGINE_URL || (import.meta as any).env?.VITE_BACKEND_URL || 'http://localhost:3001/execute-tool';
 
@@ -35,25 +36,68 @@ const callBackendTool = async <K extends keyof ToolArguments>(
 };
 
 /**
- * Client-side JavaScript execution in a sandboxed environment.
+ * Client-side JavaScript execution in a secure sandboxed environment.
+ * Uses VM2 to prevent access to dangerous globals and limit execution time.
  */
 export const executeCode = async (language: 'javascript', code: string): Promise<string> => {
     if (language === 'javascript') {
         try {
-            // Capture console.log output
-            let output = '';
-            const originalLog = console.log;
-            console.log = (...args) => { output += args.join(' ') + '\n'; };
+            // Create a secure VM sandbox with restricted access
+            const vm = new VM({
+                timeout: 5000, // 5 second execution limit
+                sandbox: {
+                    // Provide safe console implementation
+                    console: {
+                        log: (...args: any[]) => args.join(' '),
+                        error: (...args: any[]) => `[ERROR] ${args.join(' ')}`,
+                        warn: (...args: any[]) => `[WARN] ${args.join(' ')}`,
+                    },
+                    // No access to these dangerous globals
+                    // process, require, global, window, document are all blocked
+                },
+                allowAsync: true,
+            });
 
-            // Execute in sandbox
-            const result = await eval(`(async () => { ${code} })()`);
+            // Wrap code to capture console.log output
+            const wrappedCode = `
+                (async () => {
+                    let __output__ = '';
+                    const __originalLog__ = console.log;
+                    console.log = (...args) => {
+                        __output__ += args.join(' ') + '\\n';
+                        return __originalLog__(...args);
+                    };
+                    
+                    try {
+                        const __result__ = await (async () => { ${code} })();
+                        return {
+                            output: __output__,
+                            result: __result__ !== undefined ? String(__result__) : ''
+                        };
+                    } catch (e) {
+                        return {
+                            output: __output__,
+                            error: e.message || String(e)
+                        };
+                    }
+                })()
+            `;
 
-            // Restore console.log
-            console.log = originalLog;
-
-            return output + (result !== undefined ? String(result) : '');
+            const result = await vm.run(wrappedCode);
+            
+            if (result.error) {
+                return `Error: ${result.error}`;
+            }
+            
+            return result.output + result.result;
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            
+            // Handle specific VM2 errors
+            if (errorMessage.includes('Script execution timed out')) {
+                return 'Error: Script execution timed out (5 second limit exceeded)';
+            }
+            
             return `Error: ${errorMessage}`;
         }
     }
