@@ -163,7 +163,7 @@ const Section: React.FC<{ title: string; icon?: React.ReactNode; children: React
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full flex justify-between items-center mb-4"
             >
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-cyan-600 dark:text-[#00D4FF] tracking-widest uppercase">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-300">
                     {icon}
                     <span>{title}</span>
                 </h3>
@@ -526,77 +526,71 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
     return (
         <>
             <motion.div
-                className="fixed inset-0 z-50 flex justify-end"
-                initial={{ backgroundColor: 'rgba(0,0,0,0)' }}
-                animate={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
-                exit={{ backgroundColor: 'rgba(0,0,0,0)' }}
+                className="fixed inset-0 z-50 flex justify-end bg-black/50"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 onClick={onClose}
             >
                 <motion.div
-                    className="w-full max-w-md h-full bg-white dark:bg-[#0F0F0F] border-l-2 border-[#FF6B00]/50 shadow-2xl flex flex-col"
+                    className="w-full max-w-md h-full bg-echo-surface border-l border-echo-border flex flex-col"
                     initial={{ x: '100%' }}
                     animate={{ x: '0%' }}
                     exit={{ x: '100%' }}
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 >
-                    <header className="p-6 flex justify-between items-center border-b border-black/10 dark:border-white/10 flex-shrink-0">
-                        <h2 className="text-xl font-bold text-zinc-800 dark:text-gray-100">Settings</h2>
-                        <button onClick={onClose} className="text-gray-500 hover:text-black dark:hover:text-white transition-colors">
-                            <CloseIcon className="w-6 h-6" />
+                    <header className="p-4 flex justify-between items-center border-b border-echo-border flex-shrink-0">
+                        <h2 className="text-lg font-semibold text-white">Settings</h2>
+                        <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors p-1">
+                            <CloseIcon className="w-5 h-5" />
                         </button>
                     </header>
-                    <div className="p-6 flex-grow overflow-y-auto">
-                         <Section title="Appearance" icon={<SwatchIcon className="w-5 h-5" />}>
-                            <div className="flex items-center justify-between bg-black/5 dark:bg-white/5 p-3 rounded-lg">
-                                <label htmlFor="theme-toggle" className="font-semibold text-zinc-800 dark:text-white">Theme</label>
-                                <div className="flex items-center gap-2 rounded-lg bg-zinc-200 dark:bg-zinc-800 p-1">
-                                    <button onClick={() => setTheme('light')} className={`px-3 py-1 text-sm rounded-md ${theme === 'light' ? 'bg-white dark:bg-zinc-600 shadow' : ''}`}>Light</button>
-                                    <button onClick={() => setTheme('dark')} className={`px-3 py-1 text-sm rounded-md ${theme === 'dark' ? 'bg-white dark:bg-zinc-600 shadow' : ''}`}>Dark</button>
+                    <div className="p-4 flex-grow overflow-y-auto">
+                         <Section title="Appearance" icon={<SwatchIcon className="w-4 h-4" />}>
+                            <div className="flex items-center justify-between bg-echo-surface-elevated p-3 rounded-md">
+                                <label htmlFor="theme-toggle" className="text-sm text-gray-300">Theme</label>
+                                <div className="flex items-center gap-1 rounded-md bg-echo-surface p-0.5">
+                                    <button onClick={() => setTheme('light')} className={`px-3 py-1 text-xs rounded ${theme === 'light' ? 'bg-gray-600 text-white' : 'text-gray-500'}`}>Light</button>
+                                    <button onClick={() => setTheme('dark')} className={`px-3 py-1 text-xs rounded ${theme === 'dark' ? 'bg-gray-600 text-white' : 'text-gray-500'}`}>Dark</button>
                                 </div>
                             </div>
                         </Section>
 
-                        <Section title="Memory & Persistence" icon={<DatabaseIcon className="w-5 h-5" />}>
-                            <div className="bg-black/5 dark:bg-white/5 p-4 rounded-xl border border-black/10 dark:border-white/10 space-y-6">
+                        <Section title="Memory & Persistence" icon={<DatabaseIcon className="w-4 h-4" />}>
+                            <div className="bg-echo-surface-elevated p-4 rounded-md border border-echo-border space-y-4">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm font-bold text-zinc-800 dark:text-white">Memory Storage Mode</p>
-                                        <p className="text-[10px] text-gray-500 uppercase tracking-tighter">Current: {persistence.mode}</p>
+                                        <p className="text-sm text-gray-300">Memory Mode</p>
+                                        <p className="text-[10px] text-gray-600">Current: {persistence.mode}</p>
                                     </div>
-                                    <button 
+                                    <button
                                         onClick={handleToggleMemoryMode}
-                                        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${persistence.mode === MemoryMode.LOCAL ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600' : 'bg-echo-cyan text-black shadow-neon'}`}
+                                        className={`px-3 py-1.5 rounded text-xs ${persistence.mode === MemoryMode.LOCAL ? 'bg-echo-surface text-gray-400' : 'bg-echo-cyan text-black'}`}
                                     >
-                                        Switch to {persistence.mode === MemoryMode.LOCAL ? 'Cloud' : 'Local'}
+                                        {persistence.mode === MemoryMode.LOCAL ? 'Cloud' : 'Local'}
                                     </button>
                                 </div>
 
-                                <div className="pt-4 border-t border-black/5 dark:border-white/5">
-                                    <p className="text-sm font-bold text-zinc-800 dark:text-white mb-2 italic flex items-center gap-2">
-                                        <BrainIcon className="w-4 h-4 text-echo-cyan" />
-                                        Obsidian / Google RAG Link
-                                    </p>
+                                <div className="pt-3 border-t border-echo-border">
+                                    <p className="text-sm text-gray-300 mb-2">Obsidian / Google RAG</p>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">File Search Store ID</label>
-                                        <input 
-                                            type="text" 
+                                        <label className="text-[10px] text-gray-500">Store ID</label>
+                                        <input
+                                            type="text"
                                             value={persistence.fileSearchStoreId || ''}
                                             onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setPersistence(prev => ({ ...prev, fileSearchStoreId: e.target.value }))}
                                             placeholder="fileSearchStores/store_..."
-                                            className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-echo-cyan/50 text-xs font-mono"
+                                            className="w-full bg-echo-surface border border-echo-border rounded-md px-3 py-2 text-gray-300 text-xs"
                                         />
-                                        <p className="text-[9px] text-gray-500 leading-relaxed italic">
-                                            Paste your Obsidian Gemini Store ID here to sync ECHO with your vault's cloud memory.
-                                        </p>
                                     </div>
                                 </div>
                             </div>
                         </Section>
 
-                        <Section title="MCP Tool Expansion" icon={<PlugIcon className="w-5 h-5" />}>
-                            <div className="space-y-4">
-                                <p className="text-[11px] text-gray-500 uppercase font-bold tracking-widest">Connected Protocols</p>
+                        <Section title="MCP Tool Expansion" icon={<PlugIcon className="w-4 h-4" />}>
+                            <div className="space-y-3">
+                                <p className="text-xs text-gray-500 font-medium">Connected Protocols</p>
                                 {[
                                     { name: 'Git Protocol', url: 'http://localhost:3002', status: 'Connected' },
                                     { name: 'WebHawk (Playwright)', url: 'http://localhost:3003', status: 'Connected' },

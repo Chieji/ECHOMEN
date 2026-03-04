@@ -14,50 +14,71 @@
     
     <style>
       :root {
+        /* Clean, professional palette - inspired by Claude/VS Code */
         --echo-cyan: #00D4FF;
-        --echo-void: #09090B;
+        --echo-void: #0D0D0D;
+        --echo-surface: #1A1A1A;
+        --echo-surface-elevated: #242424;
+        --echo-border: #333333;
+        --echo-text: #E5E5E5;
+        --echo-text-muted: #888888;
+
+        /* Semantic colors - more muted */
+        --echo-accent: #00D4FF;
+        --echo-success: #22C55E;
+        --echo-warning: #F59E0B;
+        --echo-error: #EF4444;
       }
 
       body {
-        font-family: 'Geist', sans-serif;
+        font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
         background-color: var(--echo-void);
-        color: #eee;
+        color: var(--echo-text);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
 
       .font-mono {
-        font-family: 'Geist Mono', monospace;
+        font-family: 'Geist Mono', 'SF Mono', Consolas, monospace;
       }
 
-      /* Cyber Scrollbar Miracle */
+      /* Clean scrollbar - subtle, not neon */
       ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
+        width: 8px;
+        height: 8px;
       }
       ::-webkit-scrollbar-track {
         background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: rgba(0, 212, 255, 0.1);
-        border-radius: 10px;
+        background: #404040;
+        border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: rgba(0, 212, 255, 0.3);
+        background: #555555;
       }
 
-      /* Glassmorphism Global Utility */
-      .echo-glass {
-        backdrop-blur: 20px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+      /* Subtle glass - not glassmorphism overload */
+      .echo-surface {
+        background: var(--echo-surface);
+        border: 1px solid var(--echo-border);
       }
 
-      /* Global Animations */
-      @keyframes echo-pulse {
-        0%, 100% { opacity: 1; filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.4)); }
-        50% { opacity: 0.7; filter: drop-shadow(0 0 2px rgba(0, 212, 255, 0.1)); }
+      .echo-surface-elevated {
+        background: var(--echo-surface-elevated);
+        border: 1px solid var(--echo-border);
       }
-      .animate-echo-pulse {
-        animation: echo-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+      /* Clean focus states */
+      *:focus-visible {
+        outline: 2px solid var(--echo-accent);
+        outline-offset: 2px;
+      }
+
+      /* Remove heavy animations - keep subtle only */
+      @keyframes pulse-subtle {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
       }
     </style>
 
@@ -81,14 +102,25 @@
             colors: {
               echo: {
                 cyan: '#00D4FF',
-                void: '#09090B',
+                void: '#0D0D0D',
+                surface: '#1A1A1A',
+                elevated: '#242424',
+                border: '#333333',
                 zinc: '#18181B',
                 orange: '#FF6B00',
               }
             },
             boxShadow: {
-              'neon': '0 0 15px rgba(0, 212, 255, 0.3)',
-              'neon-strong': '0 0 25px rgba(0, 212, 255, 0.5)',
+              // Clean, subtle shadows - no neon
+              'subtle': '0 1px 2px rgba(0, 0, 0, 0.3)',
+              'elevated': '0 4px 12px rgba(0, 0, 0, 0.4)',
+            },
+            fontSize: {
+              'xs': ['12px', { lineHeight: '1.5' }],
+              'sm': ['14px', { lineHeight: '1.5' }],
+              'base': ['15px', { lineHeight: '1.6' }],
+              'lg': ['18px', { lineHeight: '1.6' }],
+              'xl': ['20px', { lineHeight: '1.4' }],
             }
           },
         },

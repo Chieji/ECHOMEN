@@ -15,15 +15,15 @@ import { StopIcon } from './icons/StopIcon';
 
 
 const statusConfig = {
-    Done: { color: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 dark:bg-green-500/20 dark:border-green-500/30', glow: '' },
-    Executing: { color: 'bg-cyan-500/20 text-cyan-500 dark:text-cyan-400 border-cyan-500/70 dark:border-cyan-400/70', glow: 'shadow-[0_0_12px_rgba(56,189,248,0.5),0_0_24px_rgba(56,189,248,0.3)] animate-pulse' },
-    Queued: { color: 'bg-zinc-500/10 text-zinc-600 dark:text-gray-400 border-zinc-500/20 dark:bg-gray-500/20 dark:border-gray-500/30', glow: '' },
-    Error: { color: 'bg-red-500/20 text-red-500 dark:text-red-400 border-red-500/70 dark:border-red-400/70', glow: 'shadow-[0_0_15px_rgba(239,68,68,0.7),0_0_30px_rgba(239,68,68,0.4)]' },
-    'Pending Review': { color: 'bg-yellow-500/20 text-yellow-500 dark:text-yellow-400 border-yellow-500/70 dark:border-yellow-400/70', glow: 'shadow-[0_0_12px_rgba(234,179,8,0.6),0_0_24px_rgba(234,179,8,0.3)]' },
-    Revising: { color: 'bg-orange-500/20 text-orange-500 dark:text-orange-400 border-orange-500/70 dark:border-orange-400/70', glow: 'shadow-[0_0_12px_rgba(249,115,22,0.6),0_0_24px_rgba(249,115,22,0.3)]' },
-    Delegating: { color: 'bg-purple-500/20 text-purple-500 dark:text-purple-400 border-purple-500/70 dark:border-purple-400/70', glow: 'shadow-[0_0_12px_rgba(168,85,247,0.5),0_0_24px_rgba(168,85,247,0.3)]' },
-    Cancelled: { color: 'bg-zinc-500/10 text-zinc-600 dark:text-gray-500 border-zinc-500/20 dark:bg-gray-600/20 dark:border-gray-600/30', glow: '' },
-    AwaitingApproval: { color: 'bg-yellow-500/20 text-yellow-500 dark:text-yellow-400 border-yellow-500/70 dark:border-yellow-400/70', glow: 'shadow-[0_0_12px_rgba(234,179,8,0.6),0_0_24px_rgba(234,179,8,0.3)]' },
+    Done: { color: 'bg-green-500/10 text-green-400 border-green-500/20' },
+    Executing: { color: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' },
+    Queued: { color: 'bg-gray-500/10 text-gray-400 border-gray-500/20' },
+    Error: { color: 'bg-red-500/10 text-red-400 border-red-500/20' },
+    'Pending Review': { color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
+    Revising: { color: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
+    Delegating: { color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
+    Cancelled: { color: 'bg-gray-500/10 text-gray-500 border-gray-500/20' },
+    AwaitingApproval: { color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
 };
 
 
@@ -56,13 +56,13 @@ const TaskItem = React.forwardRef<HTMLDivElement, {
     let highlightClass = '';
     switch(highlight) {
         case 'selected':
-            highlightClass = 'border-2 border-[#FF6B00] shadow-[0_0_20px_rgba(255,107,0,0.6)]';
+            highlightClass = 'border-echo-cyan';
             break;
         case 'dependency':
-            highlightClass = 'border-2 border-cyan-400 dark:border-[#00D4FF] shadow-[0_0_20px_rgba(0,212,255,0.6)]';
+            highlightClass = 'border-cyan-400';
             break;
         case 'dependent':
-            highlightClass = 'border-2 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.6)]';
+            highlightClass = 'border-purple-400';
             break;
         default:
             highlightClass = '';
@@ -74,28 +74,18 @@ const TaskItem = React.forwardRef<HTMLDivElement, {
             ref={ref}
             layoutId={`task-container-${task.id}`}
             onClick={onClick}
-            className={`bg-white dark:bg-black/40 backdrop-blur-sm border relative overflow-hidden ${config.color} ${highlightClass} rounded-lg p-3 flex-shrink-0 w-64 cursor-pointer transition-all duration-300 ${isDimmed ? 'opacity-40' : 'opacity-100'} ${highlight === 'none' ? config.glow : ''}`}
-            whileHover={{ scale: isDimmed ? 1 : 1.03, y: isDimmed ? 0 : -4, opacity: 1 }}
-            animate={animateComplete ? { scale: [1, 1.05, 1] } : {}}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            className={`bg-echo-surface border ${config.color} ${highlightClass} rounded p-2.5 flex-shrink-0 w-56 cursor-pointer transition-opacity ${isDimmed ? 'opacity-40' : 'opacity-100'}`}
+            whileHover={{ scale: isDimmed ? 1 : 1.02 }}
         >
-            {task.status === 'Executing' && (
-                <motion.div 
-                    initial={{ x: '-100%' }}
-                    animate={{ x: '100%' }}
-                    transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-                    className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#00D4FF] to-transparent z-10"
-                />
-            )}
             <div className="flex justify-between items-start">
-                <p className="font-bold text-zinc-800 dark:text-white truncate pr-2">{task.title}</p>
-                <span className="text-xs font-mono text-gray-500 dark:text-gray-400">{task.estimatedTime}</span>
+                <p className="text-sm text-white truncate pr-2">{task.title}</p>
+                <span className="text-xs text-gray-500 font-mono">{task.estimatedTime}</span>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+            <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-1">
                 {roleIcons[task.agent.role]}
-                <span>{task.agent.role}: <span className="font-semibold">{task.agent.name}</span></span>
+                <span>{task.agent.role}: <span className="text-gray-400">{task.agent.name}</span></span>
             </p>
-            <div className={`mt-2 text-xs font-mono px-2 py-1 rounded w-fit ${config.color}`} >{task.status}</div>
+            <div className={`mt-2 text-[10px] px-2 py-0.5 rounded w-fit`} >{task.status}</div>
         </motion.div>
     );
 });
@@ -112,10 +102,10 @@ interface Line {
 }
 
 const logStatusColors = {
-    SUCCESS: 'text-green-500 dark:text-green-400',
-    ERROR: 'text-red-500 dark:text-red-400',
-    WARN: 'text-yellow-500 dark:text-yellow-400',
-    INFO: 'text-cyan-600 dark:text-[#00D4FF]',
+    SUCCESS: 'text-green-400',
+    ERROR: 'text-red-400',
+    WARN: 'text-yellow-400',
+    INFO: 'text-cyan-400',
 }
 
 interface ExecutionDashboardProps {
@@ -195,11 +185,11 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
     return (
         <div className="w-full max-w-7xl mx-auto px-4 flex-grow flex flex-col gap-8">
             <div>
-                <h2 className="text-lg font-bold text-cyan-600 dark:text-[#00D4FF] tracking-widest uppercase">Agent Brain</h2>
+                <h2 className="text-sm font-medium text-gray-400">Agent Brain</h2>
                 <AgentOrchestration tasks={tasks} />
             </div>
             <div>
-                 <h2 className="text-lg font-bold text-cyan-600 dark:text-[#00D4FF] tracking-widest uppercase">Task Pipeline</h2>
+                 <h2 className="text-sm font-medium text-gray-400 mb-2">Task Pipeline</h2>
                  <div ref={pipelineRef} className="relative mt-2 flex gap-4 overflow-x-auto pb-4 p-2 -m-2">
                     <svg className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{ zIndex: -1 }}>
                         <defs>
@@ -275,7 +265,7 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                         onClick={() => setSelectedTaskId(null)}
                      >
                         <motion.div
-                            className="w-full max-w-2xl bg-white dark:bg-[#0F0F0F] border-2 border-[#FF6B00] rounded-xl shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
+                            className="w-full max-w-2xl bg-echo-surface border border-echo-border rounded-lg flex flex-col max-h-[90vh]"
                             onClick={(e: { stopPropagation: () => void }) => e.stopPropagation()}
                         >
                             <div className="flex-shrink-0 p-6 pb-4 border-b border-black/10 dark:border-white/10">
@@ -384,7 +374,7 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
             </AnimatePresence>
              
              <div>
-                <h2 className="text-lg font-bold text-cyan-600 dark:text-[#00D4FF] tracking-widest uppercase mb-2">Live Terminal</h2>
+                <h2 className="text-sm font-medium text-gray-300 mb-2">Live Terminal</h2>
                 <LiveTerminal logs={liveLogs} />
             </div>
         </div>

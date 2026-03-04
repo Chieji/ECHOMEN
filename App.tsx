@@ -129,7 +129,7 @@ const App: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-[#09090B] text-gray-100 selection:bg-[#00D4FF]/30 overflow-hidden">
+        <div className="flex flex-col h-screen bg-echo-void text-gray-100 overflow-hidden">
             <Header
                 onSettingsClick={() => setIsSettingsOpen(true)}
                 onHistoryClick={() => {}}
@@ -140,7 +140,7 @@ const App: React.FC = () => {
             />
 
             <main className="flex-grow overflow-hidden relative">
-                <CommandDeck 
+                <CommandDeck
                     tasks={tasks}
                     logs={liveLogs}
                     artifacts={artifacts}
@@ -153,15 +153,15 @@ const App: React.FC = () => {
 
             <ExecutionStatusBar tasks={tasks} agentStatus={agentStatus} onStopExecution={() => executorRef.current?.cancelTask('')} />
 
-            <CommandPalette 
-                isOpen={isPaletteOpen} 
-                onClose={() => setIsPaletteOpen(false)} 
+            <CommandPalette
+                isOpen={isPaletteOpen}
+                onClose={() => setIsPaletteOpen(false)}
                 onAction={(id) => id === 'open-settings' && setIsSettingsOpen(true)}
             />
 
             <AnimatePresence>
                 {isSettingsOpen && (
-                    <MasterConfigurationPanel 
+                    <MasterConfigurationPanel
                         onClose={() => setIsSettingsOpen(false)}
                         theme={theme}
                         setTheme={setTheme}

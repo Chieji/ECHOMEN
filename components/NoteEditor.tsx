@@ -10,10 +10,7 @@ interface NoteEditorProps {
 }
 
 /**
- * NoteEditor Component
- * 
- * A high-fidelity editor with Obsidian-style wiki-linking.
- * Triggers on '[[' to provide autocomplete for existing notes and artifacts.
+ * NoteEditor - Clean editor with wiki-linking
  */
 export const NoteEditor: React.FC<NoteEditorProps> = ({ initialContent = '', onSave, availableNotes }) => {
     const [isSaved, setIsSaved] = useState(true);
@@ -23,7 +20,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ initialContent = '', onS
             StarterKit,
             Mention.configure({
                 HTMLAttributes: {
-                    class: 'px-1 py-0.5 rounded bg-cyan-500/20 text-[#00D4FF] font-bold border border-cyan-500/30 cursor-pointer hover:bg-cyan-500/40 transition-colors',
+                    class: 'px-1 py-0.5 rounded bg-echo-cyan/20 text-echo-cyan border border-echo-cyan/30',
                 },
                 suggestion: {
                     char: '[[',
@@ -35,8 +32,6 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ initialContent = '', onS
                     render: () => {
                         return {
                             onStart: (props: { query: string }) => {
-                                // Logic for rendering the autocomplete dropdown would go here
-                                // For the MVP, we are focusing on the extension configuration
                                 console.log("Suggestion started for:", props.query);
                             },
                             onUpdate: (props: { query: string }) => {
@@ -57,7 +52,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ initialContent = '', onS
         },
         editorProps: {
             attributes: {
-                class: 'prose prose-invert max-w-none focus:outline-none min-h-[400px] text-gray-200 leading-relaxed',
+                class: 'prose prose-invert max-w-none focus:outline-none min-h-[400px] text-gray-200',
             },
         },
     });
@@ -65,35 +60,35 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ initialContent = '', onS
     if (!editor) return null;
 
     return (
-        <div className="bg-[#121212] border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-full">
-            <header className="px-6 py-3 border-b border-white/5 bg-white/5 flex items-center justify-between">
+        <div className="bg-echo-surface border border-echo-border rounded-lg overflow-hidden flex flex-col h-full">
+            <header className="px-4 py-2 border-b border-echo-border bg-echo-surface-elevated flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
-                    <span className="text-[10px] text-gray-400 font-mono uppercase tracking-widest">ECHO Editor v1.0</span>
+                    <div className="w-2 h-2 rounded-full bg-gray-500" />
+                    <span className="text-xs text-gray-500">Editor</span>
                 </div>
-                <div className="flex items-center gap-4">
-                    <span className={`text-[10px] font-mono ${isSaved ? 'text-green-500' : 'text-orange-500'}`}>
-                        {isSaved ? '● SYNCHRONIZED' : '○ UNSAVED CHANGES'}
+                <div className="flex items-center gap-3">
+                    <span className={`text-xs ${isSaved ? 'text-green-500' : 'text-orange-500'}`}>
+                        {isSaved ? 'Saved' : 'Unsaved'}
                     </span>
-                    <button 
+                    <button
                         onClick={() => {
                             onSave(editor.getHTML());
                             setIsSaved(true);
                         }}
-                        className="px-3 py-1 bg-cyan-500 hover:bg-cyan-600 text-black text-[10px] font-bold rounded transition-colors"
+                        className="px-3 py-1 bg-echo-cyan hover:bg-cyan-400 text-black text-xs rounded transition-colors"
                     >
-                        FORCE SAVE
+                        Save
                     </button>
                 </div>
             </header>
-            
-            <div className="flex-grow overflow-y-auto p-8 bg-transparent">
+
+            <div className="flex-grow overflow-y-auto p-4 bg-transparent">
                 <EditorContent editor={editor} />
             </div>
 
-            <footer className="px-6 py-2 border-t border-white/5 bg-white/[0.02] flex items-center gap-6">
-                <span className="text-[10px] text-gray-500 font-mono">TYPE <span className="text-[#00D4FF]">[[</span> TO LINK NOTES</span>
-                <span className="text-[10px] text-gray-500 font-mono">CTRL+S TO SYNC</span>
+            <footer className="px-4 py-2 border-t border-echo-border bg-echo-surface-elevated flex items-center gap-4 text-xs text-gray-500">
+                <span>Type [[ to link notes</span>
+                <span>Ctrl+S to save</span>
             </footer>
         </div>
     );

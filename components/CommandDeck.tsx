@@ -41,72 +41,72 @@ export const CommandDeck = ({
     return (
         <div className="flex h-full w-full bg-echo-void overflow-hidden">
             {/* Main Content Area */}
-            <div className="flex-grow flex flex-col h-full gap-6 p-6 min-w-0">
+            <div className="flex-grow flex flex-col h-full gap-4 p-4 min-w-0">
                 {/* Top Row: The Brain & The Input */}
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 flex-shrink-0">
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 flex-shrink-0">
                     <div className="xl:col-span-4 h-full">
-                        <EchoBrain 
-                            services={services} 
-                            activeTasks={tasks} 
-                            logs={logs} 
-                            sessionStats={sessionStats} 
+                        <EchoBrain
+                            services={services}
+                            activeTasks={tasks}
+                            logs={logs}
+                            sessionStats={sessionStats}
                         />
                     </div>
                     <div className="xl:col-span-8 flex flex-col justify-center">
-                        <div className="echo-glass rounded-2xl p-8 shadow-neon">
+                        <div className="echo-surface rounded-lg p-6">
                             <div className="flex items-center justify-between mb-2">
-                                <h1 className="text-2xl font-bold text-white tracking-tight">System Command</h1>
-                                <div className="flex bg-black/40 p-1 rounded-lg border border-white/5">
-                                    <button 
+                                <h1 className="text-lg font-semibold text-white">Command</h1>
+                                <div className="flex bg-echo-surface-elevated rounded-md p-0.5">
+                                    <button
                                         onClick={() => setActiveTab('board')}
-                                        className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${activeTab !== 'brain' ? 'bg-echo-cyan text-black shadow-neon' : 'text-gray-500'}`}
+                                        className={`px-3 py-1 text-xs rounded transition-colors ${activeTab !== 'brain' ? 'bg-echo-cyan text-black' : 'text-gray-400'}`}
                                     >
-                                        ACTION
+                                        Action
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => setActiveTab('brain')}
-                                        className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${activeTab === 'brain' ? 'bg-echo-cyan text-black shadow-neon' : 'text-gray-500'}`}
+                                        className={`px-3 py-1 text-xs rounded transition-colors ${activeTab === 'brain' ? 'bg-echo-cyan text-black' : 'text-gray-400'}`}
                                     >
-                                        BRAIN
+                                        Brain
                                     </button>
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-400 mb-6 font-mono uppercase tracking-widest">Awaiting high-priority objectives...</p>
+                            <p className="text-xs text-gray-500 mb-4">Enter your request...</p>
                             <CommandCenter onSendCommand={onCommand} />
                         </div>
                     </div>
                 </div>
 
                 {/* Main Area: Integrated Workspace */}
-                <div className="flex-grow flex flex-col min-h-0 bg-echo-void border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
+                <div className="flex-grow flex flex-col min-h-0 bg-echo-surface border border-echo-border rounded-lg overflow-hidden">
                     {/* Navigation Bar */}
-                    <nav className="flex items-center justify-between px-6 py-3 border-b border-white/5 bg-white/5">
-                        <div className="flex items-center gap-6">
-                            <button 
+                    <nav className="flex items-center justify-between px-4 py-2 border-b border-echo-border bg-echo-surface-elevated">
+                        <div className="flex items-center gap-4">
+                            <button
                                 onClick={() => setActiveTab('board')}
-                                className={`flex items-center gap-2 text-xs font-bold transition-all ${activeTab === 'board' ? 'text-echo-cyan' : 'text-gray-500 hover:text-white'}`}
+                                className={`flex items-center gap-2 text-xs font-medium transition-colors ${activeTab === 'board' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                                 <Squares2X2Icon className="w-4 h-4" />
-                                EXECUTION BOARD
+                                Execution
                             </button>
-                            <button 
+                            <button
                                 onClick={() => setActiveTab('artifacts')}
-                                className={`flex items-center gap-2 text-xs font-bold transition-all ${activeTab === 'artifacts' ? 'text-echo-cyan' : 'text-gray-500 hover:text-white'}`}
+                                className={`flex items-center gap-2 text-xs font-medium transition-colors ${activeTab === 'artifacts' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                                 <ArchiveBoxIcon className="w-4 h-4" />
-                                ARTIFACTS ({artifacts.length})
+                                Artifacts ({artifacts.length})
                             </button>
-                            <button 
+                            <button
                                 onClick={() => setActiveTab('brain')}
-                                className={`flex items-center gap-2 text-xs font-bold transition-all ${activeTab === 'brain' ? 'text-echo-cyan' : 'text-gray-500 hover:text-white'}`}
+                                className={`flex items-center gap-2 text-xs font-medium transition-colors ${activeTab === 'brain' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                                 <BrainIcon className="w-4 h-4" />
-                                SECOND BRAIN
+                                Notes
                             </button>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-green-500 shadow-neon" />
-                            <span className="text-[10px] text-gray-400 font-mono uppercase">Neural Link: Stable</span>
+                            <div className="w-2 h-2 rounded-full bg-green-500" />
+                            <span className="text-xs text-gray-500">Ready</span>
                         </div>
                     </nav>
 
@@ -116,9 +116,9 @@ export const CommandDeck = ({
                             {activeTab === 'board' && (
                                 <motion.div
                                     key="board"
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: 20 }}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
                                     className="h-full"
                                 >
                                     <ExecutionDashboard
@@ -129,28 +129,28 @@ export const CommandDeck = ({
                                 </motion.div>
                             )}
                             {activeTab === 'artifacts' && (
-                                <motion.div 
+                                <motion.div
                                     key="artifacts"
-                                    initial={{ opacity: 0, scale: 0.98 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 1.02 }}
-                                    className="h-full p-6"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="h-full p-4"
                                 >
-                                    <ArtifactsPanel 
-                                        artifacts={artifacts} 
-                                        onClose={() => setActiveTab('board')} 
+                                    <ArtifactsPanel
+                                        artifacts={artifacts}
+                                        onClose={() => setActiveTab('board')}
                                     />
                                 </motion.div>
                             )}
                             {activeTab === 'brain' && (
-                                <motion.div 
+                                <motion.div
                                     key="brain"
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -20 }}
-                                    className="h-full p-6"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="h-full p-4"
                                 >
-                                    <NoteEditor 
+                                    <NoteEditor
                                         initialContent={currentNoteContent}
                                         onSave={setCurrentNoteContent}
                                         availableNotes={artifacts.map(a => ({ id: a.id, title: a.title }))}
@@ -163,7 +163,7 @@ export const CommandDeck = ({
             </div>
 
             {/* Persistence Sidebar */}
-            <IntelligenceSidebar 
+            <IntelligenceSidebar
                 artifacts={artifacts}
                 logs={logs}
                 backlinks={activeBacklinks}

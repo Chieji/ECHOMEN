@@ -18,31 +18,31 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onSettingsClick, onHistoryClick, onArtifactsClick, tasks, agentStatus, sessionStats }) => {
     return (
-        <header className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-[#0A0A0A]/80 backdrop-blur-lg border-b border-black/10 dark:border-white/10 p-4 flex justify-between items-center z-50">
+        <header className="flex-none h-14 bg-echo-surface border-b border-echo-border px-4 flex justify-between items-center">
             <div className="flex items-center gap-3">
-                <LogoIcon className="w-8 h-8 text-cyan-600 dark:text-[#00D4FF]" />
-                <h1 className="text-xl font-bold tracking-wider text-zinc-800 dark:text-gray-100">ECHO</h1>
-                
-                <div className="h-6 w-px bg-black/20 dark:bg-white/20 ml-2"></div>
-                
-                <button onClick={onArtifactsClick} title="View Artifacts" className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+                <LogoIcon className="w-6 h-6 text-echo-cyan" />
+                <h1 className="text-base font-semibold text-white">ECHO</h1>
+
+                <div className="h-5 w-px bg-echo-border mx-1"></div>
+
+                <button onClick={onArtifactsClick} title="View Artifacts" className="p-2 rounded-md text-gray-500 hover:text-white hover:bg-echo-surface-elevated transition-colors">
                     <ArchiveBoxIcon className="w-5 h-5" />
                 </button>
-                <button onClick={onHistoryClick} title="View History" className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+                <button onClick={onHistoryClick} title="View History" className="p-2 rounded-md text-gray-500 hover:text-white hover:bg-echo-surface-elevated transition-colors">
                     <DocumentTextIcon className="w-5 h-5" />
                 </button>
-                <button onClick={onSettingsClick} title="Open Settings" className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+                <button onClick={onSettingsClick} title="Open Settings" className="p-2 rounded-md text-gray-500 hover:text-white hover:bg-echo-surface-elevated transition-colors">
                     <SettingsIcon className="w-5 h-5" />
                 </button>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
                  <SystemStatusIndicator tasks={tasks} agentStatus={agentStatus} />
-                 <div className="h-6 w-px bg-black/20 dark:bg-white/20"></div>
+                 <div className="h-5 w-px bg-echo-border"></div>
                  <TokenUsageIndicator stats={sessionStats} />
                 <img
                     src="https://picsum.photos/100/100"
-                    alt="User Avatar"
-                    className="w-9 h-9 rounded-full border-2 border-cyan-600/50 dark:border-[#00D4FF]/50"
+                    alt="User"
+                    className="w-8 h-8 rounded-full border border-echo-border"
                 />
             </div>
         </header>

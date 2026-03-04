@@ -29,12 +29,12 @@ const roleIcons: Record<AgentRole, React.ReactNode> = {
     Synthesizer: <SynthesizerIcon className="w-8 h-8" />,
 };
 
-const statusConfig: Record<NodeStatus, { color: string; glow: string; textColor: string; icon?: React.ReactNode }> = {
-    idle: { color: 'border-zinc-400/30 dark:border-white/20', glow: '', textColor: 'text-zinc-500 dark:text-gray-500' },
-    pending: { color: 'border-yellow-500/80', glow: 'shadow-[0_0_12px_rgba(234,179,8,0.6)] animate-pulse', textColor: 'text-yellow-600 dark:text-yellow-400' },
-    executing: { color: 'border-amber-500', glow: 'shadow-[0_0_20px] shadow-amber-500/60', textColor: 'text-amber-500' },
-    success: { color: 'border-green-500', glow: 'shadow-[0_0_10px_rgba(34,197,94,0.6)]', textColor: 'text-green-600 dark:text-green-400', icon: <CheckCircleIcon className="w-5 h-5 absolute -top-1 -right-1 text-green-500 bg-zinc-200 dark:bg-[#121212] rounded-full" /> },
-    error: { color: 'border-red-500', glow: 'shadow-[0_0_10px_rgba(239,68,68,0.6)]', textColor: 'text-red-600 dark:text-red-400', icon: <ExclamationTriangleIcon className="w-5 h-5 absolute -top-1 -right-1 text-red-500 bg-zinc-200 dark:bg-[#121212] rounded-full" /> },
+const statusConfig: Record<NodeStatus, { color: string; textColor: string; icon?: React.ReactNode }> = {
+    idle: { color: 'border-gray-600', textColor: 'text-gray-500' },
+    pending: { color: 'border-yellow-500', textColor: 'text-yellow-400' },
+    executing: { color: 'border-amber-500', textColor: 'text-amber-400' },
+    success: { color: 'border-green-500', textColor: 'text-green-400', icon: <CheckCircleIcon className="w-4 h-4 absolute -top-1 -right-1 text-green-500 bg-echo-surface rounded-full" /> },
+    error: { color: 'border-red-500', textColor: 'text-red-400', icon: <ExclamationTriangleIcon className="w-4 h-4 absolute -top-1 -right-1 text-red-500 bg-echo-surface rounded-full" /> },
 };
 
 
