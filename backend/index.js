@@ -8,10 +8,14 @@ const { chromium } = require('playwright');
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 const CSRF = require('csrf');
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const morgan = require('morgan');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const WORKSPACE_DIR = process.env.WORKSPACE_DIR || process.cwd();
+const API_KEY = process.env.API_KEY || 'echomen-secret-token-2026';
 
 // ============================================================================
 // SECURITY CONFIGURATION
@@ -26,24 +30,13 @@ const CSRF_SECRET_LIFETIME = 24 * 60 * 60 * 1000; // 24 hours
 function getCsrfSecret(sessionId) {
     const existing = csrfSecretStore.get(sessionId);
     if (!existing || Date.now() - existing.createdAt > CSRF_SECRET_LIFETIME) {
-        const newEntry = { secret: csrf.secretSync(), createdAt: Date.now() };
+        const newSecret = csrf.secretSync();
+        const newEntry = { secret: newSecret, createdAt: Date.now() };
         csrfSecretStore.set(sessionId, newEntry);
-        return newEntry.secret;
+        return newSecret;
     }
     return existing.secret;
 }
-
-// Rate Limiting Configuration
-const limiter = rateLimit({
-    windowMs: 60 * 1000, // 1 minute
-    max: 100, // 100 requests per minute per IP
-    message: { error: 'Too many requests, please try again later.' },
-    standardHeaders: true,
-    legacyHeaders: false,
-    keyGenerator: (req) => {
-        return req.ip || req.connection.remoteAddress || 'unknown';
-    }
-});
 
 // Cleanup expired CSRF secrets periodically (every hour)
 setInterval(() => {
@@ -55,42 +48,103 @@ setInterval(() => {
     }
 }, 60 * 60 * 1000);
 
+// Rate Limiting Configuration
+const limiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 100, // 100 requests per minute per IP
+    message: { error: 'Too many requests, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+        return req.headers['x-forwarded-for'] || req.ip || 'unknown';
+    }
+});
+
 // ============================================================================
 // SECURITY MIDDLEWARE
 // ============================================================================
 
+// Logging - Comprehensive for audit trails
+app.use(morgan('combined'));
+
+// Security Headers - Standardized protection
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'", "https://api.github.com"],
+        },
+    },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    xssFilter: true,
+    noSniff: true,
+    hidePoweredBy: true,
+    frameguard: { action: 'deny' },
+}));
+
 // Rate limiting middleware - applies to all routes
 app.use(limiter);
 
-// Security Headers Middleware - applies to all responses
+// Custom Security Middleware
 app.use((req, res, next) => {
-    // Prevent MIME type sniffing
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    // Prevent clickjacking
-    res.setHeader('X-Frame-Options', 'DENY');
-    // XSS protection for older browsers
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    // Enforce HTTPS
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-    // Content Security Policy
-    res.setHeader('Content-Security-Policy', "default-src 'self'");
-    // Referrer Policy
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    // Remove X-Powered-By header
-    res.removeHeader('X-Powered-By');
+    // Enforce HTTPS in production
+    if (process.env.NODE_ENV === 'production' && req.headers['x-forwarded-proto'] !== 'https') {
+        return res.redirect(`https://${req.headers.host}${req.url}`);
+    }
     next();
 });
 
-// CORS Configuration with credentials for CSRF cookies
+// CORS Configuration with credentials
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Authorization', 'X-Session-ID'],
     exposedHeaders: ['X-CSRF-Token']
 }));
 
 app.use(bodyParser.json());
+
+// ============================================================================
+// AUTHENTICATION MIDDLEWARE
+// ============================================================================
+
+/**
+ * Validates the API_KEY for secure access.
+ * Expects key in Authorization header as 'Bearer <key>'
+ */
+const validateApiKey = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    const providedKey = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+    if (!providedKey || providedKey !== API_KEY) {
+        console.warn(`[Security] Unauthorized access attempt from ${req.ip}`);
+        return res.status(401).json({
+            error: 'Unauthorized',
+            message: 'A valid API key is required to execute tools.'
+        });
+    }
+    next();
+};
+
+// ============================================================================
+// FILE PATH VALIDATION
+// ============================================================================
+
+/**
+ * Validates that a path stays within the allowed workspace directory.
+ * Prevents path traversal vulnerabilities.
+ */
+const validatePath = (userPath) => {
+    const resolvedPath = path.resolve(userPath);
+    if (!resolvedPath.startsWith(path.resolve(WORKSPACE_DIR))) {
+        throw new Error(`Security Violation: Access to path outside workspace is denied: ${userPath}`);
+    }
+    return resolvedPath;
+};
 
 // ============================================================================
 // CSRF TOKEN ENDPOINT
@@ -801,7 +855,8 @@ const dataTools = {
         const { input_file_path, analysis_script } = args;
         
         try {
-            const content = await fs.readFile(path.resolve(input_file_path), 'utf-8');
+            const safePath = validatePath(input_file_path);
+            const content = await fs.readFile(safePath, 'utf-8');
             const fileExt = path.extname(input_file_path).toLowerCase();
             
             let parsedData;
@@ -856,7 +911,8 @@ const dataTools = {
         const { input_file_path, chart_type = 'bar' } = args;
         
         try {
-            const content = await fs.readFile(path.resolve(input_file_path), 'utf-8');
+            const safePath = validatePath(input_file_path);
+            const content = await fs.readFile(safePath, 'utf-8');
             const fileExt = path.extname(input_file_path).toLowerCase();
             
             let parsedData;
@@ -908,23 +964,23 @@ const dataTools = {
 
 // --- Main Execution Endpoint ---
 
-// Apply CSRF validation to the execute-tool endpoint (state-changing operation)
-app.post('/execute-tool', validateCsrfToken, async (req, res) => {
+// Apply CSRF and API Key validation to the execute-tool endpoint
+app.post('/execute-tool', validateCsrfToken, validateApiKey, async (req, res) => {
     const { tool, args, sessionId = 'default', taskId, ephemeral = true } = req.body;
     if (!tool) return res.status(400).json({ error: 'Missing tool name' });
 
-    // Generate taskId if not provided (for backward compatibility with sessionId)
-    // Format: sessionId_timestamp_randomId ensures uniqueness for parallel tasks
+    // Generate taskId if not provided
     const effectiveTaskId = taskId || `${sessionId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    console.log(`[ECHO Engine] Executing: ${tool} (Task: ${effectiveTaskId}, Session: ${sessionId})`);
+    console.log(`[Security Audit] ${new Date().toISOString()} - User ${req.ip} Executing: ${tool}`);
 
     try {
         let result;
         switch (tool) {
             case 'readFile':
-                // SECURITY: File contents are sanitized to prevent injection from malicious files
-                const rawFileContent = await fs.readFile(path.resolve(args.path), 'utf8');
+                // SECURITY: Validate path and sanitize content
+                const safeReadPath = validatePath(args.path);
+                const rawFileContent = await fs.readFile(safeReadPath, 'utf8');
                 const sanitizedFile = sanitizeWebContent(rawFileContent, {
                     maxLength: 45000,
                     addDelimiters: true,
@@ -942,13 +998,17 @@ app.post('/execute-tool', validateCsrfToken, async (req, res) => {
                 };
                 break;
             case 'writeFile':
-                const dir = path.dirname(path.resolve(args.path));
+                // SECURITY: Validate path
+                const safeWritePath = validatePath(args.path);
+                const dir = path.dirname(safeWritePath);
                 await fs.mkdir(dir, { recursive: true });
-                await fs.writeFile(path.resolve(args.path), args.content, 'utf8');
+                await fs.writeFile(safeWritePath, args.content, 'utf8');
                 result = `File written successfully: ${args.path}`;
                 break;
             case 'listFiles':
-                result = await fs.readdir(path.resolve(args.path));
+                // SECURITY: Validate path
+                const safeListPath = validatePath(args.path);
+                result = await fs.readdir(safeListPath);
                 break;
             case 'executeShellCommand':
                 result = await executeShellCommand(args.command);
