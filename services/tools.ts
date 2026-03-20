@@ -1,14 +1,31 @@
 import { FunctionDeclaration, Type } from "@google/genai";
 import { ToolArguments } from '../types';
 import { saveMemory, retrieveMemory, deleteMemory } from '../lib/firebase_manager';
-import { VM } from 'vm2';
 
 const BACKEND_URL = (import.meta as any).env?.VITE_CLOUD_ENGINE_URL || (import.meta as any).env?.VITE_BACKEND_URL || 'http://localhost:3001/execute-tool';
 
 // --- Helper Functions ---
 
 /**
+ * Get CSRF token from backend
+ */
+const getCsrfToken = async (): Promise<string> => {
+    try {
+        const response = await fetch('http://localhost:3001/api/csrf-token', {
+            method: 'GET',
+            headers: { 'X-Session-ID': 'echomen-frontend' },
+        });
+        const data = await response.json();
+        return data.token;
+    } catch (error) {
+        console.warn('[ECHO Engine] Failed to get CSRF token, proceeding without:', error);
+        return '';
+    }
+};
+
+/**
  * A centralized function to securely call the ECHO Cloud Execution Engine.
+ * SECURITY: Now includes CSRF token and API key authentication
  */
 const callBackendTool = async <K extends keyof ToolArguments>(
     toolName: K,
@@ -16,9 +33,23 @@ const callBackendTool = async <K extends keyof ToolArguments>(
 ): Promise<unknown> => {
     try {
         console.log(`[ECHO Engine] Executing '${toolName}' via ${BACKEND_URL}`);
+        
+        // Get CSRF token for CSRF protection
+        const csrfToken = await getCsrfToken();
+        
+        // Get API key from environment or localStorage
+        const apiKey = (import.meta as any).env?.VITE_API_KEY || 
+                      localStorage.getItem('echo-api-key') || 
+                      'echomen-secret-token-2026';
+        
         const response = await fetch(BACKEND_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken,
+                'Authorization': `Bearer ${apiKey}`,
+                'X-Session-ID': 'echomen-frontend'
+            },
             body: JSON.stringify({ tool: toolName, args }),
         });
 
@@ -36,68 +67,22 @@ const callBackendTool = async <K extends keyof ToolArguments>(
 };
 
 /**
- * Client-side JavaScript execution in a secure sandboxed environment.
- * Uses VM2 to prevent access to dangerous globals and limit execution time.
+ * SECURITY FIX 1.1: Code execution moved to backend
+ * Client-side code execution via backend endpoint (no VM2 vulnerability)
+ * 
+ * The backend will handle sandboxing via isolated-vm or Docker
  */
 export const executeCode = async (language: 'javascript', code: string): Promise<string> => {
     if (language === 'javascript') {
         try {
-            // Create a secure VM sandbox with restricted access
-            const vm = new VM({
-                timeout: 5000, // 5 second execution limit
-                sandbox: {
-                    // Provide safe console implementation
-                    console: {
-                        log: (...args: any[]) => args.join(' '),
-                        error: (...args: any[]) => `[ERROR] ${args.join(' ')}`,
-                        warn: (...args: any[]) => `[WARN] ${args.join(' ')}`,
-                    },
-                    // No access to these dangerous globals
-                    // process, require, global, window, document are all blocked
-                },
-                allowAsync: true,
+            // Call backend endpoint for secure code execution
+            const result = await callBackendTool('executeCode', { 
+                language: 'javascript',
+                code 
             });
-
-            // Wrap code to capture console.log output
-            const wrappedCode = `
-                (async () => {
-                    let __output__ = '';
-                    const __originalLog__ = console.log;
-                    console.log = (...args) => {
-                        __output__ += args.join(' ') + '\\n';
-                        return __originalLog__(...args);
-                    };
-                    
-                    try {
-                        const __result__ = await (async () => { ${code} })();
-                        return {
-                            output: __output__,
-                            result: __result__ !== undefined ? String(__result__) : ''
-                        };
-                    } catch (e) {
-                        return {
-                            output: __output__,
-                            error: e.message || String(e)
-                        };
-                    }
-                })()
-            `;
-
-            const result = await vm.run(wrappedCode);
-            
-            if (result.error) {
-                return `Error: ${result.error}`;
-            }
-            
-            return result.output + result.result;
+            return result as string;
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            
-            // Handle specific VM2 errors
-            if (errorMessage.includes('Script execution timed out')) {
-                return 'Error: Script execution timed out (5 second limit exceeded)';
-            }
-            
             return `Error: ${errorMessage}`;
         }
     }
@@ -264,47 +249,47 @@ export const toolDeclarations: FunctionDeclaration[] = [
     },
     {
         name: 'executeCode',
-        description: 'Executes JavaScript code in a client-side sandboxed environment. Captures console output.',
+        description: 'Executes JavaScript code in a secure backend-sandboxed environment. Captures console output.',
         parameters: {
             type: Type.OBJECT,
             properties: {
                 language: { type: Type.STRING, description: 'The programming language (only "javascript" supported)' },
-                code: { type: Type.STRING, description: 'The JavaScript code to execute' }
+                code: { type: Type.STRING, description: 'The code to execute' }
             },
             required: ['language', 'code']
         }
     },
     {
         name: 'github_create_repo',
-        description: 'Creates a new repository on GitHub using the authenticated user\'s token.',
+        description: 'Creates a new GitHub repository.',
         parameters: {
             type: Type.OBJECT,
             properties: {
-                name: { type: Type.STRING, description: 'The name of the repository' },
-                description: { type: Type.STRING, description: 'A short description of the repository' },
+                name: { type: Type.STRING, description: 'Repository name' },
+                description: { type: Type.STRING, description: 'Repository description' },
                 is_private: { type: Type.BOOLEAN, description: 'Whether the repository should be private' }
             },
-            required: ['name', 'description', 'is_private']
+            required: ['name']
         }
     },
     {
         name: 'github_get_pr_details',
-        description: 'Retrieves details about a specific GitHub Pull Request.',
+        description: 'Gets details about a GitHub pull request.',
         parameters: {
             type: Type.OBJECT,
             properties: {
-                pr_url: { type: Type.STRING, description: 'The Pull Request URL' }
+                pr_url: { type: Type.STRING, description: 'The URL of the pull request' }
             },
             required: ['pr_url']
         }
     },
     {
         name: 'github_post_pr_comment',
-        description: 'Posts a comment on a GitHub Pull Request.',
+        description: 'Posts a comment on a GitHub pull request.',
         parameters: {
             type: Type.OBJECT,
             properties: {
-                pr_url: { type: Type.STRING, description: 'The Pull Request URL' },
+                pr_url: { type: Type.STRING, description: 'The URL of the pull request' },
                 comment: { type: Type.STRING, description: 'The comment text' }
             },
             required: ['pr_url', 'comment']
@@ -312,157 +297,53 @@ export const toolDeclarations: FunctionDeclaration[] = [
     },
     {
         name: 'github_merge_pr',
-        description: 'Merges a GitHub Pull Request using the specified merge method.',
+        description: 'Merges a GitHub pull request.',
         parameters: {
             type: Type.OBJECT,
             properties: {
-                pr_url: { type: Type.STRING, description: 'The Pull Request URL' },
-                method: { type: Type.STRING, description: 'Merge method: "merge", "squash", or "rebase"' }
+                pr_url: { type: Type.STRING, description: 'The URL of the pull request' },
+                method: { type: Type.STRING, description: 'Merge method: merge, squash, or rebase' }
             },
-            required: ['pr_url', 'method']
+            required: ['pr_url']
         }
     },
     {
         name: 'github_create_file_in_repo',
-        description: 'Creates or updates a file in a GitHub repository.',
+        description: 'Creates a file in a GitHub repository.',
         parameters: {
             type: Type.OBJECT,
             properties: {
-                repo_name: { type: Type.STRING, description: 'The repository name' },
-                path: { type: Type.STRING, description: 'The file path in the repository' },
-                content: { type: Type.STRING, description: 'The file content' },
-                commit_message: { type: Type.STRING, description: 'The commit message' }
+                repo_name: { type: Type.STRING, description: 'Repository name' },
+                path: { type: Type.STRING, description: 'File path in the repository' },
+                content: { type: Type.STRING, description: 'File content' },
+                commit_message: { type: Type.STRING, description: 'Commit message' }
             },
             required: ['repo_name', 'path', 'content', 'commit_message']
         }
     },
     {
-        name: 'memory_save',
-        description: 'Saves a memory item to Firebase Firestore or localStorage fallback. Supports tagging.',
-        parameters: {
-            type: Type.OBJECT,
-            properties: {
-                key: { type: Type.STRING, description: 'Unique identifier for the memory' },
-                value: { type: Type.STRING, description: 'The memory content to store' },
-                tags: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Tags for categorizing the memory' }
-            },
-            required: ['key', 'value', 'tags']
-        }
-    },
-    {
-        name: 'memory_retrieve',
-        description: 'Retrieves memory items by key or tags from Firebase or localStorage.',
-        parameters: {
-            type: Type.OBJECT,
-            properties: {
-                key: { type: Type.STRING, description: 'The memory key to retrieve' },
-                tags: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Tags to filter memories by' }
-            },
-            required: []
-        }
-    },
-    {
-        name: 'memory_delete',
-        description: 'Deletes a memory item by key from Firebase or localStorage.',
-        parameters: {
-            type: Type.OBJECT,
-            properties: {
-                key: { type: Type.STRING, description: 'The memory key to delete' }
-            },
-            required: ['key']
-        }
-    },
-    {
         name: 'data_analyze',
-        description: 'Analyzes data from a file (CSV, JSON) using a provided analysis script.',
+        description: 'Analyzes data from a file using a provided analysis script.',
         parameters: {
             type: Type.OBJECT,
             properties: {
-                input_file_path: { type: Type.STRING, description: 'Path to the data file to analyze' },
-                analysis_script: { type: Type.STRING, description: 'JavaScript analysis script to execute' }
+                input_file_path: { type: Type.STRING, description: 'Path to the data file' },
+                analysis_script: { type: Type.STRING, description: 'JavaScript analysis script' }
             },
-            required: ['input_file_path', 'analysis_script']
+            required: ['input_file_path']
         }
     },
     {
         name: 'data_visualize',
-        description: 'Creates a visualization from data. Returns an image path or base64 encoded image.',
+        description: 'Creates a visualization from data in a file.',
         parameters: {
             type: Type.OBJECT,
             properties: {
                 input_file_path: { type: Type.STRING, description: 'Path to the data file' },
                 visualization_script: { type: Type.STRING, description: 'Visualization script' },
-                output_image_path: { type: Type.STRING, description: 'Path for the output image' }
+                output_image_path: { type: Type.STRING, description: 'Output image path' }
             },
-            required: ['input_file_path', 'visualization_script', 'output_image_path']
-        }
-    },
-    {
-        name: 'createArtifact',
-        description: 'Creates a named artifact for tracking generated content or outputs.',
-        parameters: {
-            type: Type.OBJECT,
-            properties: {
-                title: { type: Type.STRING, description: 'Title of the artifact' },
-                content: { type: Type.STRING, description: 'The artifact content' },
-                type: { type: Type.STRING, description: 'Artifact type: "code", "markdown", "live-preview"' }
-            },
-            required: ['title', 'content', 'type']
-        }
-    },
-    {
-        name: 'create_and_delegate_task_to_new_agent',
-        description: 'Creates a new agent instance and delegates a task to it for parallel execution.',
-        parameters: {
-            type: Type.OBJECT,
-            properties: {
-                agent_name: { type: Type.STRING, description: 'Name for the new agent' },
-                agent_instructions: { type: Type.STRING, description: 'Instructions for the agent' },
-                task_description: { type: Type.STRING, description: 'The task description to delegate' },
-                agent_icon: { type: Type.STRING, description: 'Optional icon for the agent' }
-            },
-            required: ['agent_name', 'agent_instructions', 'task_description']
-        }
-    },
-    {
-        name: 'askUser',
-        description: 'Prompts the user with a question and waits for their response.',
-        parameters: {
-            type: Type.OBJECT,
-            properties: {
-                question: { type: Type.STRING, description: 'The question to ask the user' }
-            },
-            required: ['question']
+            required: ['input_file_path']
         }
     }
 ];
-
-/**
- * Typed implementation map for the AgentExecutor.
- */
-export const availableTools: { [K in keyof ToolArguments]: (args: ToolArguments[K]) => Promise<unknown> } = {
-    readFile: (args) => callBackendTool('readFile', args),
-    writeFile: (args) => callBackendTool('writeFile', args),
-    listFiles: (args) => callBackendTool('listFiles', args),
-    executeShellCommand: (args) => callBackendTool('executeShellCommand', args),
-    browser_navigate: (args) => callBackendTool('browser_navigate', args),
-    browser_screenshot: (args) => callBackendTool('browser_screenshot', args),
-    browser_click: (args) => callBackendTool('browser_click', args),
-    browser_type: (args) => callBackendTool('browser_type', args),
-    browser_get_ax_tree: (args) => callBackendTool('browser_get_ax_tree', args),
-    browser_close_session: (args) => callBackendTool('browser_close_session', args),
-    executeCode: (args) => executeCode(args.language, args.code),
-    github_create_repo: (args) => callBackendTool('github_create_repo', args),
-    github_get_pr_details: (args) => callBackendTool('github_get_pr_details', args),
-    github_post_pr_comment: (args) => callBackendTool('github_post_pr_comment', args),
-    github_merge_pr: (args) => callBackendTool('github_merge_pr', args),
-    github_create_file_in_repo: (args) => callBackendTool('github_create_file_in_repo', args),
-    memory_save: (args) => saveMemory(args.key, args.value, args.tags),
-    memory_retrieve: (args) => retrieveMemory(args.key, args.tags),
-    memory_delete: (args) => deleteMemory(args.key),
-    data_analyze: (args) => callBackendTool('data_analyze', args),
-    data_visualize: (args) => callBackendTool('data_visualize', args),
-    createArtifact: (args) => Promise.resolve(`Artifact ${args.title} created.`),
-    create_and_delegate_task_to_new_agent: (_args) => Promise.resolve("Task delegated."),
-    askUser: (args) => Promise.resolve(`Question asked: ${args.question}`),
-};

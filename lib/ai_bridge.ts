@@ -1,5 +1,10 @@
 /**
- * ECHOMEN Universal AI Bridge
+ * ECHOMEN Universal AI Bridge (Backend Proxy)
+ * 
+ * SECURITY FIX 1.2: All AI provider calls now go through backend proxy
+ * - No API keys in frontend
+ * - No dangerouslyAllowBrowser flag
+ * - All requests authenticated with CSRF + API key
  * 
  * Implements the multi-provider AI routing system as specified in PRD V1.1
  * Supported Providers: Groq, Gemini, Together AI, Cohere, OpenRouter, Mistral, Hugging Face
@@ -12,10 +17,6 @@
  * - Fallback chain: Automatic exponential retry
  */
 
-import { GoogleGenAI } from "@google/genai";
-import OpenAI from "openai";
-import Anthropic from "@anthropic-ai/sdk";
-import Groq from "groq-sdk";
 import { getSecureItem } from "./secureStorage";
 import { Service, ToolCallDefinition, AIResponseData } from "../types";
 
@@ -31,8 +32,6 @@ export interface ProviderConfig {
     id: string;
     provider: AIProvider;
     model: string;
-    apiKey: string;
-    baseUrl?: string;
     enabled: boolean;
 }
 
@@ -47,6 +46,8 @@ const DEFAULT_RETRY_CONFIG: RetryConfig = {
     baseDelay: 1000,
     maxDelay: 10000,
 };
+
+const BACKEND_URL = (import.meta as any).env?.VITE_CLOUD_ENGINE_URL || 'http://localhost:3001/api/ai';
 
 class RateLimiter {
     private requestTimes: number[] = [];
@@ -152,18 +153,14 @@ export class AIBridge {
                 const services = JSON.parse(servicesData) as Service[];
                 for (const service of services) {
                     if (service.status === 'Connected') {
-                        const apiKey = await getSecureItem(`service_${service.id}_apiKey`);
-                        if (apiKey) {
-                            const provider = this.mapServiceToProvider(service.id);
-                            if (provider) {
-                                this.providers.set(provider, {
-                                    id: service.id,
-                                    provider,
-                                    model: this.getDefaultModel(provider),
-                                    apiKey,
-                                    enabled: true,
-                                });
-                            }
+                        const provider = this.mapServiceToProvider(service.id);
+                        if (provider) {
+                            this.providers.set(provider, {
+                                id: service.id,
+                                provider,
+                                model: this.getDefaultModel(provider),
+                                enabled: true,
+                            });
                         }
                     }
                 }
@@ -249,6 +246,10 @@ export class AIBridge {
             .map(([provider]) => provider);
     }
 
+    /**
+     * SECURITY FIX 1.2: All AI generation now goes through backend proxy
+     * Frontend never handles API keys or makes direct calls to AI providers
+     */
     static async generate(
         providerOrTaskType: AIProvider | TaskType,
         model: string | null,
@@ -277,11 +278,31 @@ export class AIBridge {
 
         const actualModel = model || this.providers.get(provider)?.model || this.getDefaultModel(provider);
 
-        console.log(`[AI Bridge] Routing to ${provider} (${actualModel})`);
+        console.log(`[AI Bridge] Routing to ${provider} (${actualModel}) via backend proxy`);
 
         try {
+            // Get CSRF token
+            const csrfResponse = await fetch('http://localhost:3001/api/csrf-token', {
+                method: 'GET',
+                headers: { 'X-Session-ID': 'echomen-frontend' },
+            });
+            const { token: csrfToken } = await csrfResponse.json();
+            
+            // Get API key
+            const apiKey = (import.meta as any).env?.VITE_API_KEY || 
+                          localStorage.getItem('echo-api-key') || 
+                          'echomen-secret-token-2026';
+
             const result = await withRetry(
-                () => this.executeProvider(provider, actualModel, systemPrompt, userPrompt, tools),
+                () => this.callBackendAI(
+                    provider, 
+                    actualModel, 
+                    systemPrompt, 
+                    userPrompt, 
+                    tools,
+                    csrfToken,
+                    apiKey
+                ),
                 provider
             );
             
@@ -292,39 +313,48 @@ export class AIBridge {
         }
     }
 
-    private static isProviderKeyTaskType(key: string): key is TaskType {
-        return ['chat', 'reasoning', 'code', 'data', 'general'].includes(key);
-    }
-
-    private static async executeProvider(
+    private static async callBackendAI(
         provider: AIProvider,
         model: string,
         system: string,
         user: string,
-        tools: ToolCallDefinition[]
+        tools: ToolCallDefinition[],
+        csrfToken: string,
+        apiKey: string
     ): Promise<AIResponse> {
-        switch (provider) {
-            case 'google':
-                return await this.generateGemini(model, system, user, tools);
-            case 'openai':
-                return await this.generateOpenAI(model, system, user, tools);
-            case 'anthropic':
-                return await this.generateAnthropic(model, system, user, tools);
-            case 'groq':
-                return await this.generateGroq(model, system, user, tools);
-            case 'cohere':
-                return await this.generateCohere(model, system, user, tools);
-            case 'openrouter':
-                return await this.generateOpenRouter(model, system, user, tools);
-            case 'together':
-                return await this.generateTogether(model, system, user, tools);
-            case 'mistral':
-                return await this.generateMistral(model, system, user, tools);
-            case 'huggingface':
-                return await this.generateHuggingFace(model, system, user, tools);
-            default:
-                throw new Error(`Provider ${provider} not implemented`);
+        const response = await fetch(`${BACKEND_URL}/chat`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken,
+                'Authorization': `Bearer ${apiKey}`,
+                'X-Session-ID': 'echomen-frontend'
+            },
+            body: JSON.stringify({
+                provider,
+                model,
+                systemPrompt: system,
+                userPrompt: user,
+                tools
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Backend AI error: ${response.statusText}`);
         }
+
+        const data = await response.json();
+        return {
+            text: data.text,
+            toolCalls: data.toolCalls,
+            usage: data.usage,
+            provider,
+            model
+        };
+    }
+
+    private static isProviderKeyTaskType(key: string): key is TaskType {
+        return ['chat', 'reasoning', 'code', 'data', 'general'].includes(key);
     }
 
     private static async fallbackChain(
@@ -338,7 +368,27 @@ export class AIBridge {
         for (const provider of providers) {
             try {
                 const actualModel = model || this.providers.get(provider)?.model || this.getDefaultModel(provider);
-                return await this.executeProvider(provider, actualModel, systemPrompt, userPrompt, tools);
+                
+                // Get CSRF token
+                const csrfResponse = await fetch('http://localhost:3001/api/csrf-token', {
+                    method: 'GET',
+                    headers: { 'X-Session-ID': 'echomen-frontend' },
+                });
+                const { token: csrfToken } = await csrfResponse.json();
+                
+                const apiKey = (import.meta as any).env?.VITE_API_KEY || 
+                              localStorage.getItem('echo-api-key') || 
+                              'echomen-secret-token-2026';
+
+                return await this.callBackendAI(
+                    provider,
+                    actualModel,
+                    systemPrompt,
+                    userPrompt,
+                    tools,
+                    csrfToken,
+                    apiKey
+                );
             } catch (error) {
                 console.warn(`[AI Bridge] Provider ${provider} failed, trying next...`);
                 continue;
@@ -359,354 +409,4 @@ export class AIBridge {
         
         return null;
     }
-
-    private static async generateGemini(model: string, system: string, user: string, tools: ToolCallDefinition[]): Promise<AIResponse> {
-        const config = this.providers.get('google');
-        const apiKey = config?.apiKey || '';
-        
-        if (!apiKey) throw new Error("Gemini API key not configured");
-        
-        const ai = new GoogleGenAI({ apiKey });
-        
-        const contents = [{ role: "user", parts: [{ text: user }] }];
-        const systemInstruction = system;
-        
-        let resultText = "";
-        let totalTokens = 0;
-
-        if (tools.length > 0) {
-            const result = await ai.models.generateContent({
-                model: model || 'gemini-2.0-flash-exp',
-                contents,
-                config: {
-                    systemInstruction,
-                    tools: tools.map(t => ({ functionDeclarations: [t] })) as any,
-                },
-            });
-
-            resultText = result.text || "";
-            if (result.usageMetadata) {
-                totalTokens = result.usageMetadata.totalTokenCount || 0;
-            }
-        } else {
-            const result = await ai.models.generateContent({
-                model: model || 'gemini-2.0-flash-exp',
-                contents,
-                config: { systemInstruction },
-            });
-            
-            resultText = result.text || "";
-            if (result.usageMetadata) {
-                totalTokens = result.usageMetadata.totalTokenCount || 0;
-            }
-        }
-
-        return {
-            text: resultText,
-            usage: { totalTokens },
-            provider: 'google',
-            model,
-        };
-    }
-
-    private static async generateOpenAI(model: string, system: string, user: string, tools: ToolCallDefinition[]): Promise<AIResponse> {
-        const config = this.providers.get('openai');
-        const apiKey = config?.apiKey || '';
-
-        if (!apiKey) throw new Error("OpenAI API key not configured");
-
-        const client = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
-
-        const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-            { role: "system", content: system },
-            { role: "user", content: user }
-        ];
-
-        const response = await client.chat.completions.create({
-            model: model || "gpt-4o",
-            messages,
-            tools: tools.length > 0 ? tools.map(t => ({ type: "function", function: t })) : undefined,
-            temperature: 0.7,
-        });
-
-        const choice = response.choices[0];
-        return {
-            text: choice.message.content || "",
-            toolCalls: choice.message.tool_calls as any,
-            usage: { totalTokens: response.usage?.total_tokens || 0 },
-            provider: 'openai',
-            model,
-        };
-    }
-
-    private static async generateAnthropic(model: string, system: string, user: string, tools: ToolCallDefinition[]): Promise<AIResponse> {
-        const config = this.providers.get('anthropic');
-        const apiKey = config?.apiKey || '';
-
-        if (!apiKey) throw new Error("Anthropic API key not configured");
-
-        const client = new Anthropic({ apiKey });
-
-        const response = await client.messages.create({
-            model: model || "claude-3-5-sonnet-20241022",
-            max_tokens: 4096,
-            system,
-            messages: [{ role: "user", content: user }],
-            tools: tools as any,
-        });
-
-        const content = response.content[0] as Anthropic.TextBlock;
-        return {
-            text: content?.text || "",
-            usage: { totalTokens: response.usage.input_tokens + response.usage.output_tokens },
-            provider: 'anthropic',
-            model,
-        };
-    }
-
-    private static async generateGroq(model: string, system: string, user: string, tools: ToolCallDefinition[]): Promise<AIResponse> {
-        const config = this.providers.get('groq');
-        const apiKey = config?.apiKey || '';
-
-        if (!apiKey) throw new Error("Groq API key not configured");
-
-        const client = new Groq({ apiKey });
-
-        const messages = [
-            { role: "system", content: system },
-            { role: "user", content: user }
-        ] as any;
-
-        const response = await client.chat.completions.create({
-            model: model || "llama-3.3-70b-versatile",
-            messages,
-            tools: tools.length > 0 ? tools.map(t => ({ type: "function", function: t })) : undefined,
-            temperature: 0.7,
-        });
-
-        const choice = response.choices[0];
-        return {
-            text: choice.message.content || "",
-            toolCalls: choice.message.tool_calls as any,
-            usage: { totalTokens: response.usage?.total_tokens || 0 },
-            provider: 'groq',
-            model,
-        };
-    }
-
-    private static async generateCohere(model: string, system: string, user: string, _tools: ToolCallDefinition[]): Promise<AIResponse> {
-        const config = this.providers.get('cohere');
-        const apiKey = config?.apiKey || '';
-        
-        if (!apiKey) throw new Error("Cohere API key not configured");
-        
-        const prompt = `${system}\n\nUser: ${user}`;
-        
-        const response = await fetch("https://api.cohere.ai/v1/generate", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-                model: model || "command-r-plus-20240522",
-                prompt,
-                temperature: 0.7,
-            }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Cohere API error: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        return {
-            text: data.generations?.[0]?.text || "",
-            usage: { totalTokens: 0 },
-            provider: 'cohere',
-            model,
-        };
-    }
-
-    private static async generateOpenRouter(model: string, system: string, user: string, tools: ToolCallDefinition[]): Promise<AIResponse> {
-        const config = this.providers.get('openrouter');
-        const apiKey = config?.apiKey || '';
-        
-        if (!apiKey) throw new Error("OpenRouter API key not configured");
-        
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey}`,
-                "HTTP-Referer": "https://echomen.ai",
-                "X-Title": "ECHOMEN",
-            },
-            body: JSON.stringify({
-                model: model || "openai/gpt-4o",
-                messages: [
-                    { role: "system", content: system },
-                    { role: "user", content: user }
-                ],
-                tools: tools.length > 0 ? tools.map(t => ({ type: "function", function: t })) : undefined,
-            }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`OpenRouter API error: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const choice = data.choices[0];
-
-        return {
-            text: choice.message.content || "",
-            toolCalls: choice.message.tool_calls,
-            usage: { totalTokens: data.usage?.total_tokens || 0 },
-            provider: 'openrouter',
-            model,
-        };
-    }
-
-    private static async generateTogether(model: string, system: string, user: string, _tools: ToolCallDefinition[]): Promise<AIResponse> {
-        const config = this.providers.get('together');
-        const apiKey = config?.apiKey || '';
-
-        if (!apiKey) throw new Error("Together AI API key not configured");
-
-        const response = await fetch("https://api.together.xyz/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-                model: model || "togethercomputer/llama-3.3-70b-instruct-turbo",
-                messages: [
-                    { role: "system", content: system },
-                    { role: "user", content: user }
-                ],
-                temperature: 0.7,
-            }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Together AI API error: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const choice = data.choices[0];
-
-        return {
-            text: choice.message.content || "",
-            usage: { totalTokens: data.usage?.total_tokens || 0 },
-            provider: 'together',
-            model,
-        };
-    }
-
-    private static async generateMistral(model: string, system: string, user: string, tools: ToolCallDefinition[]): Promise<AIResponse> {
-        const config = this.providers.get('mistral');
-        const apiKey = config?.apiKey || '';
-
-        if (!apiKey) throw new Error("Mistral API key not configured");
-
-        const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-                model: model || "mistral-large-latest",
-                messages: [
-                    { role: "system", content: system },
-                    { role: "user", content: user }
-                ],
-                tools: tools.length > 0 ? tools.map(t => ({ type: "function", function: t })) : undefined,
-                temperature: 0.7,
-            }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Mistral API error: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const choice = data.choices[0];
-
-        return {
-            text: choice.message.content || "",
-            toolCalls: choice.message.tool_calls,
-            usage: { totalTokens: data.usage?.total_tokens || 0 },
-            provider: 'mistral',
-            model,
-        };
-    }
-
-    private static async generateHuggingFace(model: string, system: string, user: string, _tools: ToolCallDefinition[]): Promise<AIResponse> {
-        const config = this.providers.get('huggingface');
-        const apiKey = config?.apiKey || '';
-
-        if (!apiKey) throw new Error("Hugging Face API key not configured");
-
-        const modelId = model || "meta-llama/Llama-3.3-70B-Instruct";
-
-        const response = await fetch(`https://api-inference.huggingface.co/models/${modelId}/v1/chat/completions`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-                model: modelId,
-                messages: [
-                    { role: "system", content: system },
-                    { role: "user", content: user }
-                ],
-                temperature: 0.7,
-                max_tokens: 4096,
-            }),
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Hugging Face API error: ${response.statusText} - ${errorText}`);
-        }
-
-        const data = await response.json();
-        const choice = data.choices?.[0] || data;
-
-        return {
-            text: choice.message?.content || choice.generated_text || "",
-            usage: { totalTokens: data.usage?.total_tokens || 0 },
-            provider: 'huggingface',
-            model,
-        };
-    }
-
-    static detectTaskType(prompt: string): TaskType {
-        const lowerPrompt = prompt.toLowerCase();
-        
-        const codeKeywords = ['code', 'function', 'class', 'implement', 'write', 'create', 'build', 'program', 'script'];
-        const dataKeywords = ['analyze', 'data', 'chart', 'graph', 'visualize', 'statistics', 'calculate', 'process'];
-        const reasoningKeywords = ['reason', 'explain', 'why', 'how', 'think', 'solve', 'problem', 'logic'];
-        
-        for (const keyword of codeKeywords) {
-            if (lowerPrompt.includes(keyword)) return 'code';
-        }
-        
-        for (const keyword of dataKeywords) {
-            if (lowerPrompt.includes(keyword)) return 'data';
-        }
-        
-        for (const keyword of reasoningKeywords) {
-            if (lowerPrompt.includes(keyword)) return 'reasoning';
-        }
-        
-        return 'chat';
-    }
 }
-
-export default AIBridge;

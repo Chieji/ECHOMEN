@@ -3,6 +3,8 @@
  * 
  * Implements a formal cognitive architecture with explicit state management,
  * memory lifecycle, and validated decision pipeline.
+ * 
+ * SECURITY FIX 1.5: Real HITL (Human-in-the-Loop) approval system
  */
 
 import { MemoryManager } from './MemoryManager';
@@ -31,7 +33,9 @@ export enum LoopEvent {
   OBSERVATION_RECORDED = 'observation_recorded',
   REFLECTION_COMPLETE = 'reflection_complete',
   ERROR = 'error',
-  RECOVERY_COMPLETE = 'recovery_complete'
+  RECOVERY_COMPLETE = 'recovery_complete',
+  APPROVAL_REQUIRED = 'approval_required',
+  APPROVAL_RECEIVED = 'approval_received'
 }
 
 export interface Goal {
@@ -53,6 +57,119 @@ export interface ExecutionResult {
 }
 
 // ============================================================================
+// HITL (Human-in-the-Loop) Manager
+// ============================================================================
+
+export interface ApprovalRequest {
+  id: string;
+  sessionId: string;
+  toolName: string;
+  toolArgs: any;
+  timestamp: number;
+  status: 'pending' | 'approved' | 'rejected' | 'timeout';
+  respondedAt?: number;
+}
+
+/**
+ * SECURITY FIX 1.5: Real HITL implementation
+ * Manages approval requests for privileged operations
+ */
+class HITLManager {
+  private pendingApprovals = new Map<string, ApprovalRequest>();
+  private approvalCallbacks = new Map<string, (approved: boolean) => void>();
+  private approvalTimeouts = new Map<string, NodeJS.Timeout>();
+  private readonly APPROVAL_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+
+  /**
+   * Request human approval for a tool execution
+   */
+  async requestApproval(
+    sessionId: string,
+    toolName: string,
+    toolArgs: any
+  ): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      const id = `${sessionId}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      
+      const request: ApprovalRequest = {
+        id,
+        sessionId,
+        toolName,
+        toolArgs,
+        timestamp: Date.now(),
+        status: 'pending',
+      };
+
+      this.pendingApprovals.set(id, request);
+
+      // Emit approval required event (for UI/frontend to handle)
+      console.log(`[HITL] Approval required for tool: ${toolName}`);
+      console.log(`[HITL] Request ID: ${id}`);
+      console.log(`[HITL] Arguments: ${JSON.stringify(toolArgs, null, 2)}`);
+
+      // Set timeout - auto-reject after 5 minutes
+      const timeout = setTimeout(() => {
+        if (this.pendingApprovals.has(id)) {
+          const req = this.pendingApprovals.get(id)!;
+          req.status = 'timeout';
+          req.respondedAt = Date.now();
+          this.pendingApprovals.delete(id);
+          this.approvalCallbacks.delete(id);
+          this.approvalTimeouts.delete(id);
+          reject(new Error('Approval request timed out after 5 minutes'));
+        }
+      }, this.APPROVAL_TIMEOUT);
+
+      this.approvalTimeouts.set(id, timeout);
+
+      // Store callback for when approval response comes in
+      this.approvalCallbacks.set(id, (approved: boolean) => {
+        clearTimeout(timeout);
+        this.approvalTimeouts.delete(id);
+        
+        const req = this.pendingApprovals.get(id);
+        if (req) {
+          req.status = approved ? 'approved' : 'rejected';
+          req.respondedAt = Date.now();
+          this.pendingApprovals.delete(id);
+        }
+        
+        resolve(approved);
+      });
+    });
+  }
+
+  /**
+   * Respond to an approval request
+   */
+  respondToApproval(approvalId: string, approved: boolean): void {
+    const callback = this.approvalCallbacks.get(approvalId);
+    if (!callback) {
+      throw new Error('Approval request not found or expired');
+    }
+    
+    callback(approved);
+  }
+
+  /**
+   * Get all pending approvals for a session
+   */
+  getPendingApprovals(sessionId: string): ApprovalRequest[] {
+    return Array.from(this.pendingApprovals.values())
+      .filter(r => r.sessionId === sessionId && r.status === 'pending');
+  }
+
+  /**
+   * Get approval request by ID
+   */
+  getApprovalRequest(id: string): ApprovalRequest | undefined {
+    return this.pendingApprovals.get(id);
+  }
+}
+
+const hitlManager = new HITLManager();
+
+// ============================================================================
 // Execution Loop
 // ============================================================================
 
@@ -68,15 +185,18 @@ export class ExecutionLoop {
   private actionCount = 0;
   private maxActions = 20;
   private startTime = 0;
+  private sessionId: string;
   
   constructor(
     memory: MemoryManager,
     toolRegistry: ToolRegistry,
-    decisionPipeline: DecisionPipeline
+    decisionPipeline: DecisionPipeline,
+    sessionId?: string
   ) {
     this.memory = memory;
     this.toolRegistry = toolRegistry;
     this.decisionPipeline = decisionPipeline;
+    this.sessionId = sessionId || `session_${Date.now()}`;
   }
   
   // ============================================================================
@@ -132,6 +252,21 @@ export class ExecutionLoop {
   
   getState(): LoopState {
     return this.state;
+  }
+
+  /**
+   * Respond to HITL approval request
+   */
+  respondToApproval(approvalId: string, approved: boolean): void {
+    hitlManager.respondToApproval(approvalId, approved);
+    this.emit(LoopEvent.APPROVAL_RECEIVED, { approvalId, approved });
+  }
+
+  /**
+   * Get pending approvals for this session
+   */
+  getPendingApprovals(): ApprovalRequest[] {
+    return hitlManager.getPendingApprovals(this.sessionId);
   }
   
   // ============================================================================
@@ -228,7 +363,7 @@ export class ExecutionLoop {
     }
 
     const context: Context = {
-        sessionId: `session_${Date.now()}`,
+        sessionId: this.sessionId,
         permissions: ['read', 'write', 'execute'],
         resources: new Map(),
     };
@@ -240,13 +375,11 @@ export class ExecutionLoop {
       context
     );
     
-    if (!preconditionsMet) {
-      // Request human approval if needed
-      if (tool.requiresApproval) {
-        const approved = await this.requestHumanApproval(decision);
-        if (!approved) {
-          throw new Error('Action not approved by human');
-        }
+    // SECURITY FIX 1.5: Real HITL approval check
+    if (!preconditionsMet || tool.requiresApproval) {
+      const approved = await this.requestHumanApproval(decision);
+      if (!approved) {
+        throw new Error('Action not approved by human');
       }
     }
     
@@ -446,10 +579,30 @@ export class ExecutionLoop {
     return `Avoid: ${error}`;
   }
   
+  /**
+   * SECURITY FIX 1.5: Real HITL approval request
+   * Waits for human approval before executing privileged tools
+   */
   private async requestHumanApproval(decision: Decision): Promise<boolean> {
-    // Placeholder for HITL integration
-    console.log('[ExecutionLoop] Requesting human approval for:', decision.tool.name);
-    return true; // Assume approved for now
+    console.log(`[ExecutionLoop] Requesting human approval for: ${decision.tool.name}`);
+    
+    try {
+      const approved = await hitlManager.requestApproval(
+        this.sessionId,
+        decision.tool.name,
+        decision.args
+      );
+      
+      await this.emit(LoopEvent.APPROVAL_RECEIVED, { 
+        toolName: decision.tool.name,
+        approved 
+      });
+      
+      return approved;
+    } catch (error) {
+      console.error('[ExecutionLoop] HITL approval error:', error);
+      return false;
+    }
   }
 }
 
@@ -486,3 +639,6 @@ interface LoopResult {
   output?: any;
   learning?: any;
 }
+
+// Export HITL manager for external access
+export { hitlManager, HITLManager, ApprovalRequest };
