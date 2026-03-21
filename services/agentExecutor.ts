@@ -48,7 +48,7 @@ export class AgentExecutor {
         return MemoryMode.LOCAL;
     }
 
-    public async run(initialTasks: Task[], _prompt: string, initialArtifacts: Artifact[]) {
+    public async run(initialTasks: Task[], _prompt: string, initialArtifacts: Artifact[], onStatusUpdate?: (status: AgentStatus) => void) {
         this.isStopped = false;
         this.tasks = [...initialTasks];
         this.currentArtifacts = [...initialArtifacts];
@@ -70,7 +70,7 @@ export class AgentExecutor {
             while (activePromises.size < MAX_PARALLEL_TASKS && readyTasks.length > 0) {
                 const taskToRun = readyTasks.shift();
                 if (taskToRun) {
-                    const promise = this.executeTask(taskToRun).finally(() => {
+                    const promise = this.executeTask(taskToRun, onStatusUpdate).finally(() => {
                         activePromises.delete(taskToRun.id);
                     });
                     activePromises.set(taskToRun.id, promise);
@@ -109,10 +109,10 @@ export class AgentExecutor {
         this.callbacks.onTasksUpdate([...this.tasks]);
     }
 
-    private async executeTask(task: Task): Promise<boolean> {
+    private async executeTask(task: Task, onStatusUpdate?: (status: AgentStatus) => void): Promise<boolean> {
         this.updateTask(task, { status: 'Executing' });
         try {
-            await this.runReActLoop(task);
+            await this.runReActLoop(task, onStatusUpdate);
             if (task.status !== 'AwaitingApproval') {
                 this.updateTask(task, { status: 'Done' });
             }
@@ -124,7 +124,7 @@ export class AgentExecutor {
         }
     }
 
-    private async runReActLoop(task: Task) {
+    private async runReActLoop(task: Task, onStatusUpdate?: (status: AgentStatus) => void) {
         let subSteps: SubStep[] = task.subSteps || [];
         let observation = '';
         let currentDepth = this.calculateDepth(task);
@@ -132,8 +132,12 @@ export class AgentExecutor {
         while (subSteps.length < MAX_SUB_STEPS) {
             if (this.isStopped || this.tasks.find(t => t.id === task.id)?.status !== 'Executing') return;
 
+            onStatusUpdate?.(AgentStatus.PERCEIVE);
+
             this.llmCallCount += 1;
             const nextStep = await determineNextStep(task, subSteps, this.currentArtifacts, this.callbacks.onTokenUpdate);
+
+            onStatusUpdate?.(AgentStatus.REASON);
 
             if ('isFinished' in nextStep) {
                 this.callbacks.onLog({ status: 'SUCCESS', message: `[${task.agent.name}] Task complete.` });
@@ -158,6 +162,7 @@ export class AgentExecutor {
             }
 
             try {
+                onStatusUpdate?.(AgentStatus.ACT);
                 if (toolCall.name === 'create_and_delegate_task_to_new_agent') {
                     const { agent_name, agent_instructions, task_description, agent_icon } = toolCall.args as {
                         agent_name: string;
@@ -230,9 +235,14 @@ export class AgentExecutor {
                 });
             }
 
+            onStatusUpdate?.(AgentStatus.OBSERVE);
             subSteps.push({ thought, toolCall, observation });
             this.updateTask(task, { subSteps: [...subSteps] });
             
+            onStatusUpdate?.(AgentStatus.REFLECT);
+            // Simulate reflection time
+            await new Promise(r => setTimeout(r, 200));
+
             // Reset observation for next iteration
             observation = '';
         }
