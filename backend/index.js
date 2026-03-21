@@ -5,6 +5,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { exec } = require('child_process');
 const { chromium } = require('playwright');
+const { VM } = require('vm2');
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 const CSRF = require('csrf');
 const rateLimit = require('express-rate-limit');
@@ -881,7 +882,11 @@ const dataTools = {
             // Execute analysis script if provided
             if (analysis_script) {
                 try {
-                    const result = await eval(`(async (data) => { ${analysis_script} })(parsedData)`);
+                    const vm = new VM({
+                        timeout: 5000,
+                        sandbox: { data: parsedData }
+                    });
+                    const result = vm.run(analysis_script);
                     return { 
                         status: 'success', 
                         analysis_result: result,
