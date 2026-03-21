@@ -9,6 +9,7 @@ import { AgentExecutor } from './services/agentExecutor';
 import { CommandDeck } from './components/CommandDeck';
 import { CommandPalette } from './components/CommandPalette';
 import { ChatInterface } from './components/ChatInterface';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 /**
  * ECHO Main Application Entry
@@ -50,17 +51,37 @@ const App: React.FC = () => {
         document.documentElement.classList.toggle('dark', theme === 'dark');
     }, [theme]);
 
-    // Global Hotkeys (Ctrl+P / Cmd+K)
+    // Global Hotkeys
     useEffect(() => {
         const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            // Ctrl+P / Cmd+K: Command Palette
             if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'k')) {
                 e.preventDefault();
                 setIsPaletteOpen(prev => !prev);
             }
+
+            // Ctrl+1-2: View Switching (simplified for existing modes)
+            if (e.ctrlKey && e.key === '1') {
+                e.preventDefault();
+                setAgentMode(AgentMode.ACTION);
+            }
+            if (e.ctrlKey && e.key === '2') {
+                e.preventDefault();
+                setAgentMode(AgentMode.CHAT);
+            }
+
+            // Ctrl+C: Termination (Stop execution)
+            if (e.ctrlKey && e.key === 'c') {
+                if (agentStatus === AgentStatus.RUNNING) {
+                    e.preventDefault();
+                    executorRef.current?.cancelTask('');
+                    addLog({ status: 'WARN', message: 'Termination signal received (Ctrl+C). Execution halted.' });
+                }
+            }
         };
         window.addEventListener('keydown', handleGlobalKeyDown);
         return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-    }, []);
+    }, [agentStatus]);
 
     // --- Handlers ---
 
@@ -189,7 +210,7 @@ const App: React.FC = () => {
             });
 
             executorRef.current = executor;
-            await executor.run(initialTasks, correctedPrompt, artifacts);
+            await executor.run(initialTasks, correctedPrompt, artifacts, (status) => setAgentStatus(status));
         } catch (error) {
             console.error(error);
             setAgentStatus(AgentStatus.ERROR);
@@ -198,7 +219,8 @@ const App: React.FC = () => {
 
     return (
         <div className="flex flex-col h-screen bg-echo-void text-gray-100 overflow-hidden">
-            <Header
+            <ErrorBoundary>
+                <Header
                 onSettingsClick={() => setIsSettingsOpen(true)}
                 onHistoryClick={() => {}}
                 onArtifactsClick={() => {}}
@@ -241,15 +263,16 @@ const App: React.FC = () => {
                 onAction={(id) => id === 'open-settings' && setIsSettingsOpen(true)}
             />
 
-            <AnimatePresence>
-                {isSettingsOpen && (
-                    <MasterConfigurationPanel
-                        onClose={() => setIsSettingsOpen(false)}
-                        theme={theme}
-                        setTheme={setTheme}
-                    />
-                )}
-            </AnimatePresence>
+                <AnimatePresence>
+                    {isSettingsOpen && (
+                        <MasterConfigurationPanel
+                            onClose={() => setIsSettingsOpen(false)}
+                            theme={theme}
+                            setTheme={setTheme}
+                        />
+                    )}
+                </AnimatePresence>
+            </ErrorBoundary>
         </div>
     );
 };

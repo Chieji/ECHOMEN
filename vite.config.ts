@@ -18,7 +18,8 @@ export default defineConfig(({ mode }) => {
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
-        }
+        },
+        mainFields: ['module', 'main'],
       },
       build: {
         // Enable manual chunk splitting for better caching
@@ -27,7 +28,7 @@ export default defineConfig(({ mode }) => {
           output: {
             manualChunks: {
               // React core - stable, rarely changes
-              'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+              'react-vendor': ['react', 'react-dom'],
               // Framer Motion - animation library
               'motion-vendor': ['framer-motion'],
               // AI SDKs - large, change independently
@@ -35,12 +36,10 @@ export default defineConfig(({ mode }) => {
                 '@google/genai',
                 'openai',
                 '@anthropic-ai/sdk',
-                '@google/generative-ai',
-                'langchain',
-                'ai'
+                'cohere-ai'
               ],
               // Firebase - if used, separate for caching
-              'firebase-vendor': ['firebase', 'firebase/app', 'firebase/auth', 'firebase/firestore'],
+              'firebase-vendor': ['firebase/app', 'firebase/firestore'],
             },
             // Content-hash based naming for long-term caching
             entryFileNames: 'assets/[name]-[hash].js',

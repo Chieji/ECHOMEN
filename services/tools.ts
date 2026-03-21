@@ -1,6 +1,34 @@
 import { FunctionDeclaration, Type } from "@google/genai";
+import { z } from 'zod';
 import { ToolArguments } from '../types';
 import { saveMemory, retrieveMemory, deleteMemory } from '../lib/firebase_manager';
+
+// --- Validation Schemas ---
+
+const GitHubRepoSchema = z.object({
+    name: z.string().min(1).max(100).regex(/^[a-zA-Z0-9._-]+$/),
+    description: z.string().max(1000).optional(),
+    is_private: z.boolean().default(false)
+});
+
+const GitHubPrSchema = z.object({
+    pr_url: z.string().url().includes('github.com')
+});
+
+const GitHubCommentSchema = GitHubPrSchema.extend({
+    comment: z.string().min(1).max(65536)
+});
+
+const GitHubMergeSchema = GitHubPrSchema.extend({
+    method: z.enum(['merge', 'squash', 'rebase']).default('merge')
+});
+
+const GitHubCreateFileSchema = z.object({
+    repo_name: z.string().min(1),
+    path: z.string().min(1),
+    content: z.string(),
+    commit_message: z.string().min(1)
+});
 
 const BACKEND_URL = (import.meta as any).env?.VITE_CLOUD_ENGINE_URL || (import.meta as any).env?.VITE_BACKEND_URL || 'http://localhost:3001/execute-tool';
 
@@ -32,6 +60,9 @@ const callBackendTool = async <K extends keyof ToolArguments>(
     args: ToolArguments[K]
 ): Promise<unknown> => {
     try {
+        if (!toolName) {
+            throw new Error('Tool name is required');
+        }
         console.log(`[ECHO Engine] Executing '${toolName}' via ${BACKEND_URL}`);
         
         // Get CSRF token for CSRF protection
@@ -39,7 +70,7 @@ const callBackendTool = async <K extends keyof ToolArguments>(
         
         // Get API key from environment or localStorage
         const apiKey = (import.meta as any).env?.VITE_API_KEY || 
-                      localStorage.getItem('echo-api-key') || 
+                      (typeof localStorage !== 'undefined' ? localStorage.getItem('echo-api-key') : null) ||
                       'echomen-secret-token-2026';
         
         const response = await fetch(BACKEND_URL, {
@@ -99,23 +130,28 @@ export const executeShellCommand = (command: string) => callBackendTool('execute
 
 // GitHub helper functions
 export const githubCreateRepo = async (name: string, description: string, is_private: boolean) => {
-    return callBackendTool('github_create_repo', { name, description, is_private });
+    const validated = GitHubRepoSchema.parse({ name, description, is_private });
+    return callBackendTool('github_create_repo', validated);
 };
 
 export const githubGetPrDetails = async (pr_url: string) => {
-    return callBackendTool('github_get_pr_details', { pr_url });
+    const validated = GitHubPrSchema.parse({ pr_url });
+    return callBackendTool('github_get_pr_details', validated);
 };
 
 export const githubPostPrComment = async (pr_url: string, comment: string) => {
-    return callBackendTool('github_post_pr_comment', { pr_url, comment });
+    const validated = GitHubCommentSchema.parse({ pr_url, comment });
+    return callBackendTool('github_post_pr_comment', validated);
 };
 
 export const githubMergePr = async (pr_url: string, method: 'merge' | 'squash' | 'rebase') => {
-    return callBackendTool('github_merge_pr', { pr_url, method });
+    const validated = GitHubMergeSchema.parse({ pr_url, method });
+    return callBackendTool('github_merge_pr', validated);
 };
 
 export const githubCreateFileInRepo = async (repo_name: string, path: string, content: string, commit_message: string) => {
-    return callBackendTool('github_create_file_in_repo', { repo_name, path, content, commit_message });
+    const validated = GitHubCreateFileSchema.parse({ repo_name, path, content, commit_message });
+    return callBackendTool('github_create_file_in_repo', validated);
 };
 
 // Data analysis helper functions
@@ -125,6 +161,24 @@ export const dataAnalyze = async (input_file_path: string, analysis_script: stri
 
 export const dataVisualize = async (input_file_path: string, visualization_script: string, output_image_path: string) => {
     return callBackendTool('data_visualize', { input_file_path, visualization_script, output_image_path });
+};
+
+export const availableTools = {
+    readFile,
+    writeFile,
+    listFiles,
+    executeShellCommand,
+    githubCreateRepo,
+    githubGetPrDetails,
+    githubPostPrComment,
+    githubMergePr,
+    githubCreateFileInRepo,
+    dataAnalyze,
+    dataVisualize,
+    executeCode,
+    memory_save: saveMemory,
+    memory_retrieve: retrieveMemory,
+    memory_delete: deleteMemory
 };
 
 /**
