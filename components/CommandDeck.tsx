@@ -25,15 +25,16 @@ interface CommandDeckProps {
     services: Service[];
     sessionStats: SessionStats;
     messages: Message[];
+    activeTab: 'board' | 'artifacts' | 'history' | 'brain' | 'deployments' | 'terminal';
+    onTabChange: (tab: 'board' | 'artifacts' | 'history' | 'brain' | 'deployments' | 'terminal') => void;
     onCommand: (prompt: string) => void;
     onCancelTask: (taskId: string) => void;
     onClearChat: () => void;
 }
 
 export const CommandDeck = ({
-    tasks, logs, artifacts, services, sessionStats, messages, onCommand, onCancelTask, onClearChat
+    tasks, logs, artifacts, services, sessionStats, messages, activeTab, onTabChange, onCommand, onCancelTask, onClearChat
 }: CommandDeckProps): React.ReactElement => {
-    const [activeTab, setActiveTab] = useState<'board' | 'artifacts' | 'history' | 'brain' | 'deployments' | 'terminal'>('board');
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [currentNoteContent, setCurrentNoteContent] = useState('');
 
@@ -67,13 +68,13 @@ export const CommandDeck = ({
                                 <h1 className="text-lg font-semibold text-white">Command</h1>
                                 <div className="flex bg-echo-surface-elevated rounded-md p-0.5">
                                     <button
-                                        onClick={() => setActiveTab('board')}
+                                        onClick={() => onTabChange('board')}
                                         className={`px-3 py-1 text-xs rounded transition-colors ${activeTab !== 'brain' ? 'bg-echo-cyan text-black' : 'text-gray-400'}`}
                                     >
                                         Action
                                     </button>
                                     <button
-                                        onClick={() => setActiveTab('brain')}
+                                        onClick={() => onTabChange('brain')}
                                         className={`px-3 py-1 text-xs rounded transition-colors ${activeTab === 'brain' ? 'bg-echo-cyan text-black' : 'text-gray-400'}`}
                                     >
                                         Brain
@@ -92,35 +93,35 @@ export const CommandDeck = ({
                     <nav className="flex items-center justify-between px-4 py-2 border-b border-echo-border bg-echo-surface-elevated">
                         <div className="flex items-center gap-4">
                             <button
-                                onClick={() => setActiveTab('board')}
+                                onClick={() => onTabChange('board')}
                                 className={`flex items-center gap-2 text-xs font-medium transition-colors ${activeTab === 'board' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                                 <Squares2X2Icon className="w-4 h-4" />
-                                Execution
+                                Execution (1)
                             </button>
                             <button
-                                onClick={() => setActiveTab('artifacts')}
+                                onClick={() => onTabChange('artifacts')}
                                 className={`flex items-center gap-2 text-xs font-medium transition-colors ${activeTab === 'artifacts' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                                 <ArchiveBoxIcon className="w-4 h-4" />
-                                Artifacts ({artifacts.length})
+                                Artifacts ({artifacts.length}) (3)
                             </button>
                             <button
-                                onClick={() => setActiveTab('brain')}
+                                onClick={() => onTabChange('brain')}
                                 className={`flex items-center gap-2 text-xs font-medium transition-colors ${activeTab === 'brain' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                                 <BrainIcon className="w-4 h-4" />
-                                Notes
+                                Notes (4)
                             </button>
                             <button
-                                onClick={() => setActiveTab('deployments')}
+                                onClick={() => onTabChange('deployments')}
                                 className={`flex items-center gap-2 text-xs font-medium transition-colors ${activeTab === 'deployments' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                                 <RocketIcon className="w-4 h-4" />
-                                Deployments
+                                Deployments (5)
                             </button>
                             <button
-                                onClick={() => setActiveTab('terminal')}
+                                onClick={() => onTabChange('terminal')}
                                 className={`flex items-center gap-2 text-xs font-medium transition-colors ${activeTab === 'terminal' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                                 <CommandLineIcon className="w-4 h-4" />
@@ -170,7 +171,7 @@ export const CommandDeck = ({
                                 >
                                     <ArtifactsPanel
                                         artifacts={artifacts}
-                                        onClose={() => setActiveTab('board')}
+                                        onClose={() => onTabChange('board')}
                                     />
                                 </motion.div>
                             )}

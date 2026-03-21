@@ -12,7 +12,9 @@ const GitHubRepoSchema = z.object({
 });
 
 const GitHubPrSchema = z.object({
-    pr_url: z.string().url().includes('github.com')
+    pr_url: z.string().url().refine(v => v.includes('github.com'), {
+        message: 'PR URL must be a GitHub URL',
+    })
 });
 
 const GitHubCommentSchema = GitHubPrSchema.extend({

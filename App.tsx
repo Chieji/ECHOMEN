@@ -24,6 +24,7 @@ const App: React.FC = () => {
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
     const [agentStatus, setAgentStatus] = useState<AgentStatus>(AgentStatus.IDLE);
     const [agentMode, setAgentMode] = useState<AgentMode>(AgentMode.ACTION);
+    const [activeTab, setActiveTab] = useState<'board' | 'artifacts' | 'history' | 'brain' | 'deployments' | 'terminal'>('board');
 
     // Data State
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -60,14 +61,30 @@ const App: React.FC = () => {
                 setIsPaletteOpen(prev => !prev);
             }
 
-            // Ctrl+1-2: View Switching (simplified for existing modes)
+            // Ctrl+1-5: View & Tab Switching
             if (e.ctrlKey && e.key === '1') {
                 e.preventDefault();
                 setAgentMode(AgentMode.ACTION);
+                setActiveTab('board');
             }
             if (e.ctrlKey && e.key === '2') {
                 e.preventDefault();
                 setAgentMode(AgentMode.CHAT);
+            }
+            if (e.ctrlKey && e.key === '3') {
+                e.preventDefault();
+                setAgentMode(AgentMode.ACTION);
+                setActiveTab('artifacts');
+            }
+            if (e.ctrlKey && e.key === '4') {
+                e.preventDefault();
+                setAgentMode(AgentMode.ACTION);
+                setActiveTab('brain');
+            }
+            if (e.ctrlKey && e.key === '5') {
+                e.preventDefault();
+                setAgentMode(AgentMode.ACTION);
+                setActiveTab('deployments');
             }
 
             // Ctrl+C: Termination (Stop execution)
@@ -248,6 +265,8 @@ const App: React.FC = () => {
                         services={services}
                         sessionStats={sessionStats}
                         messages={messages}
+                        activeTab={activeTab}
+                        onTabChange={setActiveTab}
                         onCommand={handleSendCommand}
                         onCancelTask={(id) => executorRef.current?.cancelTask(id)}
                         onClearChat={() => setMessages([])}

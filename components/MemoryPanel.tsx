@@ -7,6 +7,7 @@ export const MemoryPanel: React.FC = () => {
     const [memories, setMemories] = useState<MemorySearchResult[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
     // Mock initial memories (since real memory access might require a complex hook)
     useEffect(() => {
@@ -32,10 +33,17 @@ export const MemoryPanel: React.FC = () => {
         e.preventDefault();
         setIsLoading(true);
         // Simulate semantic search
-        setTimeout(() => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
             setIsLoading(false);
         }, 800);
     };
+
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        };
+    }, []);
 
     return (
         <div className="h-full flex flex-col bg-echo-void/50">

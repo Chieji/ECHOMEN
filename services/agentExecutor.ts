@@ -54,6 +54,8 @@ export class AgentExecutor {
         this.currentArtifacts = [...initialArtifacts];
         this.llmCallCount = 0;
 
+        onStatusUpdate?.(AgentStatus.RUNNING);
+
         const memoryMode = this.getMemoryMode();
         this.callbacks.onLog({ 
             status: 'INFO', 
@@ -89,6 +91,9 @@ export class AgentExecutor {
 
         if (this.tasks.every(t => t.status === 'Done' || t.status === 'Cancelled')) {
             this.callbacks.onFinish();
+            onStatusUpdate?.(AgentStatus.FINISHED);
+        } else if (this.isStopped) {
+            onStatusUpdate?.(AgentStatus.IDLE);
         }
     }
 

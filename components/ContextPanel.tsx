@@ -7,7 +7,12 @@ interface ContextPanelProps {
 
 export const ContextPanel: React.FC<ContextPanelProps> = ({ tasks }) => {
     const renderTaskTree = (parentId: string | null = null, depth = 0) => {
-        const filteredTasks = tasks.filter(t => t.delegatorTaskId === (parentId || undefined));
+        const filteredTasks = tasks.filter(t => {
+            if (parentId === null) {
+                return !t.delegatorTaskId;
+            }
+            return t.delegatorTaskId === parentId;
+        });
 
         if (filteredTasks.length === 0 && depth === 0) {
             return <div className="text-gray-500 italic text-sm p-4">No active task tree.</div>;
