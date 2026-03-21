@@ -233,6 +233,7 @@ export const CommandDeck = ({
                 artifacts={artifacts}
                 logs={logs}
                 backlinks={activeBacklinks}
+                tasks={tasks}
                 currentNoteTitle="Active Note"
                 onSelectResult={(res) => console.log("Selected result:", res)}
             />

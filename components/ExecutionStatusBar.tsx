@@ -13,9 +13,36 @@ interface ExecutionStatusBarProps {
 
 export const ExecutionStatusBar: React.FC<ExecutionStatusBarProps> = ({ tasks, agentStatus, onStopExecution }) => {
     const { statusText, Icon } = useMemo(() => {
+        const executingTask = tasks.find(t => t.status === 'Executing');
+        const taskTitle = executingTask ? ` - ${executingTask.title}` : '';
+
         switch (agentStatus) {
+            case AgentStatus.PERCEIVE:
+                return {
+                    statusText: `PERCEIVE: Gathering context${taskTitle}`,
+                    Icon: <SpinnerIcon className="w-4 h-4 animate-spin text-blue-400" />,
+                };
+            case AgentStatus.REASON:
+                return {
+                    statusText: `REASON: Planning next steps${taskTitle}`,
+                    Icon: <BrainIcon className="w-4 h-4 text-purple-400 animate-pulse" />,
+                };
+            case AgentStatus.ACT:
+                return {
+                    statusText: `ACT: Executing tool${taskTitle}`,
+                    Icon: <SpinnerIcon className="w-4 h-4 animate-spin text-echo-cyan" />,
+                };
+            case AgentStatus.OBSERVE:
+                return {
+                    statusText: `OBSERVE: Recording outcome${taskTitle}`,
+                    Icon: <SpinnerIcon className="w-4 h-4 animate-spin text-green-400" />,
+                };
+            case AgentStatus.REFLECT:
+                return {
+                    statusText: `REFLECT: Learning from result${taskTitle}`,
+                    Icon: <BrainIcon className="w-4 h-4 text-yellow-400" />,
+                };
             case AgentStatus.RUNNING:
-                const executingTask = tasks.find(t => t.status === 'Executing');
                 return {
                     statusText: executingTask ? `Running: ${executingTask.title}` : 'Agent is running...',
                     Icon: <SpinnerIcon className="w-4 h-4 animate-spin text-echo-cyan" />,
@@ -44,7 +71,14 @@ export const ExecutionStatusBar: React.FC<ExecutionStatusBarProps> = ({ tasks, a
         }
     }, [tasks, agentStatus]);
 
-    const isExecuting = agentStatus === AgentStatus.RUNNING;
+    const isExecuting = [
+        AgentStatus.RUNNING,
+        AgentStatus.PERCEIVE,
+        AgentStatus.REASON,
+        AgentStatus.ACT,
+        AgentStatus.OBSERVE,
+        AgentStatus.REFLECT
+    ].includes(agentStatus);
 
     if (agentStatus === AgentStatus.IDLE) {
         return null;

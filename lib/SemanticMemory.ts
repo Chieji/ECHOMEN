@@ -73,7 +73,7 @@ class SemanticMemory {
   /**
    * Search memory semantically
    */
-  async search(query: string, k: number = 5): Promise<MemorySearchResult[]> {
+  async search(query: string, k: number = 5, threshold: number = 0.7): Promise<MemorySearchResult[]> {
     const queryEmbedding = await this.getEmbedding(query);
 
     // Calculate similarity scores for all entries
@@ -84,13 +84,16 @@ class SemanticMemory {
 
       const similarity = this.cosineSimilarity(queryEmbedding, entry.embedding);
 
-      results.push({
-        id,
-        content: entry.content,
-        metadata: entry.metadata,
-        similarity,
-        timestamp: entry.timestamp,
-      });
+      // Fix Priority 2.4: Proper similarity scoring with threshold
+      if (similarity >= threshold) {
+        results.push({
+          id,
+          content: entry.content,
+          metadata: entry.metadata,
+          similarity,
+          timestamp: entry.timestamp,
+        });
+      }
     }
 
     // Sort by similarity and return top k

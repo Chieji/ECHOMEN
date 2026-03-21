@@ -5,11 +5,17 @@ import { Artifact, LogEntry } from '../types';
 import { Connection } from '../lib/linkParser';
 import { MagnifyingGlassIcon } from './icons/MagnifyingGlassIcon';
 import { LinkIcon } from './icons/LinkIcon';
+import { BrainIcon } from './icons/BrainIcon';
+import { Squares2X2Icon } from './icons/Squares2X2Icon';
+import { MemoryPanel } from './MemoryPanel';
+import { ContextPanel } from './ContextPanel';
+import { Task } from '../types';
 
 interface IntelligenceSidebarProps {
     artifacts: Artifact[];
     logs: LogEntry[];
     backlinks: Connection[];
+    tasks: Task[];
     currentNoteTitle?: string;
     onSelectResult: (result: any) => void;
 }
@@ -18,31 +24,45 @@ interface IntelligenceSidebarProps {
  * IntelligenceSidebar - Clean right panel for search and links
  */
 export const IntelligenceSidebar: React.FC<IntelligenceSidebarProps> = ({
-    artifacts, logs, backlinks, currentNoteTitle, onSelectResult
+    artifacts, logs, backlinks, tasks, currentNoteTitle, onSelectResult
 }) => {
-    const [view, setView] = useState<'search' | 'links'>('search');
+    const [view, setView] = useState<'search' | 'links' | 'memory' | 'context'>('search');
 
     return (
-        <div className="w-64 h-full bg-echo-surface border-l border-echo-border flex flex-col">
+        <div className="w-80 h-full bg-echo-surface border-l border-echo-border flex flex-col">
             {/* Sidebar Tabs */}
             <div className="flex border-b border-echo-border">
                 <button
                     onClick={() => setView('search')}
+                    title="Search"
                     className={`flex-1 py-2.5 flex flex-col items-center gap-1 text-xs transition-colors ${view === 'search' ? 'text-echo-cyan border-b-2 border-echo-cyan' : 'text-gray-500 hover:text-gray-300'}`}
                 >
                     <MagnifyingGlassIcon className="w-4 h-4" />
-                    <span>Search</span>
                 </button>
                 <button
                     onClick={() => setView('links')}
+                    title="Links"
                     className={`flex-1 py-2.5 flex flex-col items-center gap-1 text-xs transition-colors ${view === 'links' ? 'text-echo-cyan border-b-2 border-echo-cyan' : 'text-gray-500 hover:text-gray-300'}`}
                 >
                     <LinkIcon className="w-4 h-4" />
-                    <span>Links</span>
+                </button>
+                <button
+                    onClick={() => setView('memory')}
+                    title="Memory"
+                    className={`flex-1 py-2.5 flex flex-col items-center gap-1 text-xs transition-colors ${view === 'memory' ? 'text-echo-cyan border-b-2 border-echo-cyan' : 'text-gray-500 hover:text-gray-300'}`}
+                >
+                    <BrainIcon className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={() => setView('context')}
+                    title="Task Tree"
+                    className={`flex-1 py-2.5 flex flex-col items-center gap-1 text-xs transition-colors ${view === 'context' ? 'text-echo-cyan border-b-2 border-echo-cyan' : 'text-gray-500 hover:text-gray-300'}`}
+                >
+                    <Squares2X2Icon className="w-4 h-4" />
                 </button>
             </div>
 
-            <div className="flex-grow overflow-hidden p-3">
+            <div className="flex-grow overflow-hidden">
                 <AnimatePresence mode="wait">
                     {view === 'search' ? (
                         <motion.div
@@ -58,13 +78,13 @@ export const IntelligenceSidebar: React.FC<IntelligenceSidebarProps> = ({
                                 onSelect={onSelectResult}
                             />
                         </motion.div>
-                    ) : (
+                    ) : view === 'links' ? (
                         <motion.div
                             key="links"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="h-full flex flex-col"
+                            className="h-full flex flex-col p-3"
                         >
                             <header className="mb-3">
                                 <h3 className="text-xs font-medium text-gray-400 mb-1">Backlinks</h3>
@@ -94,6 +114,26 @@ export const IntelligenceSidebar: React.FC<IntelligenceSidebarProps> = ({
                                     </div>
                                 )}
                             </div>
+                        </motion.div>
+                    ) : view === 'memory' ? (
+                        <motion.div
+                            key="memory"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="h-full flex flex-col"
+                        >
+                            <MemoryPanel />
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="context"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="h-full flex flex-col"
+                        >
+                            <ContextPanel tasks={tasks} />
                         </motion.div>
                     )}
                 </AnimatePresence>

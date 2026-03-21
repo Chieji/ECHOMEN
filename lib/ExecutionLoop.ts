@@ -10,6 +10,8 @@
 import { MemoryManager } from './MemoryManager';
 import { ToolRegistry, ToolResult, Context } from './ToolRegistry';
 import { DecisionPipeline, Decision } from './DecisionPipeline';
+import { BDIHaltingGuards, DEFAULT_CONFIGS } from './BDIHaltingGuards';
+import { logger } from './Logger';
 
 // ============================================================================
 // State Machine
@@ -179,6 +181,7 @@ export class ExecutionLoop {
   private toolRegistry: ToolRegistry;
   private decisionPipeline: DecisionPipeline;
   private eventListeners: Map<LoopEvent, Array<(data: any) => void>> = new Map();
+  private guards: BDIHaltingGuards;
   
   // Loop control
   private currentGoal: Goal | null = null;
@@ -197,6 +200,8 @@ export class ExecutionLoop {
     this.toolRegistry = toolRegistry;
     this.decisionPipeline = decisionPipeline;
     this.sessionId = sessionId || `session_${Date.now()}`;
+    this.guards = new BDIHaltingGuards(DEFAULT_CONFIGS.BALANCED);
+    logger.setContext({ sessionId: this.sessionId });
   }
   
   // ============================================================================
@@ -207,16 +212,20 @@ export class ExecutionLoop {
     this.startTime = Date.now();
     this.currentGoal = goal;
     this.actionCount = 0;
+    this.guards.reset();
+
+    logger.info('Starting execution for goal', { goal });
     
     try {
       await this.emit(LoopEvent.GOAL_RECEIVED, { goal });
       
       // Main execution loop
-      while (this.actionCount < this.maxActions) {
+      while (this.guards.shouldContinue()) {
         const result = await this.executeLoop();
         
         if (result.goalAchieved || result.shouldTerminate) {
           await this.transitionTo('IDLE');
+          logger.info('Goal achieved or termination requested', { result });
           return {
             success: result.goalAchieved,
             output: result.output,
@@ -275,6 +284,8 @@ export class ExecutionLoop {
   
   private async executeLoop(): Promise<LoopResult> {
     try {
+      this.guards.incrementIteration();
+
       // PERCEIVE
       await this.transitionTo('PERCEIVE');
       const perception = await this.perceive();
@@ -300,6 +311,10 @@ export class ExecutionLoop {
       await this.transitionTo('REFLECT');
       const reflection = await this.reflect(feedback, decision, perception);
       await this.emit(LoopEvent.REFLECTION_COMPLETE, reflection);
+
+      if (reflection.goalAchieved) {
+        this.guards.markGoalAchieved();
+      }
       
       return reflection;
       
@@ -362,6 +377,8 @@ export class ExecutionLoop {
         throw new Error(`Tool ${decision.tool.name} not found`);
     }
 
+    logger.logToolExecution(tool.name, 'start', { args: decision.args });
+
     const context: Context = {
         sessionId: this.sessionId,
         permissions: ['read', 'write', 'execute'],
@@ -377,26 +394,38 @@ export class ExecutionLoop {
     
     // SECURITY FIX 1.5: Real HITL approval check
     if (!preconditionsMet || tool.requiresApproval) {
+      logger.info('Privileged tool requires approval', { toolName: tool.name });
       const approved = await this.requestHumanApproval(decision);
       if (!approved) {
+        logger.warn('Action not approved by human', { toolName: tool.name });
         throw new Error('Action not approved by human');
       }
     }
     
     // Execute tool with timeout
     const timeout = tool.timeout || 60000;
-    const result = await Promise.race([
-      this.toolRegistry.execute(tool.name, decision.args, context),
-      this.timeout(timeout)
-    ]);
-    
-    return {
-      tool: tool.name,
-      args: decision.args,
-      result,
-      success: result.success,
-      duration: result.duration || 0
-    };
+    try {
+      const result = await Promise.race([
+        this.toolRegistry.execute(tool.name, decision.args, context),
+        this.timeout(timeout)
+      ]);
+
+      logger.logToolExecution(tool.name, result.success ? 'success' : 'error', {
+        duration: result.duration,
+        error: result.error
+      });
+
+      return {
+        tool: tool.name,
+        args: decision.args,
+        result,
+        success: result.success,
+        duration: result.duration || 0
+      };
+    } catch (error: any) {
+      logger.error(`Error executing tool: ${tool.name}`, error);
+      throw error;
+    }
   }
   
   private async observe(observation: Observation): Promise<Feedback> {
@@ -549,7 +578,7 @@ export class ExecutionLoop {
     const oldState = this.state;
     this.state = newState;
     
-    console.log(`[ExecutionLoop] ${oldState} → ${newState}`);
+    logger.info(`Cognitive Transition: ${oldState} → ${newState}`);
     
     await this.memory.write('working', 'state', newState);
   }

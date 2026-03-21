@@ -211,6 +211,11 @@ export interface TodoItem {
 
 export enum AgentStatus {
     IDLE = 'IDLE',
+    PERCEIVE = 'PERCEIVE',
+    REASON = 'REASON',
+    ACT = 'ACT',
+    OBSERVE = 'OBSERVE',
+    REFLECT = 'REFLECT',
     RUNNING = 'RUNNING',
     PAUSED = 'PAUSED',
     FINISHED = 'FINISHED',
