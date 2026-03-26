@@ -40,7 +40,6 @@ export interface ExecutionError {
   stack?: string;
 }
 
-const MAX_SUB_STEPS = 10;
 const MAX_PARALLEL_TASKS = 4;
 
 // Security Guard: Tools that require explicit human approval
@@ -68,7 +67,7 @@ export class AgentExecutor extends EventEmitter {
   private tasks: Task[] = [];
   private currentArtifacts: Artifact[] = [];
   private isStopped = false;
-  private llmCallCount = 0;
+  private _llmCallCount = 0;
   private activePromises: Map<string, Promise<boolean>> = new Map();
 
   constructor(callbacks: AgentExecutorCallbacks) {
@@ -76,7 +75,7 @@ export class AgentExecutor extends EventEmitter {
     this.callbacks = callbacks;
   }
 
-  public async run(initialTasks: Task[], prompt: string, initialArtifacts: Artifact[]) {
+  public async run(initialTasks: Task[], _prompt: string, initialArtifacts: Artifact[]) {
     this.isStopped = false;
     this.tasks = [...initialTasks];
     this.currentArtifacts = [...initialArtifacts];

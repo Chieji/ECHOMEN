@@ -9,9 +9,11 @@ vi.mock('ws', () => {
     close: vi.fn(),
     readyState: 1,
   }));
-  MockWebSocket.OPEN = 1;
-  MockWebSocket.CLOSED = 3;
-  return { default: MockWebSocket };
+  return { 
+    default: MockWebSocket,
+    OPEN: 1,
+    CLOSED: 3,
+  };
 });
 
 describe('EchoctlClient', () => {

@@ -15,10 +15,11 @@ interface ValidationOptions {
 /**
  * CSRF Token Validation
  */
-export function validateCsrfToken(req: Request, res: Response, next: NextFunction) {
+export function validateCsrfToken(req: Request, res: Response, next: NextFunction): void {
   // Skip for GET requests (idempotent)
   if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
-    return next();
+    next();
+    return;
   }
 
   const csrfToken = req.headers['x-csrf-token'] as string;
@@ -30,10 +31,11 @@ export function validateCsrfToken(req: Request, res: Response, next: NextFunctio
       path: req.path,
     });
 
-    return res.status(403).json({
+    res.status(403).json({
       error: 'CSRF validation failed',
       message: 'Missing CSRF token or session ID',
     });
+    return;
   }
 
   // Verify CSRF token format (should be UUID-like)
@@ -43,10 +45,11 @@ export function validateCsrfToken(req: Request, res: Response, next: NextFunctio
       path: req.path,
     });
 
-    return res.status(403).json({
+    res.status(403).json({
       error: 'CSRF validation failed',
       message: 'Invalid CSRF token format',
     });
+    return;
   }
 
   // In production, verify token against session store
@@ -60,7 +63,7 @@ export function validateCsrfToken(req: Request, res: Response, next: NextFunctio
 /**
  * API Key Validation
  */
-export function validateApiKey(req: Request, res: Response, next: NextFunction) {
+export function validateApiKey(req: Request, res: Response, next: NextFunction): void {
   const apiKey = req.headers['authorization']?.replace('Bearer ', '');
 
   if (!apiKey) {
@@ -69,10 +72,11 @@ export function validateApiKey(req: Request, res: Response, next: NextFunction) 
       path: req.path,
     });
 
-    return res.status(401).json({
+    res.status(401).json({
       error: 'Authentication failed',
       message: 'Missing API key',
     });
+    return;
   }
 
   // Verify API key (in production, check against database)
@@ -87,10 +91,11 @@ export function validateApiKey(req: Request, res: Response, next: NextFunction) 
       path: req.path,
     });
 
-    return res.status(401).json({
+    res.status(401).json({
       error: 'Authentication failed',
       message: 'Invalid API key',
     });
+    return;
   }
 
   (req as any).apiKey = apiKey;
@@ -100,7 +105,7 @@ export function validateApiKey(req: Request, res: Response, next: NextFunction) 
 /**
  * Session ID Validation
  */
-export function validateSessionId(req: Request, res: Response, next: NextFunction) {
+export function validateSessionId(req: Request, res: Response, next: NextFunction): void {
   const sessionId = req.headers['x-session-id'] as string;
 
   if (!sessionId) {
@@ -109,10 +114,11 @@ export function validateSessionId(req: Request, res: Response, next: NextFunctio
       path: req.path,
     });
 
-    return res.status(400).json({
+    res.status(400).json({
       error: 'Session validation failed',
       message: 'Missing session ID',
     });
+    return;
   }
 
   // Verify session ID format
@@ -122,10 +128,11 @@ export function validateSessionId(req: Request, res: Response, next: NextFunctio
       path: req.path,
     });
 
-    return res.status(400).json({
+    res.status(400).json({
       error: 'Session validation failed',
       message: 'Invalid session ID format',
     });
+    return;
   }
 
   (req as any).sessionId = sessionId;
@@ -136,16 +143,17 @@ export function validateSessionId(req: Request, res: Response, next: NextFunctio
  * Request Body Validation
  */
 export function validateRequestBody(schema: any) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     try {
       // Basic validation - check required fields exist
       const body = req.body;
 
       if (!body || typeof body !== 'object') {
-        return res.status(400).json({
+        res.status(400).json({
           error: 'Invalid request body',
           message: 'Request body must be a JSON object',
         });
+        return;
       }
 
       // Validate against schema if provided
@@ -159,10 +167,11 @@ export function validateRequestBody(schema: any) {
             error: error.message,
           });
 
-          return res.status(400).json({
+          res.status(400).json({
             error: 'Validation failed',
             message: error.message,
           });
+          return;
         }
 
         req.body = value;
@@ -244,7 +253,7 @@ export function sanitizeInput(input: any): any {
 /**
  * Content Security Headers
  */
-export function securityHeaders(req: Request, res: Response, next: NextFunction) {
+export function securityHeaders(_req: Request, res: Response, next: NextFunction) {
   // Prevent clickjacking
   res.setHeader('X-Frame-Options', 'DENY');
 

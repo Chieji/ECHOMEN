@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { publicProcedure, protectedProcedure, router } from '../_core/trpc';
 import { AgentExecutor } from '../lib/agent-executor';
-import { analyzeIntent, createInitialPlan, clarifyAndCorrectPrompt } from '../lib/planner';
-import { aiProviderChain, type ProviderType } from '../lib/ai-provider-chain';
+import { analyzeIntent, createInitialPlan } from '../lib/planner';
+import { aiProviderChain } from '../lib/ai-provider-chain';
 
 // Global execution registry
 const activeExecutions = new Map<string, {
@@ -171,7 +171,7 @@ export const echoctlRouter = router({
         onLog: (log) => {
           ctx.echoctl.emit('log', { executionId, log });
         },
-        onTokenUpdate: (count) => {
+        onTokenUpdate: (_count) => {
           // Track token usage
         },
         onArtifactCreated: (artifact) => {
@@ -185,7 +185,7 @@ export const echoctlRouter = router({
           ctx.echoctl.emit('fail', { executionId, error });
           activeExecutions.delete(executionId);
         },
-        onApprovalRequired: async (task, toolName) => {
+        onApprovalRequired: async (_task, _toolName) => {
           // In production, this would pause and wait for user approval
           // For now, auto-approve
           return true;

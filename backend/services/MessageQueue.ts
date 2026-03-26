@@ -128,7 +128,7 @@ class MessageQueue {
           message.processingStarted = Date.now();
 
           // Execute all handlers for this message type
-          const relevantHandlers = handlers.filter((h) => {
+          const relevantHandlers = handlers.filter((_h) => {
             // For now, execute all handlers
             // In production, could filter by message type
             return true;

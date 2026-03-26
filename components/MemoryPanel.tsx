@@ -46,7 +46,7 @@ export const MemoryPanel: React.FC = () => {
                         type="text"
                         placeholder="Search semantic memory..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                         className="w-full bg-echo-surface border border-echo-border rounded-md px-3 py-1.5 pl-9 text-xs text-gray-200 focus:outline-none focus:border-echo-cyan focus:ring-1 focus:ring-echo-cyan/20"
                     />
                     <SearchIcon className="absolute left-3 top-2 w-3.5 h-3.5 text-gray-500" />

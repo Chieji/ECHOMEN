@@ -3,7 +3,7 @@
  * Tests rate limiting, logging, and validation middleware
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 // Mock Express Request/Response
 class MockRequest {
@@ -90,7 +90,7 @@ describe('Logging Middleware', () => {
       method: 'GET',
       path: '/api/test',
     });
-    const res = new MockResponse();
+    const _res = new MockResponse();
 
     // Would call middleware here
     // Should log request details
@@ -98,8 +98,8 @@ describe('Logging Middleware', () => {
   });
 
   it('should capture response status', async () => {
-    const req = new MockRequest({ method: 'POST' });
-    const res = new MockResponse();
+    const _req = new MockRequest({ method: 'POST' });
+    const _res = new MockResponse();
     res.statusCode = 201;
 
     // Would call middleware here
@@ -131,25 +131,25 @@ describe('Logging Middleware', () => {
 
 describe('Validation Middleware', () => {
   it('should validate CSRF token', async () => {
-    const req = new MockRequest({
+    const _req = new MockRequest({
       method: 'POST',
       headers: {
         'x-csrf-token': '550e8400-e29b-41d4-a716-446655440000',
         'x-session-id': 'session-123',
       },
     });
-    const res = new MockResponse();
+    const _res = new MockResponse();
 
     // Would call validation middleware
     expect(req.headers['x-csrf-token']).toBeDefined();
   });
 
   it('should reject missing CSRF token', async () => {
-    const req = new MockRequest({
+    const _req = new MockRequest({
       method: 'POST',
       headers: {},
     });
-    const res = new MockResponse();
+    const _res = new MockResponse();
 
     // Would call validation middleware
     // Should reject request
@@ -157,12 +157,12 @@ describe('Validation Middleware', () => {
   });
 
   it('should validate API key', async () => {
-    const req = new MockRequest({
+    const _req = new MockRequest({
       headers: {
         authorization: 'Bearer echomen-secret-token-2026',
       },
     });
-    const res = new MockResponse();
+    const _res = new MockResponse();
 
     // Would call validation middleware
     expect(req.headers.authorization).toBeDefined();
@@ -178,7 +178,7 @@ describe('Validation Middleware', () => {
   });
 
   it('should set security headers', async () => {
-    const res = new MockResponse();
+    const _res = new MockResponse();
 
     // Would call security headers middleware
     // Should set CSP, X-Frame-Options, etc.

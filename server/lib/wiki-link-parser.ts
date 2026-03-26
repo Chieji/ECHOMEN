@@ -45,7 +45,7 @@ export function parseWikiLinks(content: string): ParseResult {
   }
   
   // Replace wiki links with markdown-style links for display
-  cleanedContent = content.replace(wikiLinkRegex, (match, title, displayText) => {
+  cleanedContent = content.replace(wikiLinkRegex, (_match, title, displayText) => {
     const text = displayText?.trim() || title.trim();
     return `[${text}](/knowledge/${encodeURIComponent(title)})`;
   });
@@ -77,7 +77,6 @@ export function isValidWikiLink(text: string): boolean {
  * Create wiki link from title
  */
 export function createWikiLink(title: string, displayText?: string): string {
-  const display = displayText || title;
   return `[[${title}${displayText !== title ? `|${displayText}` : ''}]]`;
 }
 

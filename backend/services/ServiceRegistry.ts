@@ -148,9 +148,12 @@ class ServiceRegistry {
     const interval = setInterval(async () => {
       try {
         const url = `${config.protocol}://${config.host}:${config.port}${config.healthCheck!.path}`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), config.healthCheck!.timeout);
         const response = await fetch(url, {
-          timeout: config.healthCheck!.timeout,
+          signal: controller.signal,
         });
+        clearTimeout(timeoutId);
 
         instance.healthy = response.ok;
         instance.lastHeartbeat = Date.now();

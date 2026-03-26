@@ -10,8 +10,8 @@
  */
 
 import { z } from 'zod';
-import { publicProcedure, protectedProcedure, router } from '../_core/trpc';
-import { parseWikiLinks, extractLinkTitles } from '../lib/wiki-link-parser';
+import { protectedProcedure, router } from '../_core/trpc';
+import { parseWikiLinks } from '../lib/wiki-link-parser';
 import { extractPlaybookFromExecution, matchPlaybook } from '../lib/playbook-extractor';
 import { createExportStructure, generateManifest } from '../lib/neural-vault';
 
@@ -71,7 +71,7 @@ export const knowledgeRouter = router({
       title: z.string(),
       content: z.string().optional(),
       type: z.enum(['note', 'artifact', 'task', 'conversation']),
-      metadata: z.record(z.unknown()).optional(),
+      metadata: z.record(z.string(), z.unknown()).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       // Parse wiki links from content
@@ -120,7 +120,7 @@ export const knowledgeRouter = router({
       id: z.number(),
       title: z.string().optional(),
       content: z.string().optional(),
-      metadata: z.record(z.unknown()).optional(),
+      metadata: z.record(z.string(), z.unknown()).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const node = knowledgeNodesStore.find(n => n.id === input.id);

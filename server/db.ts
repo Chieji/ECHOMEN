@@ -2,9 +2,9 @@ import { desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users,
-  agents, InsertAgent, Agent,
+  agents, InsertAgent,
   chatMessages, InsertChatMessage,
-  settings, InsertSetting,
+  settings,
   activityLog, InsertActivityLogEntry,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';

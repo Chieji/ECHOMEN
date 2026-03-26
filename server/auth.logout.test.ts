@@ -23,7 +23,10 @@ function createAuthContext(): { ctx: TrpcContext; clearedCookies: CookieCall[] }
     createdAt: new Date(),
     updatedAt: new Date(),
     lastSignedIn: new Date(),
-  };
+    onboardingCompleted: 0,
+    onboardingStep: 0,
+    firstAgentCreated: 0,
+  } as AuthenticatedUser;
 
   const ctx: TrpcContext = {
     user,
@@ -36,6 +39,8 @@ function createAuthContext(): { ctx: TrpcContext; clearedCookies: CookieCall[] }
         clearedCookies.push({ name, options });
       },
     } as TrpcContext["res"],
+    echoctl: {} as TrpcContext["echoctl"],
+    logActivity: async () => {},
   };
 
   return { ctx, clearedCookies };

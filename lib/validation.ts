@@ -45,13 +45,13 @@ export const TaskSchema = z.object({
     maxRetries: z.number(),
     toolCall: z.object({
         name: z.string(),
-        args: z.record(z.any())
+        args: z.record(z.string(), z.any())
     }).optional(),
     subSteps: z.array(z.object({
         thought: z.string(),
         toolCall: z.object({
             name: z.string(),
-            args: z.record(z.any())
+            args: z.record(z.string(), z.any())
         }),
         observation: z.string()
     })).optional()
@@ -60,7 +60,7 @@ export const TaskSchema = z.object({
 // Tool call validation
 export const ToolCallSchema = z.object({
     name: z.string(),
-    args: z.record(z.any())
+    args: z.record(z.string(), z.any())
 });
 
 // ReAct step validation
@@ -114,7 +114,7 @@ export const validateAIResponse = (response: any, schema: z.ZodType<any>) => {
         return { success: true, data: validated };
     } catch (error) {
         if (error instanceof z.ZodError) {
-            const details = error.errors;
+            const details = error.issues;
             throw new ValidationError(
                 'AI response validation failed',
                 details

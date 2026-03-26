@@ -1,5 +1,4 @@
 // ErrorBoundary - React 19 compatible version
-// Note: Using type assertions for React.Component due to ESM module limitations
 import * as React from 'react';
 
 interface ErrorBoundaryProps {
@@ -12,8 +11,7 @@ interface ErrorBoundaryState {
     error: Error | null;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class ErrorBoundary extends (React as any).Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
     constructor(props: ErrorBoundaryProps) {
         super(props);
         this.state = { hasError: false, error: null };
@@ -23,8 +21,7 @@ export class ErrorBoundary extends (React as any).Component<ErrorBoundaryProps, 
         return { hasError: true, error };
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    componentDidCatch(error: Error, errorInfo: any): void {
+    componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
         console.error('[Error Boundary] Caught error:', error, errorInfo);
     }
 

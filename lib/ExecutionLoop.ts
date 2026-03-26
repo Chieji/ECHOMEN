@@ -670,4 +670,4 @@ interface LoopResult {
 }
 
 // Export HITL manager for external access
-export { hitlManager, HITLManager, ApprovalRequest };
+export { hitlManager, HITLManager };

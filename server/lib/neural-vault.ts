@@ -5,10 +5,10 @@
  * Includes: notes, artifacts, playbooks, backlinks
  */
 
-import { createWriteStream } from 'fs';
-import { createReadStream } from 'fs';
-import { pipeline } from 'stream/promises';
-import { createGzip } from 'zlib';
+import { createWriteStream as _createWriteStream } from 'fs';
+import { createReadStream as _createReadStream } from 'fs';
+import { pipeline as _pipeline } from 'stream/promises';
+import { createGzip as _createGzip } from 'zlib';
 import { createHash } from 'crypto';
 
 export interface ExportManifest {
@@ -232,7 +232,7 @@ export async function createZipArchive(
  * Import knowledge graph from ZIP
  */
 export async function importFromZip(
-  zipPath: string
+  _zipPath: string
 ): Promise<{ nodes: any[]; links: any[]; playbooks: any[] }> {
   // Placeholder for import implementation
   // In production, use a ZIP library to extract and parse

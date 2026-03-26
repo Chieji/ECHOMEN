@@ -51,7 +51,7 @@ export async function analyzeIntent(
 export async function createInitialPlan(
   prompt: string,
   isActionable: boolean,
-  context?: {
+  _context?: {
     connectedServices?: string[];
     customAgents?: any[];
     activeTodos?: any[];
@@ -139,7 +139,7 @@ export async function createInitialPlan(
  * Determine next step in execution flow
  */
 export async function determineNextStep(
-  completedTask: Task,
+  _completedTask: Task,
   allTasks: Task[],
   onTokenUpdate?: (count: number) => void
 ): Promise<{

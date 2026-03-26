@@ -43,12 +43,17 @@ function createTestContext(): TrpcContext {
     createdAt: new Date(),
     updatedAt: new Date(),
     lastSignedIn: new Date(),
-  };
+    onboardingCompleted: 0,
+    onboardingStep: 0,
+    firstAgentCreated: 0,
+  } as AuthenticatedUser;
 
   return {
     user,
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
+    echoctl: {} as TrpcContext["echoctl"],
+    logActivity: async () => {},
   };
 }
 

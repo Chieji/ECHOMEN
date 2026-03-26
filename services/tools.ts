@@ -129,7 +129,7 @@ export const listFiles = (path: string) => callBackendTool('listFiles', { path }
 export const executeShellCommand = (command: string) => callBackendTool('executeShellCommand', { command });
 
 // GitHub helper functions
-export const githubCreateRepo = async (name: string, description: string, is_private: boolean) => {
+export const githubCreateRepo = async (name: string, description: string | undefined, is_private: boolean) => {
     const validated = GitHubRepoSchema.parse({ name, description, is_private });
     return callBackendTool('github_create_repo', validated);
 };

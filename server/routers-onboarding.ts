@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { protectedProcedure, router } from "./_core/trpc";
-import { getOnboardingSession, createOnboardingSession, updateOnboardingSession, updateUserOnboarding } from "./db";
+import { getOnboardingSession, updateUserOnboarding } from "./db";
 
 export const onboardingRouter = router({
   getStatus: protectedProcedure.query(async ({ ctx }) => {

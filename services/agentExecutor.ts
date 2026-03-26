@@ -1,4 +1,4 @@
-import { Task, LogEntry, SubStep, Artifact, CustomAgent, ExecutionError, MemoryMode, PersistenceSettings } from '../types';
+import { Task, LogEntry, SubStep, Artifact, CustomAgent, ExecutionError, MemoryMode, PersistenceSettings, AgentStatus } from '../types';
 import { determineNextStep } from './planner';
 import { availableTools } from './tools';
 
