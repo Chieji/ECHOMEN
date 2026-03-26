@@ -65,7 +65,7 @@ const WelcomeScreen = ({ onSuggestionClick }: WelcomeScreenProps): React.ReactEl
                 {suggestions.map((suggestion) => (
                     <div
                         key={suggestion.title}
-                        className="bg-zinc-100 dark:bg-[#121212] p-4 rounded-lg text-left text-sm cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]/50"
+                        className="bg-zinc-100 dark:bg-[var(--bg-void)] p-4 rounded-lg text-left text-sm cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50"
                         onClick={() => onSuggestionClick(suggestion.prompt)}
                         onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => handleSuggestionKeyPress(e, suggestion.prompt)}
                         role="button"
@@ -166,7 +166,7 @@ export const ChatInterface = ({ messages, onSuggestionClick, onEditMessage, onAc
                                     <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center bg-cyan-600 dark:bg-echo-cyan">
                                         <LogoIcon className="w-5 h-5 text-black" />
                                     </div>
-                                    <div className="relative p-4 rounded-2xl max-w-lg bg-white dark:bg-[#181818] shadow-md w-full border border-cyan-500/30">
+                                    <div className="relative p-4 rounded-2xl max-w-lg bg-white dark:bg-[var(--bg-void-secondary)] shadow-md w-full border border-cyan-500/30">
                                         <p className="text-base text-zinc-800 dark:text-zinc-100">{msg.text}</p>
                                         <div className="mt-4 p-3 bg-black/5 dark:bg-white/5 rounded-lg border border-black/10 dark:border-white/10">
                                             <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">PROPOSED ACTION:</p>
@@ -202,23 +202,23 @@ export const ChatInterface = ({ messages, onSuggestionClick, onEditMessage, onAc
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 transition={{ duration: 0.3, delay: 0.05, type: 'spring', stiffness: 200, damping: 25 }}
                             >
-                                <div className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center ${msg.sender === 'user' ? 'bg-[#FF6B00]' : 'bg-cyan-600 dark:bg-echo-cyan'}`}>
+                                <div className={`w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center ${msg.sender === 'user' ? 'bg-[var(--color-accent)]' : 'bg-cyan-600 dark:bg-echo-cyan'}`}>
                                     {msg.sender === 'agent' && <LogoIcon className="w-5 h-5 text-black" />}
                                 </div>
-                                <div className={`relative p-4 rounded-2xl max-w-lg shadow-md w-full ${msg.sender === 'user' ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100' : 'bg-white dark:bg-[#181818] text-zinc-800 dark:text-zinc-100'}`}>
+                                <div className={`relative p-4 rounded-2xl max-w-lg shadow-md w-full ${msg.sender === 'user' ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100' : 'bg-white dark:bg-[var(--bg-void-secondary)] text-zinc-800 dark:text-zinc-100'}`}>
                                     {isEditing ? (
                                         <div>
                                             <textarea
                                                 value={editText}
                                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditText(e.target.value)}
                                                 onKeyDown={handleKeyDown}
-                                                className="w-full bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg p-2 text-base resize-none focus:outline-none focus:ring-2 focus:ring-[#8B5CF6]"
+                                                className="w-full bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-lg p-2 text-base resize-none focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                                                 rows={Math.max(3, editText.split('\n').length)}
                                                 autoFocus
                                             />
                                             <div className="flex justify-end gap-2 mt-2">
                                                 <button onClick={handleCancelEdit} className="text-sm font-semibold px-3 py-1 rounded-md bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Cancel</button>
-                                                <button onClick={handleSaveEdit} className="text-sm font-semibold px-3 py-1 rounded-md bg-[#8B5CF6] text-white hover:bg-[#7c4ee3] transition-colors">Save</button>
+                                                <button onClick={handleSaveEdit} className="text-sm font-semibold px-3 py-1 rounded-md bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors">Save</button>
                                             </div>
                                         </div>
                                     ) : (

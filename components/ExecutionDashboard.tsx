@@ -184,16 +184,16 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                     <svg className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{ zIndex: -1 }}>
                         <defs>
                             <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="rgba(255,107,0,0.7)" />
-                                <stop offset="100%" stopColor="rgba(0,212,255,0.7)" />
+                                <stop offset="0%" stopColor="var(--color-accent)" />
+                                <stop offset="100%" stopColor="var(--echo-cyan)" />
                             </linearGradient>
                              <linearGradient id="line-gradient-dep" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#00D4FF" />
-                                <stop offset="100%" stopColor="#FF6B00" />
+                                <stop offset="0%" stopColor="var(--echo-cyan)" />
+                                <stop offset="100%" stopColor="var(--color-accent)" />
                             </linearGradient>
                             <linearGradient id="line-gradient-child" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#FF6B00" />
-                                <stop offset="100%" stopColor="#a855f7" />
+                                <stop offset="0%" stopColor="var(--color-accent)" />
+                                <stop offset="100%" stopColor="var(--color-primary)" />
                             </linearGradient>
                         </defs>
                         <AnimatePresence>
@@ -250,7 +250,7 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                         layoutId={`task-container-${selectedTask.id}`}
                         className="fixed inset-0 z-50 flex items-center justify-center p-4"
                         initial={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
-                        animate={{ backdropFilter: 'blur(16px)', backgroundColor: 'rgba(0,0,0,0.6)' }}
+                        animate={{ backdropFilter: 'var(--backdrop-blur)', backgroundColor: 'var(--backdrop-color)' }}
                         exit={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
                         onClick={() => setSelectedTaskId(null)}
                      >
@@ -298,7 +298,7 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                                         <div className="space-y-4">
                                             {selectedTask.subSteps.map((step, index) => (
                                                 <div key={index} className="border-l-2 border-dashed border-gray-300 dark:border-gray-700 pl-4">
-                                                    <div className="flex items-center gap-2 text-[#8B5CF6]">
+                                                    <div className="flex items-center gap-2 text-[var(--color-primary)]">
                                                         <BrainIcon className="w-5 h-5" />
                                                         <h5 className="font-bold">Thought</h5>
                                                     </div>
