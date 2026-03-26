@@ -182,29 +182,15 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                  <h2 className="text-sm font-medium text-gray-400 mb-2">Task Pipeline</h2>
                  <div ref={pipelineRef} className="relative mt-2 flex gap-4 overflow-x-auto pb-4 p-2 -m-2">
                     <svg className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{ zIndex: -1 }}>
-                        <defs>
-                            <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="var(--color-accent)" />
-                                <stop offset="100%" stopColor="var(--echo-cyan)" />
-                            </linearGradient>
-                             <linearGradient id="line-gradient-dep" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="var(--echo-cyan)" />
-                                <stop offset="100%" stopColor="var(--color-accent)" />
-                            </linearGradient>
-                            <linearGradient id="line-gradient-child" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="var(--color-accent)" />
-                                <stop offset="100%" stopColor="var(--color-primary)" />
-                            </linearGradient>
-                        </defs>
                         <AnimatePresence>
                             {lines.map((line) => {
                                 const isDependency = selectedTaskId === line.targetId && relatedTaskIds.dependencies.includes(line.sourceId);
                                 const isDependent = selectedTaskId === line.sourceId && relatedTaskIds.dependents.includes(line.targetId);
                                 const isDimmed = selectedTaskId && !isDependency && !isDependent;
-                                
-                                let strokeUrl = "url(#line-gradient)";
-                                if(isDependency) strokeUrl = "url(#line-gradient-dep)";
-                                if(isDependent) strokeUrl = "url(#line-gradient-child)";
+
+                                let strokeColor = "var(--color-accent)";
+                                if(isDependency) strokeColor = "var(--echo-cyan)";
+                                if(isDependent) strokeColor = "var(--color-primary)";
 
                                 return (
                                 <motion.path
@@ -213,7 +199,7 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                                     animate={{ pathLength: 1, opacity: isDimmed ? 0.3 : 1 }}
                                     transition={{ duration: 0.8, delay: 0.2 }}
                                     d={`M ${line.x1} ${line.y1} C ${line.x1 + 40} ${line.y1}, ${line.x2 - 40} ${line.y2}, ${line.x2} ${line.y2}`}
-                                    stroke={strokeUrl}
+                                    stroke={strokeColor}
                                     strokeWidth={isDependency || isDependent ? "3" : "2"}
                                     fill="none"
                                     strokeLinecap="round"
@@ -249,9 +235,9 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                      <motion.div
                         layoutId={`task-container-${selectedTask.id}`}
                         className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                        initial={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
-                        animate={{ backdropFilter: 'var(--backdrop-blur)', backgroundColor: 'var(--backdrop-color)' }}
-                        exit={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
+                        initial={{ backgroundColor: 'rgba(0,0,0,0)' }}
+                        animate={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+                        exit={{ backgroundColor: 'rgba(0,0,0,0)' }}
                         onClick={() => setSelectedTaskId(null)}
                      >
                         <motion.div

@@ -109,16 +109,16 @@ export const ServiceConnectionModal: React.FC<ServiceConnectionModalProps> = ({ 
             {isOpen && (
                 <motion.div
                     className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                    initial={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
-                    animate={{ backdropFilter: 'var(--backdrop-blur)', backgroundColor: 'var(--backdrop-color)' }}
-                    exit={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
+                    initial={{ backgroundColor: 'rgba(0,0,0,0)' }}
+                    animate={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+                    exit={{ backgroundColor: 'rgba(0,0,0,0)' }}
                     onClick={onClose}
                 >
                     <motion.div
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="service-modal-title"
-                        className="w-full max-w-lg bg-[var(--bg-void-secondary)] border-2 border-[var(--color-primary)]/50 rounded-xl p-6 shadow-2xl shadow-black/50 flex flex-col"
+                        className="w-full max-w-lg bg-surface border-2 border-[var(--color-primary)]/50 rounded-xl p-6 shadow-2xl shadow-black/50 flex flex-col"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
