@@ -10,8 +10,8 @@ describe("Supabase Auth Credentials", () => {
   it("should have valid SUPABASE_ANON_KEY environment variable", () => {
     const key = process.env.VITE_SUPABASE_ANON_KEY;
     expect(key).toBeDefined();
-    // Publishable keys start with sb_publishable_
-    expect(key).toMatch(/^sb_publishable_/);
+    // Supabase anon keys are JWT tokens (start with "eyJ")
+    expect(key).toMatch(/^eyJ/);
   });
 
   it("should be able to construct Supabase client URL", () => {
