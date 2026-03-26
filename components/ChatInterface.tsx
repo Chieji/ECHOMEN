@@ -72,7 +72,6 @@ const WelcomeScreen = ({ onSuggestionClick }: WelcomeScreenProps): React.ReactEl
                         onClick={() => onSuggestionClick(suggestion.prompt)}
                         onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => handleSuggestionKeyPress(e, suggestion.prompt)}
                         role="button"
-                        tabIndex={0}
                     >
                         <p className="font-semibold text-zinc-700 dark:text-zinc-200">{suggestion.title}</p>
                         <p className="text-gray-500 dark:text-gray-400">"{suggestion.prompt}"</p>
