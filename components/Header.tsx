@@ -30,9 +30,10 @@ export const Header: React.FC<HeaderProps> = ({ onSettingsClick, onHistoryClick,
                 <div className="h-5 w-px bg-echo-border mx-1"></div>
 
                 {/* Mode Toggle */}
-                <div className="flex items-center bg-echo-void rounded-lg p-1 border border-echo-border">
+                <div className="flex items-center bg-echo-void rounded-lg p-1 border border-echo-border" role="group" aria-label="Agent mode selection">
                     <button
                         onClick={() => onModeChange(AgentMode.ACTION)}
+                        aria-pressed={currentMode === AgentMode.ACTION}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                             currentMode === AgentMode.ACTION
                                 ? 'bg-echo-cyan text-black'
@@ -45,6 +46,7 @@ export const Header: React.FC<HeaderProps> = ({ onSettingsClick, onHistoryClick,
                     </button>
                     <button
                         onClick={() => onModeChange(AgentMode.CHAT)}
+                        aria-pressed={currentMode === AgentMode.CHAT}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                             currentMode === AgentMode.CHAT
                                 ? 'bg-echo-cyan text-black'
@@ -57,13 +59,13 @@ export const Header: React.FC<HeaderProps> = ({ onSettingsClick, onHistoryClick,
                     </button>
                 </div>
 
-                <button onClick={onArtifactsClick} title="View Artifacts" className="p-2 rounded-md text-gray-500 hover:text-white hover:bg-echo-surface-elevated transition-colors">
+                <button onClick={onArtifactsClick} title="View Artifacts" aria-label="View artifacts" className="p-2 rounded-md text-gray-500 hover:text-white hover:bg-echo-surface-elevated transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
                     <ArchiveBoxIcon className="w-5 h-5" />
                 </button>
-                <button onClick={onHistoryClick} title="View History" className="p-2 rounded-md text-gray-500 hover:text-white hover:bg-echo-surface-elevated transition-colors">
+                <button onClick={onHistoryClick} title="View History" aria-label="View history" className="p-2 rounded-md text-gray-500 hover:text-white hover:bg-echo-surface-elevated transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
                     <DocumentTextIcon className="w-5 h-5" />
                 </button>
-                <button onClick={onSettingsClick} title="Open Settings" className="p-2 rounded-md text-gray-500 hover:text-white hover:bg-echo-surface-elevated transition-colors">
+                <button onClick={onSettingsClick} title="Open Settings" aria-label="Open settings" className="p-2 rounded-md text-gray-500 hover:text-white hover:bg-echo-surface-elevated transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
                     <SettingsIcon className="w-5 h-5" />
                 </button>
             </div>
@@ -73,8 +75,8 @@ export const Header: React.FC<HeaderProps> = ({ onSettingsClick, onHistoryClick,
                  <TokenUsageIndicator stats={sessionStats} />
                 <img
                     src="https://picsum.photos/100/100"
-                    alt="User"
-                    className="w-8 h-8 rounded-full border border-echo-border"
+                    alt="User profile"
+                    className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border border-echo-border focus:outline-none focus:ring-2 focus:ring-primary"
                 />
             </div>
         </header>

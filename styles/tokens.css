@@ -329,15 +329,53 @@
    Pre-built utility classes for common patterns
    ========================================================================== */
 
-/* Focus ring for accessibility */
+/* Focus ring for accessibility - WCAG 2.4.7 Focus Visible */
 .focus-ring {
   outline: none;
   box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-primary);
+  transition: box-shadow 0.15s ease-in-out;
 }
 
 .focus-ring-secondary {
   outline: none;
   box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-secondary);
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+.focus-ring-accent {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-accent);
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+/* Focus ring for dark mode */
+.dark .focus-ring {
+  box-shadow: 0 0 0 2px var(--bg-void), 0 0 0 4px var(--color-primary);
+}
+
+/* Keyboard focus only (using :focus-visible) */
+.focus-visible-ring:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Button focus ring */
+button.focus-ring,
+.btn-focus-ring {
+  outline: none;
+}
+
+button.focus-ring:focus-visible,
+.btn-focus-ring:focus-visible {
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-primary);
+}
+
+/* Input focus ring */
+input.focus-ring:focus,
+textarea.focus-ring:focus,
+select.focus-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3), 0 0 0 1px var(--color-primary);
 }
 
 /* Text truncation */

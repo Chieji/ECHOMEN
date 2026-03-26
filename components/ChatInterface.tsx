@@ -61,10 +61,13 @@ const WelcomeScreen = ({ onSuggestionClick }: WelcomeScreenProps): React.ReactEl
             <p className="mt-2 max-w-md text-gray-500 dark:text-gray-400">
                 Ask questions, brainstorm ideas, or get help on any topic. This is a direct line to the AI, no actions will be taken.
             </p>
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl w-full">
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl w-full" role="list" aria-label="Suggested prompts">
                 {suggestions.map((suggestion) => (
                     <div
                         key={suggestion.title}
+                        role="listitem"
+                        tabIndex={0}
+                        aria-label={`Suggestion: ${suggestion.title}`}
                         className="bg-zinc-100 dark:bg-[var(--bg-void)] p-4 rounded-lg text-left text-sm cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50"
                         onClick={() => onSuggestionClick(suggestion.prompt)}
                         onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => handleSuggestionKeyPress(e, suggestion.prompt)}
@@ -85,6 +88,19 @@ export const ChatInterface = ({ messages, onSuggestionClick, onEditMessage, onAc
     const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
     const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+
+    // Keyboard shortcut: Ctrl+K to focus on command input
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                // Dispatch custom event for command center to listen to
+                window.dispatchEvent(new CustomEvent('focus-command-input'));
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     if (messages.length === 0) {
         return <WelcomeScreen onSuggestionClick={onSuggestionClick} />;
@@ -217,8 +233,8 @@ export const ChatInterface = ({ messages, onSuggestionClick, onEditMessage, onAc
                                                 autoFocus
                                             />
                                             <div className="flex justify-end gap-2 mt-2">
-                                                <button onClick={handleCancelEdit} className="text-sm font-semibold px-3 py-1 rounded-md bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Cancel</button>
-                                                <button onClick={handleSaveEdit} className="text-sm font-semibold px-3 py-1 rounded-md bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors">Save</button>
+                                                <button onClick={handleCancelEdit} aria-label="Cancel edit" className="text-sm font-semibold px-3 py-1 rounded-md bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Cancel</button>
+                                                <button onClick={handleSaveEdit} aria-label="Save edit" className="text-sm font-semibold px-3 py-1 rounded-md bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors">Save</button>
                                             </div>
                                         </div>
                                     ) : (
@@ -229,9 +245,9 @@ export const ChatInterface = ({ messages, onSuggestionClick, onEditMessage, onAc
                                     <div className="absolute -bottom-4 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                          style={msg.sender === 'user' ? { right: '0' } : { left: '0' }}>
                                         {msg.sender === 'user' && !isEditing && (
-                                            <button onClick={() => handleEditClick(msg)} className="p-1 rounded-full bg-zinc-300 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-400 dark:hover:bg-zinc-600"><PencilSquareIcon className="w-4 h-4" /></button>
+                                            <button onClick={() => handleEditClick(msg)} aria-label="Edit message" className="p-1 rounded-full bg-zinc-300 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-400 dark:hover:bg-zinc-600"><PencilSquareIcon className="w-4 h-4" /></button>
                                         )}
-                                        <button onClick={() => handleCopy(msg.text, msg.id)} className="p-1 rounded-full bg-zinc-300 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-400 dark:hover:bg-zinc-600">
+                                        <button onClick={() => handleCopy(msg.text, msg.id)} aria-label={copiedMessageId === msg.id ? 'Copied' : 'Copy message'} className="p-1 rounded-full bg-zinc-300 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-400 dark:hover:bg-zinc-600">
                                             {copiedMessageId === msg.id ? <ClipboardCheckIcon className="w-4 h-4 text-green-500" /> : <ClipboardDocumentIcon className="w-4 h-4" />}
                                         </button>
                                     </div>

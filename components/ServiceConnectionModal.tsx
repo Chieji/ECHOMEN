@@ -115,6 +115,9 @@ export const ServiceConnectionModal: React.FC<ServiceConnectionModalProps> = ({ 
                     onClick={onClose}
                 >
                     <motion.div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="service-modal-title"
                         className="w-full max-w-lg bg-[var(--bg-void-secondary)] border-2 border-[var(--color-primary)]/50 rounded-xl p-6 shadow-2xl shadow-black/50 flex flex-col"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -125,9 +128,9 @@ export const ServiceConnectionModal: React.FC<ServiceConnectionModalProps> = ({ 
                         <header className="flex justify-between items-center mb-6">
                             <div className="flex items-center gap-3">
                                 <div className="text-[var(--color-primary)]">{service.icon}</div>
-                                <h3 className="text-xl font-bold text-white">Connect to {service.name}</h3>
+                                <h3 id="service-modal-title" className="text-xl font-bold text-white">Connect to {service.name}</h3>
                             </div>
-                            <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+                            <button onClick={onClose} aria-label="Close modal" className="text-gray-500 hover:text-white transition-colors">
                                 <CloseIcon className="w-6 h-6" />
                             </button>
                         </header>
@@ -151,6 +154,8 @@ export const ServiceConnectionModal: React.FC<ServiceConnectionModalProps> = ({ 
                                         <input
                                             type={input.type}
                                             id={input.id}
+                                            aria-label={input.label}
+                                            aria-required="true"
                                             value={formState[input.id] || ''}
                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(input.id, e.target.value)}
                                             onBlur={() => handleBlur(input.id)}
@@ -163,7 +168,7 @@ export const ServiceConnectionModal: React.FC<ServiceConnectionModalProps> = ({ 
                                         />
                                     </div>
                                     {errors[input.id] && touched[input.id] && (
-                                        <p className="mt-1 text-xs text-red-400">{errors[input.id]}</p>
+                                        <p className="mt-1 text-xs text-red-400" role="alert">{errors[input.id]}</p>
                                     )}
                                 </div>
                             ))}

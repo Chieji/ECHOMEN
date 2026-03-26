@@ -71,8 +71,8 @@ const HistoryItemCard: React.FC<{ item: HistoryItem }> = ({ item }) => {
     } else {
         return (
              <div className="flex gap-3">
-                <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${item.sender === 'user' ? 'bg-orange-500' : 'bg-echo-cyan'}`}>
-                    {item.sender === 'agent' && <ChatIcon className="w-5 h-5 text-black" />}
+                <div className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex-shrink-0 flex items-center justify-center ${item.sender === 'user' ? 'bg-orange-500' : 'bg-echo-cyan'}`}>
+                    {item.sender === 'agent' && <ChatIcon className="w-6 h-6 text-black" />}
                 </div>
                 <div className={`p-3 rounded-xl max-w-sm w-full ${item.sender === 'user' ? 'bg-orange-500/10' : 'bg-echo-cyan/10'}`}>
                     <p className="text-sm text-gray-200 whitespace-pre-wrap">{item.text}</p>
@@ -128,13 +128,14 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ tasks, messages, onC
                     <div className="flex items-center gap-4">
                         <button
                             onClick={onClearChat}
+                            aria-label="Start new chat"
                             className="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-white bg-echo-surface-elevated hover:bg-echo-surface px-3 py-1.5 rounded-lg transition-colors"
                             title="Start New Chat"
                         >
                             <PlusCircleIcon className="w-5 h-5" />
                             <span>New Chat</span>
                         </button>
-                        <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+                        <button onClick={onClose} aria-label="Close history panel" className="text-gray-500 hover:text-white transition-colors">
                             <CloseIcon className="w-6 h-6" />
                         </button>
                     </div>
@@ -142,13 +143,13 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ tasks, messages, onC
 
                 <div className="p-4 border-b border-echo-border flex-shrink-0">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-                        <input type="text" placeholder="Search..." className="col-span-1 md:col-span-2 bg-echo-surface-elevated border border-echo-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"/>
-                        <select className="bg-echo-surface-elevated border border-echo-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50">
+                        <input type="text" aria-label="Search history" placeholder="Search..." className="col-span-1 md:col-span-2 bg-echo-surface-elevated border border-echo-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"/>
+                        <select aria-label="Filter by mode" className="bg-echo-surface-elevated border border-echo-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50">
                             <option>All Modes</option>
                             <option>Action</option>
                             <option>Chat</option>
                         </select>
-                         <select className="bg-echo-surface-elevated border border-echo-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50">
+                         <select aria-label="Filter by status" className="bg-echo-surface-elevated border border-echo-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50">
                             <option>All Statuses</option>
                             <option>Done</option>
                             <option>Executing</option>
