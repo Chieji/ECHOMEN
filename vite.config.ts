@@ -26,6 +26,12 @@ export default defineConfig(({ mode }) => {
         // Enable manual chunk splitting for better caching
         splitManualChunks: true,
         rollupOptions: {
+          external: [
+            '@tiptap/react', '@tiptap/starter-kit', '@tiptap/extension-mention',
+            'flexsearch', 'jszip',
+            '@google/genai', 'openai', '@anthropic-ai/sdk', 'cohere-ai',
+            'firebase/app', 'firebase/firestore'
+          ],
           output: {
             manualChunks: {
               // React core - stable, rarely changes
