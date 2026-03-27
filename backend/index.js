@@ -85,14 +85,41 @@ const executeShellCommand = (command) => {
 };
 
 /**
+ * Validates and normalizes a URL for browsing.
+ * Only allows HTTP/HTTPS URLs and blocks potentially dangerous protocols.
+ */
+const validateUrl = (urlString) => {
+    try {
+        const parsedUrl = new URL(urlString);
+        
+        // Only allow http and https protocols
+        if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+            return null;
+        }
+        
+        // Ensure the URL is well-formed
+        return parsedUrl.href;
+    } catch (e) {
+        // Invalid URL format
+        return null;
+    }
+};
+
+/**
  * Browses the web using Playwright and extracts clean text content.
  */
 const browseWeb = async (url) => {
-    console.log(`[WebHawk] Navigating to: ${url}`);
+    // Validate the URL before browsing
+    const validatedUrl = validateUrl(url);
+    if (!validatedUrl) {
+        throw new Error('Invalid URL: Only HTTP and HTTPS URLs are allowed');
+    }
+    
+    console.log(`[WebHawk] Navigating to: ${validatedUrl}`);
     const browser = await chromium.launch({ headless: true });
     try {
         const page = await browser.newPage();
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.goto(validatedUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
         
         const title = await page.title();
         // Extract visible text content, ignoring scripts and styles

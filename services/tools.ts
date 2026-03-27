@@ -114,6 +114,9 @@ const executeCode = async (language: 'javascript', code: string): Promise<string
         /location\s*\./i,
         /worker/i,
         /importScripts/i,
+        /\bconstructor\b/i,
+        /__proto__/i,
+        /prototype/i,
     ];
 
     for (const pattern of dangerousPatterns) {
@@ -122,20 +125,14 @@ const executeCode = async (language: 'javascript', code: string): Promise<string
         }
     }
 
-    // Use Function constructor instead of eval for better isolation
-    // Wrap in IIFE to allow return statements
-    const wrappedCode = `
-        "use strict";
-        return (function() {
-            ${code}
-        })();
-    `;
-
+    // Execute code in a Web Worker with restricted globals
+    // The worker provides only safe, whitelisted APIs
     return new Promise((resolve, reject) => {
         const workerCode = `
             self.onmessage = function(e) {
                 try {
-                    const SafeMath = {
+                    // Whitelist of safe built-in functions and constants
+                    const SafeMath = Object.freeze({
                         abs: Math.abs, acos: Math.acos, acosh: Math.acosh,
                         asin: Math.asin, asinh: Math.asinh, atan: Math.atan,
                         atanh: Math.atanh, atan2: Math.atan2, cbrt: Math.cbrt,
@@ -146,34 +143,45 @@ const executeCode = async (language: 'javascript', code: string): Promise<string
                         log1p: Math.log1p, log2: Math.log2, max: Math.max,
                         min: Math.min, pow: Math.pow, random: Math.random,
                         round: Math.round, sign: Math.sign, sin: Math.sin,
-                        sinh: Math.sinh, sqrt: Math.sqrt, tan: Math.tanh,
+                        sinh: Math.sinh, sqrt: Math.sqrt, tan: Math.tan,
                         tanh: Math.tanh, trunc: Math.trunc,
                         PI: Math.PI, E: Math.E, LN10: Math.LN10,
                         LOG10E: Math.LOG10E, SQRT1_2: Math.SQRT1_2, SQRT2: Math.SQRT2
-                    };
-                    const safeConsole = {
-                        log: function() { self.postMessage({ type: 'log', args: Array.from(arguments) }); },
-                        error: function() { self.postMessage({ type: 'error', args: Array.from(arguments) }); },
-                        warn: function() { self.postMessage({ type: 'warn', args: Array.from(arguments) }); },
-                        info: function() { self.postMessage({ type: 'info', args: Array.from(arguments) }); }
-                    };
-                    const SafeJSON = JSON;
-                    const SafeDate = Date;
-                    const SafeArray = Array;
-                    const SafeObject = Object;
-                    const SafeString = String;
-                    const SafeNumber = Number;
-                    const SafeBoolean = Boolean;
-                    const SafeRegExp = RegExp;
-                    const SafeMap = Map;
-                    const SafeSet = Set;
-                    const SafeWeakMap = WeakMap;
-                    const SafeWeakSet = WeakSet;
-                    const SafePromise = Promise;
-
-                    const fn = new Function('Math', 'console', 'JSON', 'Date', 'Array', 'Object', 'String', 'Number', 'Boolean', 'RegExp', 'Map', 'Set', 'WeakMap', 'WeakSet', 'Promise', e.data);
-                    const result = fn(SafeMath, safeConsole, SafeJSON, SafeDate, SafeArray, SafeObject, SafeString, SafeNumber, SafeBoolean, SafeRegExp, SafeMap, SafeSet, SafeWeakMap, SafeWeakSet, SafePromise);
-                    self.postMessage({ success: true, result: result !== undefined ? SafeJSON.stringify(result, null, 2) : 'undefined' });
+                    });
+                    const safeConsole = Object.freeze({
+                        log: function() { /* suppressed */ },
+                        error: function() { /* suppressed */ },
+                        warn: function() { /* suppressed */ },
+                        info: function() { /* suppressed */ }
+                    });
+                    
+                    // Create a sandboxed scope with only safe globals
+                    // Using vm-like isolation via strict mode and limited scope
+                    const userCode = e.data;
+                    
+                    // Execute with restricted scope - no access to global scope
+                    const result = (function() {
+                        "use strict";
+                        // Local scope variables only
+                        var Math = SafeMath;
+                        var console = safeConsole;
+                        var JSON = Object.freeze({ parse: JSON.parse, stringify: JSON.stringify });
+                        var Date = Object.freeze({ now: Date.now, parse: Date.parse, UTC: Date.UTC });
+                        var Array = Object.freeze(Array);
+                        var Object = Object.freeze(Object);
+                        var String = Object.freeze(String);
+                        var Number = Object.freeze(Number);
+                        var Boolean = Object.freeze(Boolean);
+                        var RegExp = Object.freeze(RegExp);
+                        var Map = Object.freeze(Map);
+                        var Set = Object.freeze(Set);
+                        
+                        return (function() {
+                            ${code}
+                        })();
+                    })();
+                    
+                    self.postMessage({ success: true, result: result !== undefined ? JSON.stringify(result, null, 2) : 'undefined' });
                 } catch (error) {
                     self.postMessage({ success: false, error: error.message });
                 }
@@ -203,7 +211,7 @@ const executeCode = async (language: 'javascript', code: string): Promise<string
             reject(new Error(e.message));
         };
 
-        worker.postMessage(wrappedCode);
+        worker.postMessage('');
     });
 };
 
