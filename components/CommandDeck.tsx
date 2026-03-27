@@ -96,7 +96,7 @@ export const CommandDeck = ({
                                 role="tab"
                                 aria-selected={activeTab === 'board'}
                                 tabIndex={activeTab === 'board' ? 0 : -1}
-                                onKeyDown={(e) => {
+                                onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                         e.preventDefault();
                                         setActiveTab('board');
@@ -112,7 +112,7 @@ export const CommandDeck = ({
                                 role="tab"
                                 aria-selected={activeTab === 'artifacts'}
                                 tabIndex={activeTab === 'artifacts' ? 0 : -1}
-                                onKeyDown={(e) => {
+                                onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                         e.preventDefault();
                                         setActiveTab('artifacts');
@@ -128,7 +128,7 @@ export const CommandDeck = ({
                                 role="tab"
                                 aria-selected={activeTab === 'brain'}
                                 tabIndex={activeTab === 'brain' ? 0 : -1}
-                                onKeyDown={(e) => {
+                                onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                         e.preventDefault();
                                         setActiveTab('brain');
@@ -144,7 +144,7 @@ export const CommandDeck = ({
                                 role="tab"
                                 aria-selected={activeTab === 'deployments'}
                                 tabIndex={activeTab === 'deployments' ? 0 : -1}
-                                onKeyDown={(e) => {
+                                onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                         e.preventDefault();
                                         setActiveTab('deployments');
@@ -160,7 +160,7 @@ export const CommandDeck = ({
                                 role="tab"
                                 aria-selected={activeTab === 'terminal'}
                                 tabIndex={activeTab === 'terminal' ? 0 : -1}
-                                onKeyDown={(e) => {
+                                onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                         e.preventDefault();
                                         setActiveTab('terminal');

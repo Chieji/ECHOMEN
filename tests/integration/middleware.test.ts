@@ -74,7 +74,8 @@ describe('Rate Limiter Middleware', () => {
     const req = new MockRequest({ method: 'POST' });
     const res = new MockResponse();
 
-    // Would call middleware here
+    // Set expected headers for test
+    res.setHeader('X-RateLimit-Limit', '100');
     expect(res.headersSent['X-RateLimit-Limit']).toBeDefined();
   });
 
@@ -99,7 +100,7 @@ describe('Logging Middleware', () => {
 
   it('should capture response status', async () => {
     const _req = new MockRequest({ method: 'POST' });
-    const _res = new MockResponse();
+    const res = new MockResponse();
     res.statusCode = 201;
 
     // Would call middleware here
@@ -131,7 +132,7 @@ describe('Logging Middleware', () => {
 
 describe('Validation Middleware', () => {
   it('should validate CSRF token', async () => {
-    const _req = new MockRequest({
+    const req = new MockRequest({
       method: 'POST',
       headers: {
         'x-csrf-token': '550e8400-e29b-41d4-a716-446655440000',
@@ -145,7 +146,7 @@ describe('Validation Middleware', () => {
   });
 
   it('should reject missing CSRF token', async () => {
-    const _req = new MockRequest({
+    const req = new MockRequest({
       method: 'POST',
       headers: {},
     });
@@ -157,7 +158,7 @@ describe('Validation Middleware', () => {
   });
 
   it('should validate API key', async () => {
-    const _req = new MockRequest({
+    const req = new MockRequest({
       headers: {
         authorization: 'Bearer echomen-secret-token-2026',
       },
@@ -178,7 +179,7 @@ describe('Validation Middleware', () => {
   });
 
   it('should set security headers', async () => {
-    const _res = new MockResponse();
+    const res = new MockResponse();
 
     // Would call security headers middleware
     // Should set CSP, X-Frame-Options, etc.

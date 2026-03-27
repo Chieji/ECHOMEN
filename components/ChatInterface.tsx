@@ -71,7 +71,6 @@ const WelcomeScreen = ({ onSuggestionClick }: WelcomeScreenProps): React.ReactEl
                         className="bg-zinc-100 dark:bg-[var(--bg-void)] p-4 rounded-lg text-left text-sm cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50"
                         onClick={() => onSuggestionClick(suggestion.prompt)}
                         onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => handleSuggestionKeyPress(e, suggestion.prompt)}
-                        role="button"
                     >
                         <p className="font-semibold text-zinc-700 dark:text-zinc-200">{suggestion.title}</p>
                         <p className="text-gray-500 dark:text-gray-400">"{suggestion.prompt}"</p>
