@@ -106,6 +106,29 @@ const validateUrl = (urlString) => {
 };
 
 /**
+ * Validates and normalizes a file path to prevent directory traversal.
+ * Ensures the resolved path stays within the allowed base directory.
+ */
+const BASE_DIR = path.resolve(process.cwd());
+
+const validatePath = (inputPath) => {
+    // Reject absolute paths that start with / or Windows drive letters
+    if (path.isAbsolute(inputPath) && !inputPath.startsWith(BASE_DIR)) {
+        return null;
+    }
+    
+    // Resolve and normalize the path
+    const resolvedPath = path.resolve(BASE_DIR, inputPath);
+    
+    // Ensure the resolved path starts with the base directory
+    if (!resolvedPath.startsWith(BASE_DIR + path.sep) && resolvedPath !== BASE_DIR) {
+        return null;
+    }
+    
+    return resolvedPath;
+};
+
+/**
  * Browses the web using Playwright and extracts clean text content.
  */
 const browseWeb = async (url) => {
@@ -197,16 +220,28 @@ app.post('/execute-tool', async (req, res) => {
             // Handle internal tools
             switch (tool) {
                 case 'readFile':
-                    result = await fs.readFile(path.resolve(args.path), 'utf8');
+                    const readPath = validatePath(args.path);
+                    if (!readPath) {
+                        throw new Error('Security Violation: Invalid path - directory traversal detected');
+                    }
+                    result = await fs.readFile(readPath, 'utf8');
                     break;
                 case 'writeFile':
-                    const dir = path.dirname(path.resolve(args.path));
+                    const writePath = validatePath(args.path);
+                    if (!writePath) {
+                        throw new Error('Security Violation: Invalid path - directory traversal detected');
+                    }
+                    const dir = path.dirname(writePath);
                     await fs.mkdir(dir, { recursive: true });
-                    await fs.writeFile(path.resolve(args.path), args.content, 'utf8');
+                    await fs.writeFile(writePath, args.content, 'utf8');
                     result = `File written successfully: ${args.path}`;
                     break;
                 case 'listFiles':
-                    result = await fs.readdir(path.resolve(args.path));
+                    const listPath = validatePath(args.path);
+                    if (!listPath) {
+                        throw new Error('Security Violation: Invalid path - directory traversal detected');
+                    }
+                    result = await fs.readdir(listPath);
                     break;
                 case 'executeShellCommand':
                     result = await executeShellCommand(args.command);
