@@ -38,15 +38,6 @@ export default defineConfig(({ mode }) => {
               'react-vendor': ['react', 'react-dom'],
               // Framer Motion - animation library
               'motion-vendor': ['framer-motion'],
-              // AI SDKs - large, change independently
-              'ai-vendor': [
-                '@google/genai',
-                'openai',
-                '@anthropic-ai/sdk',
-                'cohere-ai'
-              ],
-              // Firebase - if used, separate for caching
-              'firebase-vendor': ['firebase/app', 'firebase/firestore'],
             },
             // Content-hash based naming for long-term caching
             entryFileNames: 'assets/[name]-[hash].js',
