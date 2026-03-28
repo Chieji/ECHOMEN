@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import aiProxyRouter from "../routes/ai-proxy";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -77,6 +78,10 @@ async function startServer() {
       createContext,
     })
   );
+
+  // AI Proxy API (SECURITY: API keys never touch frontend)
+  app.use("/api", aiProxyRouter);
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);

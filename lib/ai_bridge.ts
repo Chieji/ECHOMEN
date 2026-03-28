@@ -17,7 +17,7 @@
  * - Fallback chain: Automatic exponential retry
  */
 
-import { getSecureItem } from "./secureStorage";
+import { getSecureItem, getSensitiveItem } from "./secureStorage";
 import { Service, ToolCallDefinition, AIResponseData } from "../types";
 
 export type AIProvider = 'google' | 'openai' | 'anthropic' | 'groq' | 'cohere' | 'openrouter' | 'together' | 'mistral' | 'huggingface';
@@ -47,7 +47,8 @@ const DEFAULT_RETRY_CONFIG: RetryConfig = {
     maxDelay: 10000,
 };
 
-const BACKEND_URL = (import.meta as any).env?.VITE_CLOUD_ENGINE_URL || 'http://localhost:3001/api/ai';
+// SECURITY FIX: Use relative path - same origin, always correct
+const BACKEND_URL = '/api/ai';
 
 class RateLimiter {
     private requestTimes: number[] = [];
@@ -281,31 +282,34 @@ export class AIBridge {
         console.log(`[AI Bridge] Routing to ${provider} (${actualModel}) via backend proxy`);
 
         try {
-            // Get CSRF token
-            const csrfResponse = await fetch('http://localhost:3001/api/csrf-token', {
+            // Get CSRF token - use relative path
+            const csrfResponse = await fetch('/api/csrf-token', {
                 method: 'GET',
                 headers: { 'X-Session-ID': 'echomen-frontend' },
             });
             const { token: csrfToken } = await csrfResponse.json();
-            
-            // Get API key
-            const apiKey = (import.meta as any).env?.VITE_API_KEY || 
-                          localStorage.getItem('echo-api-key') || 
-                          'echomen-secret-token-2026';
+
+            // Get API key from secure storage - NO hardcoded fallback
+            const apiKey = (import.meta as any).env?.VITE_API_KEY ||
+                          await getSensitiveItem('echo-api-key');
+
+            if (!apiKey) {
+                throw new Error('[ECHO Engine] API key not configured. Set VITE_API_KEY or configure in settings.');
+            }
 
             const result = await withRetry(
                 () => this.callBackendAI(
-                    provider, 
-                    actualModel, 
-                    systemPrompt, 
-                    userPrompt, 
+                    provider,
+                    actualModel,
+                    systemPrompt,
+                    userPrompt,
                     tools,
                     csrfToken,
                     apiKey
                 ),
                 provider
             );
-            
+
             return result;
         } catch (error) {
             console.error(`[AI Bridge] All providers failed, trying fallback chain`);
@@ -322,6 +326,11 @@ export class AIBridge {
         csrfToken: string,
         apiKey: string
     ): Promise<AIResponse> {
+        // SECURITY FIX: Validate API key - no hardcoded fallback
+        if (!apiKey) {
+            throw new Error('[ECHO Engine] API key not configured. Set VITE_API_KEY or configure in settings.');
+        }
+
         const response = await fetch(`${BACKEND_URL}/chat`, {
             method: 'POST',
             headers: {
@@ -364,21 +373,25 @@ export class AIBridge {
         tools: ToolCallDefinition[]
     ): Promise<AIResponse> {
         const providers = this.getAvailableProviders();
-        
+
+        // SECURITY FIX: Get API key from secure storage, validate no hardcoded fallback
+        const apiKey = (import.meta as any).env?.VITE_API_KEY ||
+                      await getSensitiveItem('echo-api-key');
+
+        if (!apiKey) {
+            throw new Error('[ECHO Engine] API key not configured. Set VITE_API_KEY or configure in settings.');
+        }
+
         for (const provider of providers) {
             try {
                 const actualModel = model || this.providers.get(provider)?.model || this.getDefaultModel(provider);
-                
+
                 // Get CSRF token
-                const csrfResponse = await fetch('http://localhost:3001/api/csrf-token', {
+                const csrfResponse = await fetch('/api/csrf-token', {
                     method: 'GET',
                     headers: { 'X-Session-ID': 'echomen-frontend' },
                 });
                 const { token: csrfToken } = await csrfResponse.json();
-                
-                const apiKey = (import.meta as any).env?.VITE_API_KEY || 
-                              localStorage.getItem('echo-api-key') || 
-                              'echomen-secret-token-2026';
 
                 return await this.callBackendAI(
                     provider,
@@ -394,7 +407,7 @@ export class AIBridge {
                 continue;
             }
         }
-        
+
         throw new Error("All AI providers failed");
     }
 

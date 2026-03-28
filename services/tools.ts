@@ -2,6 +2,8 @@ import { FunctionDeclaration, Type } from "@google/genai";
 import { z } from 'zod';
 import { ToolArguments } from '../types';
 import { saveMemory, retrieveMemory, deleteMemory } from '../lib/firebase_manager';
+import { getSensitiveItem } from '../lib/secureStorage';
+import { executeCode as executeInSandbox, SandboxResult } from '../lib/codeSandbox';
 
 // --- Validation Schemas ---
 
@@ -11,8 +13,17 @@ const GitHubRepoSchema = z.object({
     is_private: z.boolean().default(false)
 });
 
+// SECURITY FIX: Proper URL validation - must be exactly github.com
 const GitHubPrSchema = z.object({
-    pr_url: z.string().url().includes('github.com')
+    pr_url: z.string().url().refine(
+        (url) => {
+            try {
+                const { hostname } = new URL(url);
+                return hostname === 'github.com' || hostname === 'api.github.com';
+            } catch { return false; }
+        },
+        { message: 'URL must be on github.com or api.github.com' }
+    )
 });
 
 const GitHubCommentSchema = GitHubPrSchema.extend({
@@ -30,25 +41,26 @@ const GitHubCreateFileSchema = z.object({
     commit_message: z.string().min(1)
 });
 
-const BACKEND_URL = (import.meta as any).env?.VITE_CLOUD_ENGINE_URL || (import.meta as any).env?.VITE_BACKEND_URL || 'http://localhost:3001/execute-tool';
+// SECURITY FIX: Use relative path - same origin, always correct
+const BACKEND_URL = (import.meta as any).env?.VITE_CLOUD_ENGINE_URL || (import.meta as any).env?.VITE_BACKEND_URL || '/execute-tool';
 
 // --- Helper Functions ---
 
 /**
  * Get CSRF token from backend
+ * SECURITY FIX: No silent bypass - throws on error
  */
 const getCsrfToken = async (): Promise<string> => {
-    try {
-        const response = await fetch('http://localhost:3001/api/csrf-token', {
-            method: 'GET',
-            headers: { 'X-Session-ID': 'echomen-frontend' },
-        });
-        const data = await response.json();
-        return data.token;
-    } catch (error) {
-        console.warn('[ECHO Engine] Failed to get CSRF token, proceeding without:', error);
-        return '';
+    const response = await fetch('/api/csrf-token', {
+        method: 'GET',
+        headers: { 'X-Session-ID': 'echomen-frontend' },
+    });
+    if (!response.ok) {
+        throw new Error(`[ECHO] CSRF token request failed: HTTP ${response.status}`);
     }
+    const data = await response.json();
+    if (!data?.token) throw new Error('[ECHO] CSRF token missing from response');
+    return data.token;
 };
 
 /**
@@ -64,15 +76,18 @@ const callBackendTool = async <K extends keyof ToolArguments>(
             throw new Error('Tool name is required');
         }
         console.log(`[ECHO Engine] Executing '${toolName}' via ${BACKEND_URL}`);
-        
-        // Get CSRF token for CSRF protection
+
+        // Get CSRF token for CSRF protection - will throw on error (no silent bypass)
         const csrfToken = await getCsrfToken();
-        
-        // Get API key from environment or localStorage
-        const apiKey = (import.meta as any).env?.VITE_API_KEY || 
-                      (typeof localStorage !== 'undefined' ? localStorage.getItem('echo-api-key') : null) ||
-                      'echomen-secret-token-2026';
-        
+
+        // Get API key from secure storage - NO hardcoded fallback
+        const apiKey = (import.meta as any).env?.VITE_API_KEY ||
+                      await getSensitiveItem('echo-api-key');
+
+        if (!apiKey) {
+            throw new Error('[ECHO Engine] API key not configured. Set VITE_API_KEY or configure in settings.');
+        }
+
         const response = await fetch(BACKEND_URL, {
             method: 'POST',
             headers: { 
@@ -98,26 +113,43 @@ const callBackendTool = async <K extends keyof ToolArguments>(
 };
 
 /**
- * SECURITY FIX 1.1: Code execution moved to backend
- * Client-side code execution via backend endpoint (no VM2 vulnerability)
+ * SECURITY FIX: 3-Tier Code Execution Sandbox
  * 
- * The backend will handle sandboxing via isolated-vm or Docker
+ * Tier 1 (Pure): Web Worker - auto-execute for math/data operations
+ * Tier 2 (DOM): iframe sandbox - auto-execute for DOM manipulation
+ * Tier 3 (Full): Backend execution - requires user confirmation
+ * 
+ * The AI can freely use Tier 1/2, but Tier 3 needs human approval
  */
 export const executeCode = async (language: 'javascript', code: string): Promise<string> => {
-    if (language === 'javascript') {
-        try {
-            // Call backend endpoint for secure code execution
-            const result = await callBackendTool('executeCode', { 
-                language: 'javascript',
-                code 
-            });
-            return result as string;
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            return `Error: ${errorMessage}`;
-        }
+    if (language !== 'javascript') {
+        return 'Only JavaScript execution is supported';
     }
-    return 'Only JavaScript execution is supported';
+    
+    try {
+        // Execute with automatic tier selection
+        const result: SandboxResult = await executeInSandbox(code);
+        
+        // Tier 3 requires user confirmation
+        if (result.error === 'TIER_3_REQUIRES_APPROVAL') {
+            return `[SECURITY] This code requires full execution (Tier 3) which needs user approval.\n\n` +
+                   `The code contains potentially dangerous operations like:\n` +
+                   `- File system access (fs module)\n` +
+                   `- Network requests (fetch, XMLHttpRequest)\n` +
+                   `- Child process execution\n` +
+                   `- Node.js internals (require, process, Buffer)\n\n` +
+                   `Please switch to YOLO mode or confirm execution in the backend.`;
+        }
+        
+        if (result.success) {
+            return result.output || 'Code executed successfully (no output)';
+        } else {
+            return `Error: ${result.error}`;
+        }
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return `Error: ${errorMessage}`;
+    }
 };
 
 /**

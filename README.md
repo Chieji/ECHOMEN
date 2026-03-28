@@ -1,341 +1,107 @@
-# ECHO Platform — Enterprise AI Orchestration
-
 <div align="center">
-
-![ECHO Platform](https://img.shields.io/badge/ECHO-Platform-6366f1?style=for-the-badge)
-![Production Ready](https://img.shields.io/badge/status-production%20ready-brightgreen?style=for-the-badge)
-![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)
-
-**Your thoughts. My echo. Infinite possibility.**
-
-[![Echoctl](https://img.shields.io/badge/Echoctl-CLI%20Brain-4f46e5?style=for-the-badge&logo=terminal)](https://github.com/Chieji/Echoctl)
-[![ECHOMEN](https://img.shields.io/badge/ECHOMEN-Web%20Dashboard-06b6d4?style=for-the-badge&logo=react)](https://github.com/Chieji/ECHOMEN)
-
+  <img src="./public/echo-logo.svg" alt="ECHO Logo" width="400" />
+  
+  <h3>Your Multi-Ecosystem AI Workstation</h3>
+  
+  <p>
+    <a href="https://github.com/chieji/ECHOMEN"><img src="https://img.shields.io/badge/status-production--ready-green" alt="Status" /></a>
+    <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-%3E%3D18-blue" alt="Node.js" /></a>
+    <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.0-blue" alt="TypeScript" /></a>
+    <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-61dafb" alt="React" /></a>
+    <a href="https://github.com/chieji/ECHOMEN/blob/main/LICENSE"><img src="https://img.shields.io/github/license/chieji/ECHOMEN" alt="License" /></a>
+  </p>
+  
+  <p>
+    <a href="https://github.com/chieji/echoctl"><strong>CLI Repo »</strong></a> •
+    <a href="#features">Features</a> •
+    <a href="#installation">Installation</a> •
+    <a href="#usage">Usage</a> •
+    <a href="#security">Security</a>
+  </p>
 </div>
 
 ---
 
-## 🎯 What is ECHO?
+## 🚀 What is ECHOMEN?
 
-**ECHO** is a complete AI agent orchestration platform combining two powerful components:
+**ECHOMEN** is a full-stack AI orchestration platform that brings together 14+ AI providers into a single, secure workstation. Think of it as your AI command center — where you can manage multiple AI models, execute complex tasks, and build extensions that work across ecosystems.
 
-| Component | Description | Repository |
-|-----------|-------------|------------|
-| **Echoctl** | CLI brain with BDI engine, 14+ AI providers, multi-layer memory | [→ View Echoctl](https://github.com/Chieji/Echoctl) |
-| **ECHOMEN** | Web dashboard for visual agent management, real-time monitoring, browser automation | [→ View ECHOMEN](https://github.com/Chieji/ECHOMEN) |
+### Why ECHOMEN Exists
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    ECHO Platform Architecture                    │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌──────────────────────┐         ┌──────────────────────┐     │
-│  │   ECHOMEN (Web UI)   │◄───────►│   Echoctl (CLI)      │     │
-│  │  - Dashboard         │  WebSocket│  - BDI Engine      │     │
-│  │  - Agent Management  │  Bridge  │  - 14+ Providers   │     │
-│  │  - Browser Automation│          │  - Multi-layer Mem │     │
-│  │  - Knowledge Graph   │          │  - Tool Execution  │     │
-│  └──────────────────────┘         └──────────────────────┘     │
-│           │                                  │                  │
-│           ▼                                  ▼                  │
-│  ┌──────────────────────┐         ┌──────────────────────┐     │
-│  │   PostgreSQL DB      │         │   AI Providers       │     │
-│  │   - Agents           │         │   - Groq, Gemini     │     │
-│  │   - Knowledge Nodes  │         │   - Together, Cohere │     │
-│  │   - Playbooks        │         │   - OpenRouter, etc. │     │
-│  │   - Activity Logs    │         │                      │     │
-│  └──────────────────────┘         └──────────────────────┘     │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+Most AI tools lock you into a single provider. ECHOMEN breaks those walls:
+- ✅ **Multi-Provider**: Switch between Gemini, Claude, GPT-4, Qwen, and 10+ others instantly
+- ✅ **Extension System**: Import skills from Claude, Gemini, Qwen, or build your own
+- ✅ **Safe Execution**: 3-tier sandbox prevents AI from running dangerous code
+- ✅ **Zero-Config APIs**: Free web search, Wikipedia, weather — no API keys needed
+- ✅ **MCP Support**: Compatible with Model Context Protocol servers
 
 ---
 
-## ✨ Platform Features
+## ✨ Features
 
-### 🎛️ Multi-Agent Orchestration
-- **Autonomous Execution** - ReAct engine with Planner, Executor, Reviewer agents
-- **Parallel Task Execution** - Up to 4 concurrent tasks with dependency management
-- **HITL Safety Gates** - Human approval for privileged operations (shell, file write)
-- **Real-time Status Streaming** - Live task progress via WebSocket
+### 🧠 AI Orchestration
+- **14+ AI Providers**: Google Gemini, OpenAI, Anthropic, Alibaba Qwen, DeepSeek, Kimi, Groq, Ollama, OpenRouter, Together AI, ModelScope, Mistral, Hugging Face, GitHub Models
+- **Smart Routing**: Automatically selects the best AI for each task
+- **Failover Chain**: If one provider fails, automatically tries the next
+- **Token Tracking**: Monitor usage across all providers
 
-### 🤖 AI Provider Integration
-- **7+ Providers** - Groq, Gemini, Together AI, Cohere, OpenRouter, Mistral, HuggingFace
-- **Smart Routing** - Auto-select optimal provider (chat→Groq, code→Together, reasoning→Gemini)
-- **Fallback Chain** - Automatic retry with degraded providers on failure
-- **Health Monitoring** - Real-time provider status and latency tracking
+### 🔌 Extension Registry
+- **Unified System**: MCP servers, plugins, and skills in one place
+- **Cross-Ecosystem**: Import Claude skills, Gemini extensions, Qwen plugins
+- **Persistence**: Extensions saved and synced across sessions
+- **Auth Management**: Secure API key storage for each extension
 
-### 🌐 Browser Automation (WebHawk 2.0)
-- **Playwright-based** - Full browser automation with headless Chrome
-- **AXTree Navigation** - Accessibility tree parsing for reliable element interaction
-- **Persistent Sessions** - Maintain login state across multi-step web tasks
-- **Screenshot Capture** - Visual feedback with base64 encoding
+### 🛡️ 3-Tier Code Sandbox
+```
+Tier 1 (Pure)  → Web Worker      → Auto-execute ✅
+Tier 2 (DOM)   → iframe sandbox  → Auto-execute ✅
+Tier 3 (Full)  → Backend         → User approval required 🛑
+```
 
-### 🧠 Knowledge Graph
-- **Wiki-Linking** - `[[Link Title]]` syntax with bidirectional backlinks
-- **Playbook Learning** - Auto-extract execution patterns from successful tasks
-- **Neural Vault Export** - Portable ZIP archive of entire knowledge base
-- **Full-Text Search** - Fast search across notes, artifacts, and conversations
+### 🌐 Zero-Config Web APIs
+No API keys needed for these tools:
+- **Web Search**: DuckDuckGo integration
+- **Wikipedia**: Article search and summaries
+- **Reddit**: Posts and comments from any subreddit
+- **Hacker News**: Top and new stories
+- **Weather**: Current conditions via Open-Meteo
+- **Archive.org**: Check if URLs are archived
+- **Web Scraping**: Extract content from any website
 
-### 💬 AI Chat Interface
-- **Streaming Responses** - Token-by-token progressive rendering
-- **Persistent History** - All conversations stored and searchable
-- **Rich Markdown** - Full formatting, code blocks, syntax highlighting
-- **Action/Chat Modes** - Toggle between conversation and execution
-
-### 📊 Code Analysis
-- **Multi-Language** - TypeScript, Python, JavaScript, Go, Rust, and more
-- **AI-Powered Summaries** - Automatic documentation generation
-- **Security Scanning** - Potential vulnerability detection
-- **Export Results** - Download in multiple formats
+### 🔒 Security Hardening
+- ✅ API keys never touch the frontend
+- ✅ CSRF protection with fail-loud design
+- ✅ Path traversal prevention
+- ✅ SSRF protection for web tools
+- ✅ Command allowlisting for shell execution
+- ✅ XSS prevention in markdown rendering
+- ✅ Zod validation for all LLM responses
 
 ---
 
-## 🚀 Quick Start
+## 📦 Installation
 
-### Option 1: Full Platform Install (Recommended)
+### Option 1: Docker (Recommended for Production)
 
-Install both Echoctl (CLI) and ECHOMEN (Web UI) for complete functionality:
+**Prerequisites:**
+- Docker 20+
+- Docker Compose 2+
 
-```bash
-# 1. Clone both repositories
-git clone https://github.com/Chieji/Echoctl.git
-git clone https://github.com/Chieji/ECHOMEN.git
-
-# 2. Install Echoctl (CLI Brain)
-cd Echoctl
-npm install
-npm link
-echoctl --version  # Verify installation
-
-# 3. Install ECHOMEN (Web Dashboard)
-cd ../ECHOMEN
-pnpm install
-```
-
-### Option 2: Echoctl Only (CLI Mode)
-
-If you only need CLI functionality:
+**Quick Start:**
 
 ```bash
-git clone https://github.com/Chieji/Echoctl.git
-cd Echoctl
-npm install
-npm link
-```
-
-### Option 3: ECHOMEN Only (Web UI)
-
-If you want the web dashboard (requires Echoctl running separately):
-
-```bash
-git clone https://github.com/Chieji/ECHOMEN.git
+# Clone the repository
+git clone https://github.com/chieji/ECHOMEN.git
 cd ECHOMEN
-pnpm install
-```
 
----
+# Copy environment file
+cp .env.example .env
 
-## 📋 Configuration
+# Edit .env with your API keys
+nano .env  # or use your favorite editor
 
-### Step 1: Environment Setup
-
-**ECHOMEN** - Copy and configure `.env.local`:
-
-```bash
-cd ECHOMEN
-cp .env.example .env.local
-```
-
-Edit `.env.local`:
-
-```env
-# === Supabase Authentication ===
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key-here
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your-service-role-key
-
-# === Database ===
-DATABASE_URL=postgresql://user:password@localhost:5432/echomen
-
-# === Echoctl WebSocket Bridge ===
-ECHOCTL_WS_URL=ws://localhost:8080
-
-# === AI Providers (configure at least one) ===
-# Groq (ultra-low latency chat)
-GROQ_API_KEY=gsk_xxx
-
-# Google Gemini (complex reasoning, default fallback)
-GEMINI_API_KEY=AIzaSy...
-
-# Together AI (code generation specialist)
-TOGETHER_API_KEY=xxx
-
-# Cohere (data processing)
-COHERE_API_KEY=xxx
-
-# OpenRouter (general purpose fallback)
-OPENROUTER_API_KEY=sk-or-xxx
-
-# Mistral (EU compliance, GDPR)
-MISTRAL_API_KEY=xxx
-
-# Hugging Face (specialized models)
-HUGGINGFACE_API_KEY=hf_xxx
-```
-
-### Step 2: Initialize Database
-
-```bash
-cd ECHOMEN
-pnpm db:push
-```
-
-### Step 3: Start Echoctl Server
-
-**In a separate terminal:**
-
-```bash
-cd Echoctl
-echoctl serve --ws-port 8080
-```
-
-Keep this running - ECHOMEN needs it for real-time communication.
-
-### Step 4: Start ECHOMEN Web Server
-
-```bash
-cd ECHOMEN
-pnpm dev
-```
-
-The web dashboard will be available at `http://localhost:3000`.
-
----
-
-## 🔗 Repository Links
-
-### Cross-Repository Navigation
-
-| From | To | Link |
-|------|-----|------|
-| **Echoctl** | → ECHOMEN Web UI | [github.com/Chieji/ECHOMEN](https://github.com/Chieji/ECHOMEN) |
-| **ECHOMEN** | → Echoctl CLI | [github.com/Chieji/Echoctl](https://github.com/Chieji/Echoctl) |
-
-### Installation Dependencies
-
-```
-ECHOMEN requires Echoctl for:
-├─ Agent execution engine
-├─ AI provider chain
-├─ Browser automation (WebHawk)
-└─ Tool execution (shell, files, MCP)
-
-Echoctl can run standalone:
-└─ Full CLI functionality without ECHOMEN
-   └─ ECHOMEN adds: Visual dashboard, real-time monitoring, browser view
-```
-
----
-
-## 🏗️ Architecture
-
-### Tech Stack
-
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Frontend** | React 19, TypeScript, Tailwind CSS 4 | Modern UI framework |
-| **UI Components** | shadcn/ui, Radix UI | Accessible component library |
-| **Backend** | Express 4, tRPC 11, Node.js | Type-safe API layer |
-| **Database** | PostgreSQL, Supabase, Drizzle ORM | Data persistence |
-| **Real-time** | WebSocket, Server-Sent Events (SSE) | Live updates |
-| **AI Bridge** | Groq, Gemini, Together, Cohere, OpenRouter | 7+ provider integration |
-| **Browser** | Playwright | Web automation |
-| **Deployment** | Docker, Railway, Render, Vercel | Cloud hosting |
-
-### System Components
-
-```
-ECHOMEN (Web Dashboard)
-├── client/                    # React 19 + TypeScript frontend
-│   ├── pages/
-│   │   ├── Dashboard.tsx     # Real-time KPIs, activity feed
-│   │   ├── Agents.tsx        # Agent CRUD, status monitoring
-│   │   ├── Chat.tsx          # AI chat interface
-│   │   ├── BrowserView.tsx   # WebHawk browser automation
-│   │   └── Settings.tsx      # Configuration, provider management
-│   ├── hooks/
-│   │   ├── useEchoctl.ts     # Echoctl integration hooks
-│   │   └── useAgentStatus.ts # Real-time status streaming
-│   └── lib/
-│       ├── trpc.ts           # tRPC client
-│       └── api.ts            # API wrappers
-│
-├── server/                    # Express + tRPC backend
-│   ├── routers/
-│   │   ├── echoctlRouter.ts  # Echoctl WebSocket bridge
-│   │   ├── browserRouter.ts  # WebHawk automation API
-│   │   └── knowledgeRouter.ts# Knowledge graph API
-│   ├── lib/
-│   │   ├── agent-executor.ts # Multi-agent orchestration
-│   │   ├── ai-provider-chain.ts # 7-provider AI routing
-│   │   ├── webhawk.ts        # Browser automation
-│   │   └── planner.ts        # Task decomposition
-│   └── db.ts                 # Database queries
-│
-└── drizzle/                   # Database schema & migrations
-    └── schema.ts              # Tables: agents, knowledge_nodes, playbooks
-
-Echoctl (CLI Brain)
-├── src/                       # Core CLI engine
-│   ├── bdi/                   # Belief-Desire-Intention engine
-│   ├── providers/             # 14+ AI provider implementations
-│   ├── tools/                 # Tool execution (shell, files, MCP)
-│   └── memory/                # Multi-layer memory system
-└── plugins/                   # Plugin system
-```
-
----
-
-## 🧪 Testing
-
-### Run Test Suites
-
-```bash
-# ECHOMEN tests
-cd ECHOMEN
-pnpm test                    # Run all tests
-pnpm test:backend            # Backend only
-pnpm test:frontend           # Frontend only
-pnpm test:integration        # Integration tests (requires Echoctl running)
-
-# Echoctl tests
-cd Echoctl
-npm test                     # Run all tests
-npm test:unit                # Unit tests
-npm test:integration         # Integration tests
-```
-
-### Test Coverage
-
-| Component | Coverage | Status |
-|-----------|----------|--------|
-| Echoctl Core | 85% | ✅ Passing |
-| ECHOMEN Backend | 78% | ✅ Passing |
-| ECHOMEN Frontend | 65% | ✅ Passing |
-| Integration Tests | 70% | ✅ Passing |
-
----
-
-## 📦 Deployment
-
-### Docker Deployment
-
-```bash
-# Build and run with Docker Compose
-cd ECHOMEN
-docker compose up --build -d
+# Start all services
+docker compose up -d
 
 # View logs
 docker compose logs -f
@@ -344,160 +110,227 @@ docker compose logs -f
 docker compose down
 ```
 
-### Cloud Platforms
+**Access:** Navigate to `http://localhost:3000`
 
-#### Railway (1-Click Deploy)
+**Volumes:**
+- `echomen-logs` - Application logs
+- `echomen-browser-cache` - Playwright browser cache
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/echo)
+---
 
-#### Render
+### Option 2: Manual Installation
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=github.com/Chieji/ECHOMEN)
+- **Node.js** 18+ ([Download](https://nodejs.org/))
+- **pnpm** or **npm**
+- **Git**
 
-#### Vercel
+### Step 1: Clone the Repository
 
 ```bash
+git clone https://github.com/chieji/ECHOMEN.git
 cd ECHOMEN
-vercel deploy
 ```
 
-### Environment Variables (Production)
+### Step 2: Install Dependencies
 
-```env
-# Required
-NODE_ENV=production
-DATABASE_URL=postgresql://...
-SUPABASE_URL=...
-SUPABASE_KEY=...
-ECHOCTL_WS_URL=wss://your-echoctl-instance.com
+```bash
+# Using pnpm (recommended)
+pnpm install
 
-# AI Providers (at least one)
-GROQ_API_KEY=...
-GEMINI_API_KEY=...
-TOGETHER_API_KEY=...
+# Or using npm
+npm install
+```
+
+### Step 3: Configure Environment
+
+```bash
+# Copy the example environment file
+cp .env.example .env
+
+# Edit .env with your API keys
+# At minimum, configure one AI provider:
+GEMINI_API_KEY=your_gemini_key_here
+```
+
+### Step 4: Build the Application
+
+```bash
+# Build frontend and backend
+npm run build
+```
+
+### Step 5: Start the Server
+
+```bash
+# Development mode (with hot reload)
+npm run dev
+
+# Production mode
+npm start
+```
+
+### Step 6: Open in Browser
+
+Navigate to `http://localhost:3000`
+
+---
+
+## 🎯 Usage
+
+### Quick Start
+
+1. **Configure AI Providers**: Go to Settings → AI Providers and add your API keys
+2. **Start a Task**: Type a goal like "Build a React component for user profiles"
+3. **Watch Execution**: ECHOMEN breaks it into tasks and executes them
+4. **Review Results**: Check the Artifacts panel for outputs
+
+### Agent Modes
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| **Chat** | Conversational AI | Questions, explanations, debugging help |
+| **Action** | Task execution | Building, coding, file operations |
+| **Plan** | Read-only exploration | Research, codebase analysis |
+
+### Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+P` / `Cmd+K` | Command Palette |
+| `Ctrl+1` | Switch to Action Mode |
+| `Ctrl+2` | Switch to Chat Mode |
+| `Ctrl+C` | Stop execution |
+
+---
+
+## 🔗 Related Repos
+
+### ECHOMEN Ecosystem
+
+- **[Echoctl CLI](https://github.com/chieji/echoctl)** — Command-line interface for ECHOMEN
+  - Terminal-based AI agent
+  - Extension management
+  - Model switching
+  - MCP server integration
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                 ECHOMEN Platform                     │
+├─────────────────────────────────────────────────────┤
+│  Frontend (React 19)    │  Backend (Express/tRPC)  │
+│  - Agent UI             │  - AI Proxy              │
+│  - Task Pipeline        │  - Tool Execution        │
+│  - Artifact Viewer      │  - Database (MySQL)      │
+├─────────────────────────────────────────────────────┤
+│              Extension Registry                     │
+│  MCP Servers │ Plugins │ Skills (Claude/Gemini)   │
+└─────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🔐 Security
+## 🛡️ Security
 
-### Implemented Security Features
+ECHOMEN implements enterprise-grade security:
 
-| Feature | Status | Description |
-|---------|--------|-------------|
-| **Authentication** | ✅ | Supabase Auth with OAuth (Google, GitHub, Discord) |
-| **Authorization** | ✅ | Role-based access control (user, admin) |
-| **API Security** | ✅ | tRPC with input validation (Zod schemas) |
-| **Database Security** | ✅ | Parameterized queries, SQL injection prevention |
-| **Browser Isolation** | ✅ | Headless Chrome in sandboxed mode |
-| **HITL Gates** | ✅ | Human approval for privileged operations |
-| **Provider Fallback** | ✅ | Automatic retry with degraded providers |
+### Frontend Security
+- API keys stored in encrypted sessionStorage (AES-GCM)
+- No secrets in client bundle
+- CSRF tokens for all state-changing requests
+- Content Security Policy headers
 
-### Security Best Practices
+### Backend Security
+- Command allowlisting (no arbitrary shell execution)
+- Path traversal prevention
+- SSRF protection for web requests
+- Rate limiting on all endpoints
 
-1. **Never commit `.env` files** - Use `.env.example` as template
-2. **Rotate API keys regularly** - Especially for AI providers
-3. **Use HTTPS in production** - Required for WebSocket connections
-4. **Enable rate limiting** - Prevent abuse of AI endpoints
-5. **Monitor activity logs** - Track all agent executions
+### Code Execution
+- **Tier 1**: Pure math in Web Workers (safe)
+- **Tier 2**: DOM manipulation in sandboxed iframes (isolated)
+- **Tier 3**: Full execution requires user approval (audited)
+
+For detailed security information, see [SECURITY_BOUNDARIES.md](./SECURITY_BOUNDARIES.md) and [SECURITY_AUDIT_REPORT.md](./SECURITY_AUDIT_REPORT.md).
 
 ---
 
 ## 📚 Documentation
 
-### Getting Started Guides
-
-- [Echoctl CLI Quickstart](https://github.com/Chieji/Echoctl#quick-start)
-- [ECHOMEN Setup Guide](#-quick-start)
-- [AI Provider Configuration](#step-1-environment-setup)
-- [Browser Automation (WebHawk)](#-browser-automation-webhawk-20)
-
-### Advanced Topics
-
-- [Multi-Agent Orchestration](#-multi-agent-orchestration)
-- [Knowledge Graph & Wiki-Links](#-knowledge-graph)
-- [Playbook Learning System](#-knowledge-graph)
-- [Security & HITL Gates](#-security)
-
-### API Reference
-
-- [tRPC Router Documentation](server/routers/)
-- [Database Schema](drizzle/schema.ts)
-- [WebSocket Protocol](docs/WEBSOCKET_PROTOCOL.md)
+| Document | Description |
+|----------|-------------|
+| [AGENTS.md](./AGENTS.md) | AI agent system architecture |
+| [TOOLS.md](./TOOLS.md) | Available tools and capabilities |
+| [SOUL.md](./SOUL.md) | Design philosophy and principles |
+| [SECURITY_BOUNDARIES.md](./SECURITY_BOUNDARIES.md) | Security model overview |
+| [SECURITY_AUDIT_REPORT.md](./SECURITY_AUDIT_REPORT.md) | Security audit findings |
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! Here's how to get started:
+We welcome contributions! See our [Contributing Guide](./CONTRIBUTING.md) for:
+- Development setup
+- Code style guidelines
+- Pull request process
+- Issue reporting
 
-### Development Workflow
+---
 
-```bash
-# 1. Fork the repository
-# 2. Clone your fork
-git clone https://github.com/YOUR_USERNAME/ECHOMEN.git
-cd ECHOMEN
+## 📊 Tech Stack
 
-# 3. Create feature branch
-git checkout -b feature/amazing-feature
+### Frontend
+- **React 19** with TypeScript
+- **Vite** for build tooling
+- **Framer Motion** for animations
+- **Tailwind CSS** for styling
 
-# 4. Make changes and commit
-git commit -m 'feat: add amazing feature'
+### Backend
+- **Express.js** with tRPC
+- **Drizzle ORM** for database
+- **MySQL** for persistence
+- **Supabase Auth** for authentication
 
-# 5. Push to your fork
-git push origin feature/amazing-feature
+### AI Integration
+- Custom multi-provider bridge
+- MCP client for external tools
+- Zod for schema validation
 
-# 6. Open Pull Request
-```
+---
 
-### Good First Issues
+## 📈 Roadmap
 
-- [ ] Add provider health indicators to dashboard
-- [ ] Implement playbook extraction UI
-- [ ] Improve AXTree viewer performance
-- [ ] Add mobile responsive design
-- [ ] Create onboarding wizard
+### Q2 2026
+- [ ] Mobile app (React Native)
+- [ ] Real-time collaboration
+- [ ] Advanced analytics dashboard
+- [ ] More MCP server integrations
 
-### Contribution Guidelines
+### Q3 2026
+- [ ] Plugin marketplace
+- [ ] Team workspaces
+- [ ] Advanced RBAC
+- [ ] Self-hosting improvements
 
-- Follow existing code style
-- Write tests for new features
-- Update documentation as needed
-- Ensure all tests pass before submitting PR
+---
+
+## 🙏 Acknowledgments
+
+Built with inspiration from:
+- [Model Context Protocol](https://modelcontextprotocol.io/)
+- [Claude Code](https://claude.ai/code)
+- [Continue.dev](https://continue.dev/)
 
 ---
 
 ## 📄 License
 
-MIT License — See [LICENSE](LICENSE) file for details.
-
----
-
-## 🔗 Related Projects
-
-| Project | Description | Link |
-|---------|-------------|------|
-| **Echoctl** | CLI brain with BDI engine & provider chain | [→ GitHub](https://github.com/Chieji/Echoctl) |
-| **ECHOMEN** | Web dashboard for AI orchestration | [→ GitHub](https://github.com/Chieji/ECHOMEN) |
-
----
-
-## 📧 Support & Community
-
-- **Issues & Bugs** — [Open an issue](https://github.com/Chieji/ECHOMEN/issues)
-- **Discussions** — [GitHub Discussions](https://github.com/Chieji/ECHOMEN/discussions)
-- **Documentation** — [Full Docs](docs/)
+MIT License — see [LICENSE](./LICENSE) for details.
 
 ---
 
 <div align="center">
-
-**Built with ❤️ by [Chieji](https://github.com/Chieji)**
-
-*Your thoughts. Our echo. Infinite possibility.*
-
-[![Echoctl](https://img.shields.io/badge/View-Echoctl-4f46e5?style=for-the-badge)](https://github.com/Chieji/Echoctl)
-[![ECHOMEN](https://img.shields.io/badge/View-ECHOMEN-06b6d4?style=for-the-badge)](https://github.com/Chieji/ECHOMEN)
-
+  <p>Built with ❤️ by <a href="https://github.com/chieji">chieji</a></p>
+  <p>⭐ Star this repo if you find it useful!</p>
 </div>

@@ -61,6 +61,7 @@ export class AgentExecutor {
         });
 
         const activePromises = new Map<string, Promise<boolean>>();
+        const dispatchedIds = new Set<string>();
 
         while (this.tasks.some(t => ['Queued', 'Executing', 'Delegating', 'AwaitingApproval'].includes(t.status)) && !this.isStopped) {
             // Find ready tasks that are not already being executed
@@ -69,9 +70,13 @@ export class AgentExecutor {
             // Start executing tasks up to the concurrency limit
             while (activePromises.size < MAX_PARALLEL_TASKS && readyTasks.length > 0) {
                 const taskToRun = readyTasks.shift();
-                if (taskToRun) {
+                if (taskToRun && !dispatchedIds.has(taskToRun.id)) {
+                    // SECURITY FIX: Mark as Executing BEFORE pushing to activePromises
+                    this.updateTask(taskToRun, { status: 'Executing' });
+                    dispatchedIds.add(taskToRun.id);
                     const promise = this.executeTask(taskToRun, onStatusUpdate).finally(() => {
                         activePromises.delete(taskToRun.id);
+                        dispatchedIds.delete(taskToRun.id);
                     });
                     activePromises.set(taskToRun.id, promise);
                 }
