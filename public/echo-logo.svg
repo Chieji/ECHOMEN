@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="echoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#06b6d4;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background Circle -->
+  <circle cx="200" cy="200" r="190" fill="#0f172a" stroke="url(#echoGradient)" stroke-width="4"/>
+  
+  <!-- Echo Wave Pattern -->
+  <path d="M 100 200 Q 150 100 200 200 T 300 200" 
+        fill="none" 
+        stroke="url(#echoGradient)" 
+        stroke-width="8" 
+        stroke-linecap="round"
+        filter="url(#glow)"
+        opacity="0.8"/>
+  
+  <path d="M 120 200 Q 170 120 200 200 T 280 200" 
+        fill="none" 
+        stroke="url(#echoGradient)" 
+        stroke-width="6" 
+        stroke-linecap="round"
+        filter="url(#glow)"
+        opacity="0.6"/>
+  
+  <path d="M 140 200 Q 190 140 200 200 T 260 200" 
+        fill="none" 
+        stroke="url(#echoGradient)" 
+        stroke-width="4" 
+        stroke-linecap="round"
+        filter="url(#glow)"
+        opacity="0.4"/>
+  
+  <!-- Center Dot -->
+  <circle cx="200" cy="200" r="12" fill="url(#echoGradient)" filter="url(#glow)"/>
+  
+  <!-- Text -->
+  <text x="200" y="340" 
+        font-family="system-ui, -apple-system, sans-serif" 
+        font-size="48" 
+        font-weight="bold"
+        fill="url(#echoGradient)"
+        text-anchor="middle"
+        letter-spacing="8">ECHO</text>
+  
+  <!-- Tagline -->
+  <text x="200" y="365" 
+        font-family="system-ui, -apple-system, sans-serif" 
+        font-size="14" 
+        fill="#64748b"
+        text-anchor="middle"
+        letter-spacing="2">MULTI-ECOSYSTEM AI</text>
+</svg>

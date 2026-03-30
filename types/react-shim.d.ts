@@ -60,6 +60,66 @@ declare module 'react' {
   export function useRef<T>(value: T): RefObject<T>;
   export function useRef<T = undefined>(value?: T): RefObject<T | undefined>;
 
+  export const StrictMode: FC<{ children?: any }>;
+  export const Fragment: FC<{ children?: any }>;
+
+  export interface SyntheticEvent<T = Element, E = Event> {
+    nativeEvent: E;
+    currentTarget: T & EventTarget;
+    target: EventTarget;
+    bubbles: boolean;
+    cancelable: boolean;
+    defaultPrevented: boolean;
+    eventPhase: number;
+    isTrusted: boolean;
+    preventDefault(): void;
+    isDefaultPrevented(): boolean;
+    stopPropagation(): void;
+    isPropagationStopped(): boolean;
+    persist(): void;
+    timeStamp: number;
+    type: string;
+  }
+
+  export interface MouseEvent<T = Element, E = globalThis.MouseEvent> extends SyntheticEvent<T, E> {
+    altKey: boolean;
+    button: number;
+    buttons: number;
+    clientX: number;
+    clientY: number;
+    ctrlKey: boolean;
+    metaKey: boolean;
+    movementX: number;
+    movementY: number;
+    pageX: number;
+    pageY: number;
+    relatedTarget: EventTarget | null;
+    screenX: number;
+    screenY: number;
+    shiftKey: boolean;
+  }
+
+  export interface KeyboardEvent<T = Element> extends SyntheticEvent<T, globalThis.KeyboardEvent> {
+    altKey: boolean;
+    code: string;
+    ctrlKey: boolean;
+    getModifierState(key: string): boolean;
+    key: string;
+    locale: string;
+    location: number;
+    metaKey: boolean;
+    repeat: boolean;
+    shiftKey: boolean;
+    which: number;
+  }
+
+  export interface ChangeEvent<T = Element> extends SyntheticEvent<T> {
+    target: EventTarget & T;
+  }
+
+  export interface FormEvent<T = Element> extends SyntheticEvent<T> {
+  }
+
   export function forwardRef<T, P = Record<string, any>>(
     render: (props: P, ref: Ref<T>) => any
   ): any;
@@ -79,7 +139,7 @@ declare module 'react-dom/client' {
 }
 
 declare namespace JSX {
-  interface Element {}
+  type Element = import('react').ReactElement<any, any>;
   interface IntrinsicElements {
     [elemName: string]: any;
   }

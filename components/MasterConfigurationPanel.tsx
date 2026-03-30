@@ -12,10 +12,13 @@ import { CohereIcon } from './icons/CohereIcon';
 import { SupabaseIcon } from './icons/SupabaseIcon';
 import { GenericApiIcon } from './icons/GenericApiIcon';
 import { AgentCreationModal } from './AgentCreationModal';
+import { PlaybookCreationModal } from './PlaybookCreationModal';
+import { getSensitiveItem, setSensitiveItem, migrateSensitiveData } from '../lib/secureStorage';
 import { CustomAgent, Playbook, AgentPreferences, AgentRole, TodoItem, Service, ModelProviderConfig, MemoryMode, PersistenceSettings } from '../types';
 import { PencilIcon } from './icons/PencilIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { PlusIcon } from './icons/PlusIcon';
+import { getSecureItem, getSensitiveItem, setSensitiveItem, migrateSensitiveData } from '../lib/secureStorage';
 import { BrainIcon } from './icons/BrainIcon';
 import { AppDeployments } from './AppDeployments';
 import { RocketIcon } from './icons/RocketIcon';
@@ -41,13 +44,14 @@ import { ServerIcon } from './icons/ServerIcon';
 import { CloudIcon } from './icons/CloudIcon';
 import { DatabaseIcon } from './icons/DatabaseIcon';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
-import { setSecureItem, getSecureItem, isSecureContext, migrateCredentials, removeSecureItem } from '../lib/secureStorage';
+import { getSecureItem } from '../lib/secureStorage';
 
 
 interface MasterConfigurationPanelProps {
     onClose: () => void;
     theme: 'light' | 'dark';
     setTheme: (theme: 'light' | 'dark') => void;
+    openAgentsModal?: boolean;
 }
 
 const initialServices: Service[] = [
@@ -158,12 +162,12 @@ const initialModelProviders: ModelProviderConfig[] = [
 const Section: React.FC<{ title: string; icon?: React.ReactNode; children: React.ReactNode; defaultOpen?: boolean }> = ({ title, icon, children, defaultOpen = true }) => {
     const [isOpen, setIsOpen] = useState(defaultOpen);
     return (
-        <div className="border-b border-black/10 dark:border-white/10 pb-6 mb-6">
+        <div className="border-b border-echo-border pb-6 mb-6">
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full flex justify-between items-center mb-4"
             >
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-cyan-600 dark:text-[#00D4FF] tracking-widest uppercase">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-300">
                     {icon}
                     <span>{title}</span>
                 </h3>
@@ -221,32 +225,32 @@ const defaultAgentModels = [
     'WebHawk'
 ];
 
-export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> = ({ onClose, theme, setTheme }) => {
+export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> = ({ onClose, theme, setTheme, openAgentsModal }) => {
     const [services, setServices] = useState<Service[]>(initialServices);
     const [modelProviders, setModelProviders] = useState<ModelProviderConfig[]>(initialModelProviders);
+
+    // Handle openAgentsModal prop to trigger agent modal from external trigger (e.g., Header button)
+    useEffect(() => {
+        if (openAgentsModal) {
+            setIsAgentModalOpen(true);
+        }
+    }, [openAgentsModal]);
 
     // Async data loading for secure credentials
     useEffect(() => {
         const loadSecureData = async () => {
+            // Run migration on first load
+            await migrateSensitiveData();
+            
             try {
-                // First try secure storage for credentials
-                const secureServicesStr = await getSecureItem('echo-services');
-                if (secureServicesStr) {
-                    const savedServices = JSON.parse(secureServicesStr);
+                // Load services from secure storage
+                const servicesData = await getSensitiveItem('echo-services');
+                if (servicesData) {
+                    const savedServices = JSON.parse(servicesData);
                     setServices(prev => prev.map(is => {
                         const saved = savedServices.find((ss: Service) => ss.id === is.id);
                         return saved ? { ...is, status: saved.status, inputs: saved.inputs || is.inputs } : is;
                     }));
-                } else {
-                    // Fallback to localStorage for legacy data
-                    const savedServicesJSON = localStorage.getItem('echo-services');
-                    if (savedServicesJSON) {
-                        const savedServices = JSON.parse(savedServicesJSON);
-                        setServices(prev => prev.map(is => {
-                            const saved = savedServices.find((ss: Service) => ss.id === is.id);
-                            return saved ? { ...is, status: saved.status } : is;
-                        }));
-                    }
                 }
             } catch (error) {
                 console.error("Failed to load secure services:", error);
@@ -349,9 +353,9 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
     useEffect(() => {
         try {
             const servicesToSave = services.map(({ id, status }) => ({ id, status }));
-            localStorage.setItem('echo-services', JSON.stringify(servicesToSave));
+            setSensitiveItem('echo-services', JSON.stringify(servicesToSave));
         } catch(error) {
-            console.error("Failed to save services to localStorage", error);
+            console.error("Failed to save services to secure storage", error);
         }
     }, [services]);
 
@@ -395,6 +399,9 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
 
     const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
     const [editingAgent, setEditingAgent] = useState<CustomAgent | null>(null);
+    const [isPlaybookModalOpen, setIsPlaybookModalOpen] = useState(false);
+    const [playbookSuggestedName, setPlaybookSuggestedName] = useState('');
+    const [playbookTriggerPrompt, setPlaybookTriggerPrompt] = useState('');
 
     const handleSaveService = (serviceId: string, values: { [key: string]: string }) => {
         console.log(`Saving service ${serviceId}`, values);
@@ -448,6 +455,25 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
         if (window.confirm("Are you sure you want to delete all learned playbooks? This action cannot be undone.")) {
             setPlaybooks([]);
         }
+    };
+
+    const handleOpenPlaybookModal = () => {
+        setPlaybookSuggestedName(`Playbook-${new Date().toISOString().slice(0, 10)}`);
+        setPlaybookTriggerPrompt('');
+        setIsPlaybookModalOpen(true);
+    };
+
+    const handleSavePlaybook = (name: string, description: string) => {
+        const newPlaybook: Playbook = {
+            id: `playbook-${Date.now()}`,
+            name,
+            description,
+            triggerPrompt: playbookTriggerPrompt || 'Manual creation',
+            tasks: [],
+            createdAt: new Date().toISOString(),
+        };
+        setPlaybooks(prev => [...prev, newPlaybook]);
+        setIsPlaybookModalOpen(false);
     };
 
     const handleAddTodo = (e: React.FormEvent) => {
@@ -526,70 +552,79 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
     return (
         <>
             <motion.div
-                className="fixed inset-0 z-50 flex justify-end"
-                initial={{ backgroundColor: 'rgba(0,0,0,0)' }}
-                animate={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
-                exit={{ backgroundColor: 'rgba(0,0,0,0)' }}
+                className="fixed inset-0 z-50 flex justify-end bg-black/50"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 onClick={onClose}
             >
                 <motion.div
-                    className="w-full max-w-md h-full bg-white dark:bg-[#0F0F0F] border-l-2 border-[#FF6B00]/50 shadow-2xl flex flex-col"
+                    className="w-full max-w-md h-full bg-echo-surface border-l border-echo-border flex flex-col"
                     initial={{ x: '100%' }}
                     animate={{ x: '0%' }}
                     exit={{ x: '100%' }}
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 >
-                    <header className="p-6 flex justify-between items-center border-b border-black/10 dark:border-white/10 flex-shrink-0">
-                        <h2 className="text-xl font-bold text-zinc-800 dark:text-gray-100">Settings</h2>
-                        <button onClick={onClose} className="text-gray-500 hover:text-black dark:hover:text-white transition-colors">
-                            <CloseIcon className="w-6 h-6" />
+                    <header className="p-4 flex justify-between items-center border-b border-echo-border flex-shrink-0">
+                        <h2 className="text-lg font-semibold text-white">Settings</h2>
+                        <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors p-1">
+                            <CloseIcon className="w-5 h-5" />
                         </button>
                     </header>
-                    <div className="p-6 flex-grow overflow-y-auto">
-                         <Section title="Appearance" icon={<SwatchIcon className="w-5 h-5" />}>
-                            <div className="flex items-center justify-between bg-black/5 dark:bg-white/5 p-3 rounded-lg">
-                                <label htmlFor="theme-toggle" className="font-semibold text-zinc-800 dark:text-white">Theme</label>
-                                <div className="flex items-center gap-2 rounded-lg bg-zinc-200 dark:bg-zinc-800 p-1">
-                                    <button onClick={() => setTheme('light')} className={`px-3 py-1 text-sm rounded-md ${theme === 'light' ? 'bg-white dark:bg-zinc-600 shadow' : ''}`}>Light</button>
-                                    <button onClick={() => setTheme('dark')} className={`px-3 py-1 text-sm rounded-md ${theme === 'dark' ? 'bg-white dark:bg-zinc-600 shadow' : ''}`}>Dark</button>
+                    <div className="p-4 flex-grow overflow-y-auto">
+                         <Section title="Appearance" icon={<SwatchIcon className="w-4 h-4" />}>
+                            <div className="flex items-center justify-between bg-echo-surface-elevated p-3 rounded-md">
+                                <label htmlFor="theme-toggle" className="text-sm text-gray-300">Theme</label>
+                                <div className="flex items-center gap-1 rounded-md bg-echo-surface p-0.5">
+                                    <button onClick={() => setTheme('light')} className={`px-3 py-1 text-xs rounded ${theme === 'light' ? 'bg-gray-600 text-white' : 'text-gray-500'}`}>Light</button>
+                                    <button onClick={() => setTheme('dark')} className={`px-3 py-1 text-xs rounded ${theme === 'dark' ? 'bg-gray-600 text-white' : 'text-gray-500'}`}>Dark</button>
                                 </div>
                             </div>
                         </Section>
 
-                        <Section title="Memory & Persistence" icon={<DatabaseIcon className="w-5 h-5" />}>
-                            <div className="bg-black/5 dark:bg-white/5 p-4 rounded-xl border border-black/10 dark:border-white/10">
-                                <div className="flex items-center justify-between mb-4">
+                        <Section title="Memory & Persistence" icon={<DatabaseIcon className="w-4 h-4" />}>
+                            <div className="bg-echo-surface-elevated p-4 rounded-md border border-echo-border space-y-4">
+                                <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm font-bold text-zinc-800 dark:text-white">Memory Storage Mode</p>
-                                        <p className="text-[10px] text-gray-500 uppercase tracking-tighter">Current: {persistence.mode}</p>
+                                        <p className="text-sm text-gray-300">Memory Mode</p>
+                                        <p className="text-[10px] text-gray-600">Current: {persistence.mode}</p>
                                     </div>
-                                    <button 
+                                    <button
                                         onClick={handleToggleMemoryMode}
-                                        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${persistence.mode === MemoryMode.LOCAL ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600' : 'bg-cyan-500 text-white shadow-[0_0_12px_rgba(6,182,212,0.4)]'}`}
+                                        className={`px-3 py-1.5 rounded text-xs ${persistence.mode === MemoryMode.LOCAL ? 'bg-echo-surface text-gray-400' : 'bg-echo-cyan text-black'}`}
                                     >
-                                        Switch to {persistence.mode === MemoryMode.LOCAL ? 'Cloud' : 'Local'}
+                                        {persistence.mode === MemoryMode.LOCAL ? 'Cloud' : 'Local'}
                                     </button>
                                 </div>
-                                <div className="text-[11px] text-gray-500 leading-relaxed italic">
-                                    {persistence.mode === MemoryMode.LOCAL 
-                                        ? "Local mode stores your agent's memories and playbooks privately in your browser's encrypted storage." 
-                                        : "Cloud mode uses Firebase Firestore to sync your agent's brain across all your devices."}
+
+                                <div className="pt-3 border-t border-echo-border">
+                                    <p className="text-sm text-gray-300 mb-2">Obsidian / Google RAG</p>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] text-gray-500">Store ID</label>
+                                        <input
+                                            type="text"
+                                            value={persistence.fileSearchStoreId || ''}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setPersistence(prev => ({ ...prev, fileSearchStoreId: e.target.value }))}
+                                            placeholder="fileSearchStores/store_..."
+                                            className="w-full bg-echo-surface border border-echo-border rounded-md px-3 py-2 text-gray-300 text-xs"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </Section>
 
-                        <Section title="MCP Tool Expansion" icon={<PlugIcon className="w-5 h-5" />}>
-                            <div className="space-y-4">
-                                <p className="text-[11px] text-gray-500 uppercase font-bold tracking-widest">Connected Protocols</p>
+                        <Section title="MCP Tool Expansion" icon={<PlugIcon className="w-4 h-4" />}>
+                            <div className="space-y-3">
+                                <p className="text-xs text-gray-500 font-medium">Connected Protocols</p>
                                 {[
                                     { name: 'Git Protocol', url: 'http://localhost:3002', status: 'Connected' },
                                     { name: 'WebHawk (Playwright)', url: 'http://localhost:3003', status: 'Connected' },
                                     { name: 'Sequential Thinking', url: 'http://localhost:3004', status: 'Connected' }
                                 ].map((mcp, idx) => (
-                                    <div key={idx} className="flex items-center justify-between bg-black/5 dark:bg-white/5 px-4 py-3 rounded-xl border border-black/5 dark:border-white/5">
+                                    <div key={idx} className="flex items-center justify-between bg-echo-surface-elevated px-4 py-3 rounded-xl border border-echo-border">
                                         <div>
-                                            <p className="text-sm font-bold text-zinc-800 dark:text-white">{mcp.name}</p>
+                                            <p className="text-sm font-bold text-zinc-800 text-gray-100">{mcp.name}</p>
                                             <p className="text-[10px] text-gray-500 font-mono">{mcp.url}</p>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -598,7 +633,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                         </div>
                                     </div>
                                 ))}
-                                <button className="w-full py-3 border-2 border-dashed border-white/10 rounded-xl text-xs font-bold text-gray-500 hover:text-white hover:border-[#00D4FF]/50 transition-all flex items-center justify-center gap-2">
+                                <button className="w-full py-3 border-2 border-dashed border-white/10 rounded-xl text-xs font-bold text-gray-500 hover:text-white hover:border-echo-cyan/50 transition-all flex items-center justify-center gap-2">
                                     <PlusIcon className="w-4 h-4" />
                                     ADD NEW MCP ENDPOINT
                                 </button>
@@ -609,12 +644,12 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                         <Section title="System Instructions" icon={<CommandLineIcon className="w-5 h-5" />}>
                             <textarea
                                 value={systemInstruction}
-                                onChange={(e) => setSystemInstruction(e.target.value)}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSystemInstruction(e.target.value)}
                                 placeholder="Define the AI's core behavior, personality, and constraints..."
                                 rows={4}
-                                className="w-full bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50 text-sm"
+                                className="w-full bg-black/5 dark:bg-black/40 border border-echo-border rounded-lg px-3 py-2 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-600/50 dark:focus:ring-echo-cyan/50 text-sm"
                             />
-                            <button className="mt-3 w-full bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-zinc-800 dark:text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm">
+                            <button className="mt-3 w-full bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-zinc-800 text-gray-100 font-semibold py-2 px-4 rounded-lg transition-colors text-sm">
                                 Save Instructions
                             </button>
                         </Section>
@@ -624,11 +659,11 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                 <input
                                     type="text"
                                     value={newTodoText}
-                                    onChange={(e) => setNewTodoText(e.target.value)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTodoText(e.target.value)}
                                     placeholder="Add a new objective..."
-                                    className="flex-grow bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-1.5 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50 text-sm"
+                                    className="flex-grow bg-black/5 dark:bg-black/40 border border-echo-border rounded-lg px-3 py-1.5 text-zinc-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-cyan-600/50 dark:focus:ring-echo-cyan/50 text-sm"
                                 />
-                                <button type="submit" className="bg-cyan-600 hover:bg-cyan-700 text-white dark:bg-[#00D4FF] dark:hover:bg-[#00b8e6] dark:text-black rounded-lg px-3 py-1.5 flex-shrink-0">
+                                <button type="submit" className="bg-cyan-600 hover:bg-cyan-700 text-white dark:bg-echo-cyan dark:hover:bg-echo-cyan/80 dark:text-black rounded-lg px-3 py-1.5 flex-shrink-0">
                                     <PlusIcon className="w-5 h-5" />
                                 </button>
                             </form>
@@ -641,16 +676,16 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                         initial={{ opacity: 0, y: -10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
-                                        className="flex items-center justify-between bg-black/5 dark:bg-white/5 p-3 rounded-lg"
+                                        className="flex items-center justify-between bg-echo-surface-elevated p-3 rounded-lg"
                                     >
                                         <div className="flex items-center gap-3">
                                             <input 
                                                 type="checkbox" 
                                                 checked={todo.isCompleted}
                                                 onChange={() => handleToggleTodo(todo.id)}
-                                                className="w-5 h-5 rounded bg-zinc-300 dark:bg-zinc-700 border-zinc-400 dark:border-zinc-600 text-cyan-600 dark:text-[#00D4FF] focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50"
+                                                className="w-5 h-5 rounded bg-zinc-300 dark:bg-zinc-700 border-zinc-400 dark:border-zinc-600 text-cyan-600 dark:text-echo-cyan focus:ring-cyan-600/50 dark:focus:ring-echo-cyan/50"
                                             />
-                                            <p className={`text-sm text-zinc-800 dark:text-white ${todo.isCompleted ? 'line-through opacity-50' : ''}`}>
+                                            <p className={`text-sm text-zinc-800 text-gray-100 ${todo.isCompleted ? 'line-through opacity-50' : ''}`}>
                                                 {todo.text}
                                             </p>
                                         </div>
@@ -667,10 +702,10 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                         <Section title="Cognitive Core: Learned Playbooks" icon={<BrainIcon className="w-5 h-5" />}>
                             <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
                                 {Array.isArray(playbooks) && playbooks.map(playbook => (
-                                    <div key={playbook.id} className="bg-black/5 dark:bg-white/5 p-3 rounded-lg">
+                                    <div key={playbook.id} className="bg-echo-surface-elevated p-3 rounded-lg">
                                         <div className="flex items-start justify-between">
                                             <div>
-                                                <p className="font-semibold text-zinc-800 dark:text-white">{playbook.name}</p>
+                                                <p className="font-semibold text-zinc-800 text-gray-100">{playbook.name}</p>
                                                 <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{playbook.description}</p>
                                                 <p className="text-xs text-gray-500 dark:text-gray-400 italic mt-2">Learned from: "{playbook.triggerPrompt}"</p>
                                                  <p className="text-xs text-gray-500 mt-2">{new Date(playbook.createdAt).toLocaleString()}</p>
@@ -683,26 +718,34 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                 ))}
                                 {Array.isArray(playbooks) && playbooks.length === 0 && <p className="text-sm text-center text-gray-500 py-2">No playbooks learned yet.</p>}
                             </div>
-                            <button
-                                onClick={handleClearAllPlaybooks}
-                                disabled={!Array.isArray(playbooks) || playbooks.length === 0}
-                                className="mt-3 w-full bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:bg-red-900/50 dark:hover:bg-red-900/80 dark:text-red-300 font-semibold py-2 px-4 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Clear All Playbooks
-                            </button>
+                            <div className="flex gap-2 mt-3">
+                                <button
+                                    onClick={handleOpenPlaybookModal}
+                                    className="flex-1 bg-echo-cyan/10 hover:bg-echo-cyan/20 text-echo-cyan font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
+                                >
+                                    + Create Playbook
+                                </button>
+                                <button
+                                    onClick={handleClearAllPlaybooks}
+                                    disabled={!Array.isArray(playbooks) || playbooks.length === 0}
+                                    className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:bg-red-900/50 dark:hover:bg-red-900/80 dark:text-red-300 font-semibold py-2 px-4 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Clear All
+                                </button>
+                            </div>
                         </Section>
                         
                          <Section title="Agent Management" icon={<AgentsIcon className="w-5 h-5" />}>
                              <div className="space-y-2">
                                 {agents.map(agent => (
-                                    <div key={agent.id} className={`bg-black/5 dark:bg-white/5 p-3 rounded-lg transition-opacity ${!agent.enabled ? 'opacity-50' : ''}`}>
+                                    <div key={agent.id} className={`bg-echo-surface-elevated p-3 rounded-lg transition-opacity ${!agent.enabled ? 'opacity-50' : ''}`}>
                                         <div className="flex items-start justify-between">
                                             <div className="flex items-start gap-3 flex-grow overflow-hidden">
-                                                <div className="text-cyan-600 dark:text-[#00D4FF] flex-shrink-0 mt-1">
+                                                <div className="text-cyan-600 dark:text-echo-cyan flex-shrink-0 mt-1">
                                                     <AgentIcon icon={agent.icon} className="w-6 h-6" />
                                                 </div>
                                                 <div className="flex-grow overflow-hidden">
-                                                    <p className="font-semibold text-zinc-800 dark:text-white truncate">{agent.name}</p>
+                                                    <p className="font-semibold text-zinc-800 text-gray-100 truncate">{agent.name}</p>
                                                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{agent.description || 'No description'}</p>
                                                     {agent.llm_profile_id && (
                                                         <div className="text-xs text-violet-500 dark:text-violet-400 mt-1 font-mono bg-violet-500/10 dark:bg-violet-500/20 px-2 py-0.5 rounded-full w-fit">
@@ -723,7 +766,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                             <div className="flex items-center gap-3 flex-shrink-0 ml-4">
                                                 {!agent.isCore && (
                                                     <>
-                                                        <button onClick={() => handleOpenAgentModal(agent)} className="text-gray-500 dark:text-gray-400 hover:text-cyan-600 dark:hover:text-[#00D4FF]" title="Edit Agent">
+                                                        <button onClick={() => handleOpenAgentModal(agent)} className="text-gray-500 dark:text-gray-400 hover:text-cyan-600 dark:hover:text-echo-cyan" title="Edit Agent">
                                                             <PencilIcon className="w-4 h-4" />
                                                         </button>
                                                         <button onClick={() => handleDeleteAgent(agent.id)} className="text-gray-500 dark:text-gray-400 hover:text-red-500" title="Delete Agent">
@@ -733,7 +776,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                                 )}
                                                 <label className="relative inline-flex items-center cursor-pointer">
                                                     <input type="checkbox" checked={agent.enabled} onChange={() => handleToggleAgent(agent.id)} className="sr-only peer" />
-                                                    <div className="w-11 h-6 bg-gray-400 dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-cyan-600/50 dark:peer-focus:ring-[#00D4FF]/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600 dark:peer-checked:bg-[#00D4FF]"></div>
+                                                    <div className="w-11 h-6 bg-gray-400 dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-cyan-600/50 dark:peer-focus:ring-echo-cyan/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600 dark:peer-checked:bg-[var(--echo-cyan)]"></div>
                                                 </label>
                                             </div>
                                         </div>
@@ -742,7 +785,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                              </div>
                             <button 
                                 onClick={() => handleOpenAgentModal()}
-                                className="mt-3 w-full flex items-center justify-center gap-2 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-zinc-800 dark:text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
+                                className="mt-3 w-full flex items-center justify-center gap-2 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-zinc-800 text-gray-100 font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
                             >
                                 <PlusIcon className="w-5 h-5" />
                                 Create New Agent
@@ -752,12 +795,12 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                             <div className="space-y-3">
                                 {(['Planner', 'Executor', 'Reviewer', 'Synthesizer'] as AgentRole[]).map(role => (
                                     <div key={role} className="flex items-center justify-between">
-                                        <label htmlFor={`agent-pref-${role}`} className="font-semibold text-zinc-800 dark:text-white text-sm">{role} Role</label>
+                                        <label htmlFor={`agent-pref-${role}`} className="font-semibold text-zinc-800 text-gray-100 text-sm">{role} Role</label>
                                         <select
                                             id={`agent-pref-${role}`}
                                             value={agentPreferences[role] || ''}
-                                            onChange={(e) => handlePreferenceChange(role, e.target.value)}
-                                            className="bg-black/5 dark:bg-black/40 border border-black/10 dark:border-white/10 rounded-lg px-3 py-1 text-zinc-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-cyan-600/50 dark:focus:ring-[#00D4FF]/50 text-sm w-48"
+                                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handlePreferenceChange(role, e.target.value)}
+                                            className="bg-black/5 dark:bg-black/40 border border-echo-border rounded-lg px-3 py-1 text-zinc-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-cyan-600/50 dark:focus:ring-echo-cyan/50 text-sm w-48"
                                         >
                                             <option value="">Default</option>
                                             {availableAgentNames.map(name => (
@@ -772,12 +815,12 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                         <Section title="AI Core: Model Providers" icon={<CpuChipIcon className="w-5 h-5" />}>
                             <div className="space-y-2">
                                 {modelProviders.map(provider => (
-                                    <div key={provider.id} className={`bg-black/5 dark:bg-white/5 p-3 rounded-lg transition-opacity ${!provider.enabled ? 'opacity-50' : ''}`}>
+                                    <div key={provider.id} className={`bg-echo-surface-elevated p-3 rounded-lg transition-opacity ${!provider.enabled ? 'opacity-50' : ''}`}>
                                         <div className="flex items-start justify-between">
                                             <div className="flex items-center gap-3 flex-grow overflow-hidden">
                                                 <AgentIcon icon={provider.provider} className="w-6 h-6 flex-shrink-0 text-gray-500" />
                                                 <div className="flex-grow overflow-hidden">
-                                                    <p className="font-semibold text-zinc-800 dark:text-white truncate" title={provider.config.model_name}>{provider.config.model_name}</p>
+                                                    <p className="font-semibold text-zinc-800 text-gray-100 truncate" title={provider.config.model_name}>{provider.config.model_name}</p>
                                                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{provider.description}</p>
                                                     <div className="flex items-center gap-2 mt-2">
                                                         <span className={`px-2 py-0.5 rounded-full text-xs font-mono ${provider.type === 'CLOUD' ? 'bg-sky-500/20 text-sky-400' : 'bg-green-500/20 text-green-400'}`}>{provider.type}</span>
@@ -786,7 +829,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3 flex-shrink-0 ml-2">
-                                                <button onClick={() => handleOpenModelModal(provider)} className="text-gray-500 dark:text-gray-400 hover:text-cyan-600 dark:hover:text-[#00D4FF]" title="Edit Provider">
+                                                <button onClick={() => handleOpenModelModal(provider)} className="text-gray-500 dark:text-gray-400 hover:text-cyan-600 dark:hover:text-echo-cyan" title="Edit Provider">
                                                     <PencilIcon className="w-4 h-4" />
                                                 </button>
                                                 <button onClick={() => handleDeleteModel(provider.id)} className="text-gray-500 dark:text-gray-400 hover:text-red-500" title="Delete Provider">
@@ -794,7 +837,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                                 </button>
                                                 <label className="relative inline-flex items-center cursor-pointer">
                                                     <input type="checkbox" checked={provider.enabled} onChange={() => handleToggleModel(provider.id)} className="sr-only peer" />
-                                                    <div className="w-11 h-6 bg-gray-400 dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-cyan-600/50 dark:peer-focus:ring-[#00D4FF]/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600 dark:peer-checked:bg-[#00D4FF]"></div>
+                                                    <div className="w-11 h-6 bg-gray-400 dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-cyan-600/50 dark:peer-focus:ring-echo-cyan/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600 dark:peer-checked:bg-[var(--echo-cyan)]"></div>
                                                 </label>
                                             </div>
                                         </div>
@@ -803,7 +846,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                             </div>
                             <button 
                                 onClick={() => handleOpenModelModal()}
-                                className="mt-3 w-full flex items-center justify-center gap-2 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-zinc-800 dark:text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
+                                className="mt-3 w-full flex items-center justify-center gap-2 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-zinc-800 text-gray-100 font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
                             >
                                 <PlusIcon className="w-5 h-5" />
                                 Add New Provider
@@ -819,10 +862,10 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                             >
                                 <div className="space-y-2">
                                     {serviceList.map(service => (
-                                        <div key={service.id} className="flex items-center justify-between bg-black/5 dark:bg-white/5 p-3 rounded-lg">
+                                        <div key={service.id} className="flex items-center justify-between bg-echo-surface-elevated p-3 rounded-lg">
                                             <div className="flex items-center gap-3">
                                                 <div className="text-gray-700 dark:text-gray-300">{service.icon}</div>
-                                                <p className="font-semibold text-zinc-800 dark:text-white">{service.name}</p>
+                                                <p className="font-semibold text-zinc-800 text-gray-100">{service.name}</p>
                                             </div>
                                             <div className="flex items-center gap-4">
                                                 <span className={`text-xs font-bold ${service.status === 'Connected' ? 'text-green-500 dark:text-green-400' : 'text-gray-500'}`}>
@@ -830,7 +873,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                                 </span>
                                                 <button 
                                                     onClick={() => setSelectedService(service)}
-                                                    className="text-sm font-semibold text-cyan-600 dark:text-[#00D4FF] hover:text-black dark:hover:text-white transition-colors"
+                                                    className="text-sm font-semibold text-cyan-600 dark:text-echo-cyan hover:text-black dark:hover:text-white transition-colors"
                                                 >
                                                     Manage
                                                 </button>
@@ -844,12 +887,12 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                         <Section title="Advanced Workflows" icon={<GithubIcon className="w-5 h-5" />}>
                             <div className="space-y-3">
                                 {advancedWorkflows.map(workflow => (
-                                    <div key={workflow.id} className="bg-black/5 dark:bg-white/5 p-4 rounded-lg">
-                                        <p className="font-bold text-zinc-800 dark:text-white">{workflow.name}</p>
+                                    <div key={workflow.id} className="bg-echo-surface-elevated p-4 rounded-lg">
+                                        <p className="font-bold text-zinc-800 text-gray-100">{workflow.name}</p>
                                         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{workflow.description}</p>
                                         <button 
                                             onClick={() => handleCopyPrompt(workflow.id, workflow.prompt)}
-                                            className={`mt-3 w-full text-sm font-semibold py-2 px-4 rounded-lg transition-colors ${copiedPromptId === workflow.id ? 'bg-green-500/20 text-green-400' : 'bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-zinc-800 dark:text-white'}`}
+                                            className={`mt-3 w-full text-sm font-semibold py-2 px-4 rounded-lg transition-colors ${copiedPromptId === workflow.id ? 'bg-green-500/20 text-green-400' : 'bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-zinc-800 text-gray-100'}`}
                                         >
                                             {copiedPromptId === workflow.id ? 'Copied to Clipboard!' : 'Copy Example Prompt'}
                                         </button>
@@ -896,6 +939,18 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                         isOpen={isModelModalOpen}
                         onClose={() => setIsModelModalOpen(false)}
                         onSave={handleSaveModel}
+                    />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {isPlaybookModalOpen && (
+                    <PlaybookCreationModal
+                        isOpen={isPlaybookModalOpen}
+                        onClose={() => setIsPlaybookModalOpen(false)}
+                        onSave={handleSavePlaybook}
+                        suggestedName={playbookSuggestedName}
+                        triggerPrompt={playbookTriggerPrompt}
                     />
                 )}
             </AnimatePresence>

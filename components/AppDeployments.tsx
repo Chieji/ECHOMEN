@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AppDeployment, LogEntry } from '../types';
 import { PlusIcon } from './icons/PlusIcon';
 import { SpinnerIcon } from './icons/SpinnerIcon';
@@ -71,11 +71,11 @@ export const AppDeployments: React.FC = () => {
         <>
             <div className="space-y-2">
                 {apps.map(app => (
-                    <div key={app.id} className="flex items-center justify-between bg-white/5 p-3 rounded-lg">
+                    <div key={app.id} className="flex items-center justify-between echo-surface p-3 rounded-lg border border-echo-border">
                         <div>
                             <p className="font-semibold text-white">{app.name}</p>
                             {app.status === 'ready' && app.url ? (
-                                <a href={app.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-cyan-400 hover:underline">
+                                <a href={app.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-echo-cyan hover:underline">
                                     <LinkIcon className="w-3 h-3" />
                                     <span>{app.url}</span>
                                 </a>
@@ -100,9 +100,9 @@ export const AppDeployments: React.FC = () => {
                     <p className="text-sm text-center text-gray-500 py-4">No apps deployed yet.</p>
                 )}
             </div>
-            <button 
+            <button
                 onClick={handleCreateApp}
-                className="mt-3 w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
+                className="mt-3 w-full flex items-center justify-center gap-2 echo-surface-elevated hover:bg-white/10 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm border border-echo-border"
             >
                 <PlusIcon className="w-5 h-5" />
                 Create New App

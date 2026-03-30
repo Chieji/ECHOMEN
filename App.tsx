@@ -1,19 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Header } from './components/Header';
 import { MasterConfigurationPanel } from './components/MasterConfigurationPanel';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Task, LogEntry, AgentMode, AgentStatus, Artifact, CustomAgent, Service, Playbook, TodoItem, SessionStats } from './types';
-import { createInitialPlan, getChatResponse, suggestPlaybookName, clarifyAndCorrectPrompt, analyzeChatMessageForAction } from './services/planner';
-import { useMemory } from './hooks/useMemory';
+import { AnimatePresence } from 'framer-motion';
+import { Task, LogEntry, AgentStatus, Artifact, CustomAgent, Service, SessionStats, Message, AgentMode } from './types';
+import { createInitialPlan, clarifyAndCorrectPrompt } from './services/planner';
 import { ExecutionStatusBar } from './components/ExecutionStatusBar';
 import { AgentExecutor } from './services/agentExecutor';
 import { CommandDeck } from './components/CommandDeck';
 import { CommandPalette } from './components/CommandPalette';
-import { PlaybookCreationModal } from './components/PlaybookCreationModal';
+import { ChatInterface } from './components/ChatInterface';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { CodeExecutionApproval } from './components/CodeExecutionApproval';
+import { SandboxTierIndicator, type SandboxTier } from './components/SandboxTierIndicator';
+import { setTier3ApprovalHandler } from './lib/codeSandbox';
 
 /**
  * ECHO Main Application Entry
- * 
+ *
  * Orchestrates the multi-agent system, handles global state,
  * and manages the elite workstation UI.
  */
@@ -21,10 +24,10 @@ const App: React.FC = () => {
     // UI State
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isPaletteOpen, setIsPaletteOpen] = useState(false);
-    const [isPlaybookModalOpen, setIsPlaybookModalOpen] = useState(false);
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
     const [agentStatus, setAgentStatus] = useState<AgentStatus>(AgentStatus.IDLE);
-    
+    const [agentMode, setAgentMode] = useState<AgentMode>(AgentMode.ACTION);
+
     // Data State
     const [tasks, setTasks] = useState<Task[]>([]);
     const [liveLogs, setLiveLogs] = useState<LogEntry[]>([]);
@@ -32,8 +35,15 @@ const App: React.FC = () => {
     const [agents, setAgents] = useState<CustomAgent[]>([]);
     const [sessionStats, setSessionStats] = useState<SessionStats>({ totalTokensUsed: 0 });
     const [services, setServices] = useState<Service[]>([]);
-    const [currentPrompt, setCurrentPrompt] = useState<string>('');
-    const [playbookCandidate, setPlaybookCandidate] = useState<{ suggestedName: string; tasks: Task[]; triggerPrompt: string } | null>(null);
+    const [messages, setMessages] = useState<Message[]>([]);
+
+    // Sandbox State
+    const [sandboxTier, setSandboxTier] = useState<SandboxTier>('pure');
+    const [pendingCodeApproval, setPendingCodeApproval] = useState<{
+        code: string;
+        operations: string[];
+        resolve: (approved: boolean) => void;
+    } | null>(null);
 
     const executorRef = useRef<AgentExecutor | null>(null);
 
@@ -48,21 +58,56 @@ const App: React.FC = () => {
         }
     }, []);
 
+    // Set up sandbox approval handler
+    useEffect(() => {
+        setTier3ApprovalHandler(async (code: string, operations: string[]) => {
+            return new Promise((resolve) => {
+                setPendingCodeApproval({
+                    code,
+                    operations,
+                    resolve: (approved: boolean) => resolve(approved)
+                });
+                // Update tier indicator
+                setSandboxTier('full');
+            });
+        });
+    }, []);
+
     useEffect(() => {
         document.documentElement.classList.toggle('dark', theme === 'dark');
     }, [theme]);
 
-    // Global Hotkeys (Ctrl+P / Cmd+K)
+    // Global Hotkeys
     useEffect(() => {
         const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            // Ctrl+P / Cmd+K: Command Palette
             if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'k')) {
                 e.preventDefault();
                 setIsPaletteOpen(prev => !prev);
             }
+
+            // Ctrl+1-2: View Switching (simplified for existing modes)
+            if (e.ctrlKey && e.key === '1') {
+                e.preventDefault();
+                setAgentMode(AgentMode.ACTION);
+            }
+            if (e.ctrlKey && e.key === '2') {
+                e.preventDefault();
+                setAgentMode(AgentMode.CHAT);
+            }
+
+            // Ctrl+C: Termination (Stop execution)
+            if (e.ctrlKey && e.key === 'c') {
+                if (agentStatus === AgentStatus.RUNNING) {
+                    e.preventDefault();
+                    executorRef.current?.cancelTask('');
+                    addLog({ status: 'WARN', message: 'Termination signal received (Ctrl+C). Execution halted.' });
+                }
+            }
         };
         window.addEventListener('keydown', handleGlobalKeyDown);
         return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-    }, []);
+    }, [agentStatus]);
 
     // --- Handlers ---
 
@@ -74,7 +119,7 @@ const App: React.FC = () => {
         const newLog = { ...log, timestamp: new Date().toISOString() };
         setLiveLogs(prev => [...prev.slice(-100), newLog]);
     };
-    
+
     const handleCreateArtifact = (artifactData: Omit<Artifact, 'id' | 'createdAt'>) => {
         const newArtifact: Artifact = {
             ...artifactData,
@@ -88,12 +133,76 @@ const App: React.FC = () => {
         setAgents(prev => [...prev, newAgent]);
     };
 
+    // --- Chat Mode Handlers ---
+
+    const handleSuggestionClick = (prompt: string) => {
+        const userMessage: Message = {
+            id: `msg-${Date.now()}`,
+            text: prompt,
+            sender: 'user',
+            timestamp: new Date().toISOString(),
+            type: 'chat',
+        };
+        setMessages(prev => [...prev, userMessage]);
+
+        // Simulate agent response (in a real app, this would call the LLM)
+        setTimeout(() => {
+            const agentMessage: Message = {
+                id: `msg-${Date.now()}-agent`,
+                text: `I understand you want to: "${prompt}". This is a chat mode response. In a full implementation, this would connect to the AI provider.`,
+                sender: 'agent',
+                timestamp: new Date().toISOString(),
+                type: 'chat',
+            };
+            setMessages(prev => [...prev, agentMessage]);
+        }, 500);
+    };
+
+    const handleEditMessage = (messageId: string, newText: string) => {
+        setMessages(prev => prev.map(msg =>
+            msg.id === messageId ? { ...msg, text: newText } : msg
+        ));
+    };
+
+    const handleAcceptAction = (messageId: string, prompt: string) => {
+        // Remove the action prompt and switch to action mode with the prompt
+        setMessages(prev => prev.filter(msg => msg.id !== messageId));
+        setAgentMode(AgentMode.ACTION);
+        handleSendCommand(prompt);
+    };
+
+    const handleDeclineAction = (messageId: string) => {
+        setMessages(prev => prev.filter(msg => msg.id !== messageId));
+    };
+
     const handleSendCommand = async (prompt: string) => {
         if (!prompt.trim()) return;
-        
+
+        // In chat mode, just add the message and get a response
+        if (agentMode === AgentMode.CHAT) {
+            const userMessage: Message = {
+                id: `msg-${Date.now()}-user`,
+                text: prompt,
+                sender: 'user',
+                timestamp: new Date().toISOString(),
+                type: 'chat',
+            };
+            setMessages(prev => [...prev, userMessage]);
+
+            // Simulate agent response (in real app, this would call the LLM)
+            const agentMessage: Message = {
+                id: `msg-${Date.now()}-agent`,
+                text: `Processing your request: "${prompt}"... This is a chat mode response. The actual AI response would be generated here.`,
+                sender: 'agent',
+                timestamp: new Date().toISOString(),
+                type: 'chat',
+            };
+            setMessages(prev => [...prev, agentMessage]);
+            return;
+        }
+
         setTasks([]);
         setLiveLogs([]);
-        setCurrentPrompt(prompt);
         setAgentStatus(AgentStatus.RUNNING);
         addLog({ status: 'INFO', message: `[User] Received directive: "${prompt}"` });
 
@@ -127,7 +236,7 @@ const App: React.FC = () => {
             });
 
             executorRef.current = executor;
-            await executor.run(initialTasks, correctedPrompt, artifacts);
+            await executor.run(initialTasks, correctedPrompt, artifacts, (status) => setAgentStatus(status));
         } catch (error) {
             console.error(error);
             setAgentStatus(AgentStatus.ERROR);
@@ -135,42 +244,82 @@ const App: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-[#09090B] text-gray-100 selection:bg-[#00D4FF]/30 overflow-hidden">
-            <Header 
-                onSettingsClick={() => setIsSettingsOpen(true)} 
+        <div className="flex flex-col h-screen bg-echo-void text-gray-100 overflow-hidden">
+            <ErrorBoundary>
+                <Header
+                onSettingsClick={() => setIsSettingsOpen(true)}
+                onHistoryClick={() => {}}
+                onArtifactsClick={() => {}}
+                onModeChange={setAgentMode}
+                currentMode={agentMode}
+                tasks={tasks}
                 agentStatus={agentStatus}
                 sessionStats={sessionStats}
             />
 
             <main className="flex-grow overflow-hidden relative">
-                <CommandDeck 
-                    tasks={tasks}
-                    logs={liveLogs}
-                    artifacts={artifacts}
-                    services={services}
-                    sessionStats={sessionStats}
-                    onCommand={handleSendCommand}
-                    onCancelTask={(id) => executorRef.current?.cancelTask(id)}
-                />
+                {agentMode === AgentMode.CHAT ? (
+                    <ChatInterface
+                        messages={messages}
+                        onSuggestionClick={handleSuggestionClick}
+                        onEditMessage={handleEditMessage}
+                        onAcceptAction={handleAcceptAction}
+                        onDeclineAction={handleDeclineAction}
+                    />
+                ) : (
+                    <CommandDeck
+                        tasks={tasks}
+                        logs={liveLogs}
+                        artifacts={artifacts}
+                        services={services}
+                        sessionStats={sessionStats}
+                        messages={messages}
+                        onCommand={handleSendCommand}
+                        onCancelTask={(id) => executorRef.current?.cancelTask(id)}
+                        onClearChat={() => setMessages([])}
+                    />
+                )}
             </main>
 
-            <ExecutionStatusBar status={agentStatus} tokenCount={sessionStats.totalTokensUsed} />
+            <ExecutionStatusBar tasks={tasks} agentStatus={agentStatus} onStopExecution={() => executorRef.current?.cancelTask('')} />
 
-            <CommandPalette 
-                isOpen={isPaletteOpen} 
-                onClose={() => setIsPaletteOpen(false)} 
+            <CommandPalette
+                isOpen={isPaletteOpen}
+                onClose={() => setIsPaletteOpen(false)}
                 onAction={(id) => id === 'open-settings' && setIsSettingsOpen(true)}
             />
 
-            <AnimatePresence>
-                {isSettingsOpen && (
-                    <MasterConfigurationPanel 
-                        onClose={() => setIsSettingsOpen(false)}
-                        theme={theme}
-                        setTheme={setTheme}
+                <AnimatePresence>
+                    {isSettingsOpen && (
+                        <MasterConfigurationPanel
+                            onClose={() => setIsSettingsOpen(false)}
+                            theme={theme}
+                            setTheme={setTheme}
+                        />
+                    )}
+                </AnimatePresence>
+
+                {/* Sandbox Tier Indicator - Top Right */}
+                <div className="fixed top-20 right-4 z-40">
+                    <SandboxTierIndicator tier={sandboxTier} />
+                </div>
+
+                {/* Code Execution Approval Modal */}
+                {pendingCodeApproval && (
+                    <CodeExecutionApproval
+                        code={pendingCodeApproval.code}
+                        detectedOperations={pendingCodeApproval.operations}
+                        onApprove={() => {
+                            pendingCodeApproval.resolve(true);
+                            setPendingCodeApproval(null);
+                        }}
+                        onReject={() => {
+                            pendingCodeApproval.resolve(false);
+                            setPendingCodeApproval(null);
+                        }}
                     />
                 )}
-            </AnimatePresence>
+            </ErrorBoundary>
         </div>
     );
 };

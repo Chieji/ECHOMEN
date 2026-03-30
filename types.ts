@@ -13,10 +13,89 @@ export enum MemoryMode {
 export interface PersistenceSettings {
     mode: MemoryMode;
     isCloudConnected: boolean;
+    fileSearchStoreId?: string;
 }
 
 export interface SessionStats {
     totalTokensUsed: number;
+}
+
+// --- Tool Contract Types ---
+
+export interface ToolArguments {
+    readFile: { path: string };
+    writeFile: { path: string; content: string };
+    listFiles: { path: string };
+    executeShellCommand: { command: string };
+    browser_navigate: { url: string };
+    browser_screenshot: {};
+    browser_click: { selector: string };
+    browser_type: { selector: string; text: string; pressEnter?: boolean };
+    browser_get_ax_tree: {};
+    browser_close_session: {};
+    executeCode: { language: 'javascript'; code: string };
+    github_create_repo: { name: string; description: string; is_private: boolean };
+    github_get_pr_details: { pr_url: string };
+    github_post_pr_comment: { pr_url: string; comment: string };
+    github_merge_pr: { pr_url: string; method: 'merge' | 'squash' | 'rebase' };
+    github_create_file_in_repo: { repo_name: string; path: string; content: string; commit_message: string };
+    memory_save: { key: string; value: string; tags: string[] };
+    memory_retrieve: { key?: string; tags?: string[] };
+    memory_delete: { key: string };
+    data_analyze: { input_file_path: string; analysis_script: string };
+    data_visualize: { input_file_path: string; visualization_script: string; output_image_path: string };
+    create_and_delegate_task_to_new_agent: { agent_name: string; agent_instructions: string; task_description: string; agent_icon?: string };
+    createArtifact: { title: string; type: 'code' | 'markdown' | 'live-preview'; content: string };
+    askUser: { question: string };
+}
+
+export interface ToolResult<T = unknown> {
+    status: 'success' | 'error';
+    result?: T;
+    error?: string;
+}
+
+// --- AI Bridge Types ---
+
+export interface ToolCallDefinition {
+    name: string;
+    description: string;
+    parameters: {
+        type: string;
+        properties: Record<string, { type: string; description: string }>;
+        required: string[];
+    };
+}
+
+export interface ToolCallResponse {
+    name: string;
+    arguments: Record<string, unknown>;
+}
+
+export interface AIUsage {
+    totalTokens: number;
+    inputTokens?: number;
+    outputTokens?: number;
+}
+
+export interface AIResponseData {
+    text: string;
+    toolCalls?: ToolCallResponse[];
+    usage: AIUsage;
+    provider: string;
+    model: string;
+}
+
+// --- Import Meta Types ---
+
+export interface ImportMetaEnv {
+    VITE_CLOUD_ENGINE_URL?: string;
+    VITE_BACKEND_URL?: string;
+    [key: string]: string | undefined;
+}
+
+export interface ImportMeta {
+    env: ImportMetaEnv;
 }
 
 export interface Message {
@@ -28,7 +107,7 @@ export interface Message {
     suggestedPrompt?: string;
 }
 
-export type TaskStatus = 'Done' | 'Executing' | 'Queued' | 'Error' | 'Pending Review' | 'Revising' | 'Delegating' | 'Cancelled';
+export type TaskStatus = 'Done' | 'Executing' | 'Queued' | 'Error' | 'Pending Review' | 'Revising' | 'Delegating' | 'Cancelled' | 'AwaitingApproval';
 
 export interface LogEntry {
     timestamp: string;
@@ -74,6 +153,7 @@ export interface Task {
     toolCall?: ToolCall;
     subSteps?: SubStep[];
     delegatorTaskId?: string;
+    pendingAction?: ToolCall; // For AwaitingApproval status
 }
 
 export interface ChildAgentTemplate {
@@ -131,6 +211,11 @@ export interface TodoItem {
 
 export enum AgentStatus {
     IDLE = 'IDLE',
+    PERCEIVE = 'PERCEIVE',
+    REASON = 'REASON',
+    ACT = 'ACT',
+    OBSERVE = 'OBSERVE',
+    REFLECT = 'REFLECT',
     RUNNING = 'RUNNING',
     PAUSED = 'PAUSED',
     FINISHED = 'FINISHED',

@@ -1,134 +1,336 @@
-
 <div align="center">
-
-<img src="https://files.manuscdn.com/user_upload_by_module/session_file/310419663029321070/NVvajgOUYjfhzUHU.png" alt="ECHO - Autonomous AI Agent Logo" width="600"/>
-
-**Your thoughts. My echo. Infinite possibility.**
-
-</div>
-
-<div align="center">
-
-[![React](https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![Gemini API](https://img.shields.io/badge/Gemini_API-Google-4285F4?style=for-the-badge&logo=google-gemini)](https://ai.google.dev/)
-[![Framer Motion](https://img.shields.io/badge/Framer_Motion-11-black?style=for-the-badge&logo=framer)](https://www.framer.com/motion/)
-[![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite)](https://vitejs.dev/)
-
+  <img src="./public/echo-logo.svg" alt="ECHO Logo" width="400" />
+  
+  <h3>Your Multi-Ecosystem AI Workstation</h3>
+  
+  <p>
+    <a href="https://github.com/chieji/ECHOMEN"><img src="https://img.shields.io/badge/status-production--ready-green" alt="Status" /></a>
+    <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-%3E%3D18-blue" alt="Node.js" /></a>
+    <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.0-blue" alt="TypeScript" /></a>
+    <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-61dafb" alt="React" /></a>
+    <a href="https://github.com/chieji/ECHOMEN/blob/main/LICENSE"><img src="https://img.shields.io/github/license/chieji/ECHOMEN" alt="License" /></a>
+  </p>
+  
+  <p>
+    <a href="https://github.com/chieji/echoctl"><strong>CLI Repo »</strong></a> •
+    <a href="#features">Features</a> •
+    <a href="#installation">Installation</a> •
+    <a href="#usage">Usage</a> •
+    <a href="#security">Security</a>
+  </p>
 </div>
 
 ---
 
-**ECHO** is not just another AI chatbot. It's a browser-based autonomous agent designed to transform natural language commands into executed reality. It plans, acts, and delivers results with ruthless efficiency, orchestrating a team of specialized AI agents to achieve complex goals.
+## 🚀 What is ECHOMEN?
 
-## Core Philosophy
+**ECHOMEN** is a full-stack AI orchestration platform that brings together 14+ AI providers into a single, secure workstation. Think of it as your AI command center — where you can manage multiple AI models, execute complex tasks, and build extensions that work across ecosystems.
 
-The principle behind ECHO is simple: **Action over conversation.** While chat is a tool, the ultimate goal is execution. ECHO is designed with a persistent, stateful architecture that allows it to:
+### Why ECHOMEN Exists
 
--   **Deconstruct** high-level objectives into actionable task pipelines.
--   **Orchestrate** a multi-agent system, assigning the right agent to the right task.
--   **Execute** tasks using a comprehensive suite of tools, including file manipulation, web interaction, **structured long-term memory**, and **data analysis**.
--   **Learn** from successful executions to create reusable "Playbooks," improving its efficiency over time.
+Most AI tools lock you into a single provider. ECHOMEN breaks those walls:
+- ✅ **Multi-Provider**: Switch between Gemini, Claude, GPT-4, Qwen, and 10+ others instantly
+- ✅ **Extension System**: Import skills from Claude, Gemini, Qwen, or build your own
+- ✅ **Safe Execution**: 3-tier sandbox prevents AI from running dangerous code
+- ✅ **Zero-Config APIs**: Free web search, Wikipedia, weather — no API keys needed
+- ✅ **MCP Support**: Compatible with Model Context Protocol servers
 
-<!-- TODO: Replace this with a high-quality GIF of ECHO in action! -->
-<img src="https://via.placeholder.com/800x400.png?text=ECHO+In+Action+(Replace+this+image)" alt="ECHO Demo" />
+---
 
-## ✨ Key Features
+## ✨ Features
 
--   🤖 **Multi-Agent Orchestration:** A central `Core` brain delegates tasks to specialized agents like `Planner`, `Executor`, `Reviewer`, and `Synthesizer`.
--   🧠 **ReAct Logic Loop:** The `God Mode` executor uses a Reason-Act loop to make decisions, use tools, and process observations, enabling it to solve complex, multi-step problems.
--   ⚡ **Task Pipeline UI:** Visualize the entire execution plan in real-time, from queuing to completion, including dependencies between tasks.
--   📦 **Artifact Generation:** Final outputs like code blocks, documents, and reports are cleanly separated from execution logs and presented as downloadable artifacts.
--   📝 **Agent To-Do List:** Provide ECHO with high-priority objectives. The Planner uses this list as context to generate more relevant and aligned execution plans.
--   📚 **Playbook Synthesis:** ECHO learns from its successes. Completed task plans are summarized into "Playbooks" that can be instantly recalled for similar future requests.
--   ⚙️ **Master Configuration Panel (MCP):** A centralized hub to manage system instructions, connect services (e.g., GitHub, OpenAI), and create custom agents.
--   ↔️ **Dual Modes:** Switch seamlessly between `Action Mode` for task execution and `Chat Mode` for quick questions and brainstorming.
--   🖥️ **Live Terminal:** Monitor the agent's every thought, action, and observation in a familiar terminal interface.
+### 🧠 AI Orchestration
+- **14+ AI Providers**: Google Gemini, OpenAI, Anthropic, Alibaba Qwen, DeepSeek, Kimi, Groq, Ollama, OpenRouter, Together AI, ModelScope, Mistral, Hugging Face, GitHub Models
+- **Smart Routing**: Automatically selects the best AI for each task
+- **Failover Chain**: If one provider fails, automatically tries the next
+- **Token Tracking**: Monitor usage across all providers
 
-## 🚀 Getting Started
+### 🔌 Extension Registry
+- **Unified System**: MCP servers, plugins, and skills in one place
+- **Cross-Ecosystem**: Import Claude skills, Gemini extensions, Qwen plugins
+- **Persistence**: Extensions saved and synced across sessions
+- **Auth Management**: Secure API key storage for each extension
 
-ECHO has a **browser-first UI** with an **optional backend execution engine** for privileged tools (file system, shell, web, GitHub, memory). To get started locally:
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/Chieji/ECHOMEN.git
-    cd ECHOMEN
-    ```
-
-2.  **Set up configuration:**
-    -   Copy `.env.example` to `.env`.
-    -   Add your Google AI Studio API key:
-        ```
-        API_KEY=your_google_api_key_here
-        ```
-
-3.  **Install dependencies and run:**
-    ```bash
-    npm install
-    npm run dev
-    ```
-
-4.  Open your browser at the Vite address (typically `http://localhost:5173`).
-
-### Backend execution engine (optional but required for non-browser tools)
-
-Some tools in `services/tools.ts` call a backend endpoint (`http://localhost:3001/execute-tool`) for secure execution. If no backend is running, those tools will fail gracefully and surface an error in the terminal UI.
-
-Current status:
--   ✅ Browser-native path: planning, orchestration, local UI, `executeCode`.
--   ⚠️ Backend-dependent path: sandbox file I/O, shell execution, web browsing, GitHub operations, and Supabase memory calls.
-
-If you are only evaluating UI/orchestration behavior, frontend-only mode is enough. If you need real tool execution, run or implement a compatible backend engine first.
-
-
-## 🔒 Runtime Safety Limits
-
-To prevent runaway autonomous execution, the executor enforces hard limits:
-
--   `MAX_SUB_STEPS = 10` per ReAct task loop.
--   `MAX_PARALLEL_TASKS = 4` concurrent tasks.
--   `MAX_LLM_CALLS_PER_RUN = 40` model calls per run.
-
-When a limit is hit, execution emits a normalized `ExecutionError` and the failure is surfaced in the Live Terminal log.
-
-## 📐 Tool Contract Source of Truth
-
-Tool contracts are defined and consumed with this precedence:
-
-1.  **Source of truth:** `services/tools.ts` (`toolDeclarations` + `availableTools`).
-2.  **Documentation:** `tool_specifications.md` (high-level behavior and intent).
-3.  **Shared runtime types:** `types.ts` (cross-module data contracts).
-4.  **App metadata only:** `metadata.json` (project/app descriptor, not tool contracts).
-
-A validation script is included to detect drift between tool declarations and implementations:
-
-```bash
-npm run check:tools
+### 🛡️ 3-Tier Code Sandbox
+```
+Tier 1 (Pure)  → Web Worker      → Auto-execute ✅
+Tier 2 (DOM)   → iframe sandbox  → Auto-execute ✅
+Tier 3 (Full)  → Backend         → User approval required 🛑
 ```
 
-## 🛠️ Technology Stack
+### 🌐 Zero-Config Web APIs
+No API keys needed for these tools:
+- **Web Search**: DuckDuckGo integration
+- **Wikipedia**: Article search and summaries
+- **Reddit**: Posts and comments from any subreddit
+- **Hacker News**: Top and new stories
+- **Weather**: Current conditions via Open-Meteo
+- **Archive.org**: Check if URLs are archived
+- **Web Scraping**: Extract content from any website
 
--   **Frontend:** React 19, TypeScript, TailwindCSS
--   **AI/LLM:** Google Gemini API (`gemini-2.5-flash`)
--   **Animation:** Framer Motion
--   **State Management:** React Hooks & Context
--   **Build Tool:** Vite (via browser module loading)
+### 🔒 Security Hardening
+- ✅ API keys never touch the frontend
+- ✅ CSRF protection with fail-loud design
+- ✅ Path traversal prevention
+- ✅ SSRF protection for web tools
+- ✅ Command allowlisting for shell execution
+- ✅ XSS prevention in markdown rendering
+- ✅ Zod validation for all LLM responses
 
-## 🗺️ Roadmap
+---
 
-ECHO is an evolving experiment. The next frontiers include:
+## 📦 Installation
 
--   [ ] **Real Tool Integration:** Bridge the gap from a simulated file system to real-world APIs by building secure backend proxies for services like GitHub, and an optional local server for file system access.
--   [ ] **WebHawk Agent:** Fully implement the `WebHawk` agent for autonomous web browsing, data extraction, and research.
--   [x] **Long-Term Memory:** Integrated a structured memory system using Supabase (backend implementation pending) to give ECHO persistent, searchable memory across sessions.
--   [ ] **Collaborative Agents:** Allow multiple ECHO instances to communicate and delegate tasks to each other.
+### Option 1: Docker (Recommended for Production)
+
+**Prerequisites:**
+- Docker 20+
+- Docker Compose 2+
+
+**Quick Start:**
+
+```bash
+# Clone the repository
+git clone https://github.com/chieji/ECHOMEN.git
+cd ECHOMEN
+
+# Copy environment file
+cp .env.example .env
+
+# Edit .env with your API keys
+nano .env  # or use your favorite editor
+
+# Start all services
+docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Stop services
+docker compose down
+```
+
+**Access:** Navigate to `http://localhost:3000`
+
+**Volumes:**
+- `echomen-logs` - Application logs
+- `echomen-browser-cache` - Playwright browser cache
+
+---
+
+### Option 2: Manual Installation
+
+- **Node.js** 18+ ([Download](https://nodejs.org/))
+- **pnpm** or **npm**
+- **Git**
+
+### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/chieji/ECHOMEN.git
+cd ECHOMEN
+```
+
+### Step 2: Install Dependencies
+
+```bash
+# Using pnpm (recommended)
+pnpm install
+
+# Or using npm
+npm install
+```
+
+### Step 3: Configure Environment
+
+```bash
+# Copy the example environment file
+cp .env.example .env
+
+# Edit .env with your API keys
+# At minimum, configure one AI provider:
+GEMINI_API_KEY=your_gemini_key_here
+```
+
+### Step 4: Build the Application
+
+```bash
+# Build frontend and backend
+npm run build
+```
+
+### Step 5: Start the Server
+
+```bash
+# Development mode (with hot reload)
+npm run dev
+
+# Production mode
+npm start
+```
+
+### Step 6: Open in Browser
+
+Navigate to `http://localhost:3000`
+
+---
+
+## 🎯 Usage
+
+### Quick Start
+
+1. **Configure AI Providers**: Go to Settings → AI Providers and add your API keys
+2. **Start a Task**: Type a goal like "Build a React component for user profiles"
+3. **Watch Execution**: ECHOMEN breaks it into tasks and executes them
+4. **Review Results**: Check the Artifacts panel for outputs
+
+### Agent Modes
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| **Chat** | Conversational AI | Questions, explanations, debugging help |
+| **Action** | Task execution | Building, coding, file operations |
+| **Plan** | Read-only exploration | Research, codebase analysis |
+
+### Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+P` / `Cmd+K` | Command Palette |
+| `Ctrl+1` | Switch to Action Mode |
+| `Ctrl+2` | Switch to Chat Mode |
+| `Ctrl+C` | Stop execution |
+
+---
+
+## 🔗 Related Repos
+
+### ECHOMEN Ecosystem
+
+- **[Echoctl CLI](https://github.com/chieji/echoctl)** — Command-line interface for ECHOMEN
+  - Terminal-based AI agent
+  - Extension management
+  - Model switching
+  - MCP server integration
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                 ECHOMEN Platform                     │
+├─────────────────────────────────────────────────────┤
+│  Frontend (React 19)    │  Backend (Express/tRPC)  │
+│  - Agent UI             │  - AI Proxy              │
+│  - Task Pipeline        │  - Tool Execution        │
+│  - Artifact Viewer      │  - Database (MySQL)      │
+├─────────────────────────────────────────────────────┤
+│              Extension Registry                     │
+│  MCP Servers │ Plugins │ Skills (Claude/Gemini)   │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🛡️ Security
+
+ECHOMEN implements enterprise-grade security:
+
+### Frontend Security
+- API keys stored in encrypted sessionStorage (AES-GCM)
+- No secrets in client bundle
+- CSRF tokens for all state-changing requests
+- Content Security Policy headers
+
+### Backend Security
+- Command allowlisting (no arbitrary shell execution)
+- Path traversal prevention
+- SSRF protection for web requests
+- Rate limiting on all endpoints
+
+### Code Execution
+- **Tier 1**: Pure math in Web Workers (safe)
+- **Tier 2**: DOM manipulation in sandboxed iframes (isolated)
+- **Tier 3**: Full execution requires user approval (audited)
+
+For detailed security information, see [SECURITY_BOUNDARIES.md](./SECURITY_BOUNDARIES.md) and [SECURITY_AUDIT_REPORT.md](./SECURITY_AUDIT_REPORT.md).
+
+---
+
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [AGENTS.md](./AGENTS.md) | AI agent system architecture |
+| [TOOLS.md](./TOOLS.md) | Available tools and capabilities |
+| [SOUL.md](./SOUL.md) | Design philosophy and principles |
+| [SECURITY_BOUNDARIES.md](./SECURITY_BOUNDARIES.md) | Security model overview |
+| [SECURITY_AUDIT_REPORT.md](./SECURITY_AUDIT_REPORT.md) | Security audit findings |
+
+---
 
 ## 🤝 Contributing
 
-Contributions are welcome! If you have an idea for a new feature, agent, or tool, please open an issue to discuss it.
+We welcome contributions! See our [Contributing Guide](./CONTRIBUTING.md) for:
+- Development setup
+- Code style guidelines
+- Pull request process
+- Issue reporting
+
+---
+
+## 📊 Tech Stack
+
+### Frontend
+- **React 19** with TypeScript
+- **Vite** for build tooling
+- **Framer Motion** for animations
+- **Tailwind CSS** for styling
+
+### Backend
+- **Express.js** with tRPC
+- **Drizzle ORM** for database
+- **MySQL** for persistence
+- **Supabase Auth** for authentication
+
+### AI Integration
+- Custom multi-provider bridge
+- MCP client for external tools
+- Zod for schema validation
+
+---
+
+## 📈 Roadmap
+
+### Q2 2026
+- [ ] Mobile app (React Native)
+- [ ] Real-time collaboration
+- [ ] Advanced analytics dashboard
+- [ ] More MCP server integrations
+
+### Q3 2026
+- [ ] Plugin marketplace
+- [ ] Team workspaces
+- [ ] Advanced RBAC
+- [ ] Self-hosting improvements
+
+---
+
+## 🙏 Acknowledgments
+
+Built with inspiration from:
+- [Model Context Protocol](https://modelcontextprotocol.io/)
+- [Claude Code](https://claude.ai/code)
+- [Continue.dev](https://continue.dev/)
+
+---
+
+## 📄 License
+
+MIT License — see [LICENSE](./LICENSE) for details.
 
 ---
 
 <div align="center">
-    Built with precision and a bias for action.
+  <p>Built with ❤️ by <a href="https://github.com/chieji">chieji</a></p>
+  <p>⭐ Star this repo if you find it useful!</p>
 </div>

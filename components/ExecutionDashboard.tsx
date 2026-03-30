@@ -1,13 +1,14 @@
 import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloseIcon } from './icons/CloseIcon';
-import { Task, LogEntry, TaskStatus } from '../types';
+import { Task, LogEntry } from '../types';
 import { PlannerIcon } from './icons/PlannerIcon';
 import { ExecutorIcon } from './icons/ExecutorIcon';
 import { ReviewerIcon } from './icons/ReviewerIcon';
 import { SynthesizerIcon } from './icons/SynthesizerIcon';
 import { AgentOrchestration } from './AgentOrchestration';
 import { LiveTerminal } from './LiveTerminal';
+import { TerminalDisplay } from './TerminalDisplay';
 import { BrainIcon } from './icons/BrainIcon';
 import { PlugIcon } from './icons/PlugIcon';
 import { WebHawkIcon } from './icons/WebHawkIcon';
@@ -15,14 +16,15 @@ import { StopIcon } from './icons/StopIcon';
 
 
 const statusConfig = {
-    Done: { color: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 dark:bg-green-500/20 dark:border-green-500/30', glow: '' },
-    Executing: { color: 'bg-cyan-500/20 text-cyan-500 dark:text-cyan-400 border-cyan-500/70 dark:border-cyan-400/70', glow: 'shadow-[0_0_12px_rgba(56,189,248,0.5),0_0_24px_rgba(56,189,248,0.3)] animate-pulse' },
-    Queued: { color: 'bg-zinc-500/10 text-zinc-600 dark:text-gray-400 border-zinc-500/20 dark:bg-gray-500/20 dark:border-gray-500/30', glow: '' },
-    Error: { color: 'bg-red-500/20 text-red-500 dark:text-red-400 border-red-500/70 dark:border-red-400/70', glow: 'shadow-[0_0_15px_rgba(239,68,68,0.7),0_0_30px_rgba(239,68,68,0.4)]' },
-    'Pending Review': { color: 'bg-yellow-500/20 text-yellow-500 dark:text-yellow-400 border-yellow-500/70 dark:border-yellow-400/70', glow: 'shadow-[0_0_12px_rgba(234,179,8,0.6),0_0_24px_rgba(234,179,8,0.3)]' },
-    Revising: { color: 'bg-orange-500/20 text-orange-500 dark:text-orange-400 border-orange-500/70 dark:border-orange-400/70', glow: 'shadow-[0_0_12px_rgba(249,115,22,0.6),0_0_24px_rgba(249,115,22,0.3)]' },
-    Delegating: { color: 'bg-purple-500/20 text-purple-500 dark:text-purple-400 border-purple-500/70 dark:border-purple-400/70', glow: 'shadow-[0_0_12px_rgba(168,85,247,0.5),0_0_24px_rgba(168,85,247,0.3)]' },
-    Cancelled: { color: 'bg-zinc-500/10 text-zinc-600 dark:text-gray-500 border-zinc-500/20 dark:bg-gray-600/20 dark:border-gray-600/30', glow: '' },
+    Done: { color: 'bg-green-500/10 text-green-400 border-green-500/20' },
+    Executing: { color: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' },
+    Queued: { color: 'bg-gray-500/10 text-gray-400 border-gray-500/20' },
+    Error: { color: 'bg-red-500/10 text-red-400 border-red-500/20' },
+    'Pending Review': { color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
+    Revising: { color: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
+    Delegating: { color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
+    Cancelled: { color: 'bg-gray-500/10 text-gray-500 border-gray-500/20' },
+    AwaitingApproval: { color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
 };
 
 
@@ -33,35 +35,27 @@ const roleIcons = {
     Synthesizer: <SynthesizerIcon className="w-4 h-4" />,
 };
 
-const TaskItem = React.forwardRef(({ task, onClick, highlight, isDimmed }: {
+const TaskItem = React.forwardRef<HTMLDivElement, {
     task: Task;
     onClick: () => void;
     highlight: 'selected' | 'dependency' | 'dependent' | 'none';
     isDimmed: boolean;
-}, ref: React.Ref<HTMLDivElement>) => {
+}>(({ task, onClick, highlight, isDimmed }, ref): React.ReactElement => {
     const config = statusConfig[task.status];
-    const prevStatusRef = useRef<TaskStatus | undefined>(undefined);
-    const [animateComplete, setAnimateComplete] = useState(false);
 
-    useEffect(() => {
-        if (prevStatusRef.current && prevStatusRef.current !== 'Done' && task.status === 'Done') {
-            setAnimateComplete(true);
-            const timer = setTimeout(() => setAnimateComplete(false), 600);
-            return () => clearTimeout(timer);
-        }
-        prevStatusRef.current = task.status;
-    }, [task.status]);
-    
     let highlightClass = '';
     switch(highlight) {
         case 'selected':
-            highlightClass = 'border-2 border-[#FF6B00] shadow-[0_0_20px_rgba(255,107,0,0.6)]';
+            highlightClass = 'border-echo-cyan';
             break;
         case 'dependency':
-            highlightClass = 'border-2 border-cyan-400 dark:border-[#00D4FF] shadow-[0_0_20px_rgba(0,212,255,0.6)]';
+            highlightClass = 'border-cyan-400';
             break;
         case 'dependent':
-            highlightClass = 'border-2 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.6)]';
+            highlightClass = 'border-purple-400';
+            break;
+        default:
+            highlightClass = '';
             break;
     }
 
@@ -70,28 +64,18 @@ const TaskItem = React.forwardRef(({ task, onClick, highlight, isDimmed }: {
             ref={ref}
             layoutId={`task-container-${task.id}`}
             onClick={onClick}
-            className={`bg-white dark:bg-black/40 backdrop-blur-sm border relative overflow-hidden ${config.color} ${highlightClass} rounded-lg p-3 flex-shrink-0 w-64 cursor-pointer transition-all duration-300 ${isDimmed ? 'opacity-40' : 'opacity-100'} ${highlight === 'none' ? config.glow : ''}`}
-            whileHover={{ scale: isDimmed ? 1 : 1.03, y: isDimmed ? 0 : -4, opacity: 1 }}
-            animate={animateComplete ? { scale: [1, 1.05, 1] } : {}}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            className={`bg-echo-surface border ${config.color} ${highlightClass} rounded p-2.5 flex-shrink-0 w-56 cursor-pointer transition-opacity ${isDimmed ? 'opacity-40' : 'opacity-100'}`}
+            whileHover={{ scale: isDimmed ? 1 : 1.02 }}
         >
-            {task.status === 'Executing' && (
-                <motion.div 
-                    initial={{ x: '-100%' }}
-                    animate={{ x: '100%' }}
-                    transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-                    className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#00D4FF] to-transparent z-10"
-                />
-            )}
             <div className="flex justify-between items-start">
-                <p className="font-bold text-zinc-800 dark:text-white truncate pr-2">{task.title}</p>
-                <span className="text-xs font-mono text-gray-500 dark:text-gray-400">{task.estimatedTime}</span>
+                <p className="text-sm text-white truncate pr-2">{task.title}</p>
+                <span className="text-xs text-gray-500 font-mono">{task.estimatedTime}</span>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+            <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-1">
                 {roleIcons[task.agent.role]}
-                <span>{task.agent.role}: <span className="font-semibold">{task.agent.name}</span></span>
+                <span>{task.agent.role}: <span className="text-gray-400">{task.agent.name}</span></span>
             </p>
-            <div className={`mt-2 text-xs font-mono px-2 py-1 rounded w-fit ${config.color}`} >{task.status}</div>
+            <div className={`mt-2 text-[10px] px-2 py-0.5 rounded w-fit`} >{task.status}</div>
         </motion.div>
     );
 });
@@ -108,10 +92,10 @@ interface Line {
 }
 
 const logStatusColors = {
-    SUCCESS: 'text-green-500 dark:text-green-400',
-    ERROR: 'text-red-500 dark:text-red-400',
-    WARN: 'text-yellow-500 dark:text-yellow-400',
-    INFO: 'text-cyan-600 dark:text-[#00D4FF]',
+    SUCCESS: 'text-green-400',
+    ERROR: 'text-red-400',
+    WARN: 'text-yellow-400',
+    INFO: 'text-cyan-400',
 }
 
 interface ExecutionDashboardProps {
@@ -131,17 +115,17 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
 
     useEffect(() => {
         if (selectedTaskId) {
-            const selected = tasks.find(t => t.id === selectedTaskId);
-            if (!selected) {
+            const selectedTask = tasks.find(t => t.id === selectedTaskId);
+            if (!selectedTask) {
                 setRelatedTaskIds({ dependencies: [], dependents: [] });
                 return;
             }
 
-            const deps = selected.dependencies;
+            const deps = selectedTask.dependencies;
             const dependents = tasks
                 .filter(t => t.dependencies.includes(selectedTaskId))
                 .map(t => t.id);
-                
+
             setRelatedTaskIds({ dependencies: deps, dependents: dependents });
         } else {
             setRelatedTaskIds({ dependencies: [], dependents: [] });
@@ -150,14 +134,14 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
 
     useLayoutEffect(() => {
         const calculateLines = () => {
-            if (!pipelineRef.current) return;
+            if (!pipelineRef.current || !taskRefs.current) return;
             const newLines: Line[] = [];
             const pipelineRect = pipelineRef.current.getBoundingClientRect();
 
             tasks.forEach(task => {
                 task.dependencies.forEach(depId => {
-                    const sourceNode = taskRefs.current[depId];
-                    const targetNode = taskRefs.current[task.id];
+                    const sourceNode = taskRefs.current![depId];
+                    const targetNode = taskRefs.current![task.id];
 
                     if (sourceNode && targetNode) {
                         const sourceRect = sourceNode.getBoundingClientRect();
@@ -191,36 +175,22 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
     return (
         <div className="w-full max-w-7xl mx-auto px-4 flex-grow flex flex-col gap-8">
             <div>
-                <h2 className="text-lg font-bold text-cyan-600 dark:text-[#00D4FF] tracking-widest uppercase">Agent Brain</h2>
+                <h2 className="text-sm font-medium text-gray-400">Agent Brain</h2>
                 <AgentOrchestration tasks={tasks} />
             </div>
             <div>
-                 <h2 className="text-lg font-bold text-cyan-600 dark:text-[#00D4FF] tracking-widest uppercase">Task Pipeline</h2>
+                 <h2 className="text-sm font-medium text-gray-400 mb-2">Task Pipeline</h2>
                  <div ref={pipelineRef} className="relative mt-2 flex gap-4 overflow-x-auto pb-4 p-2 -m-2">
                     <svg className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{ zIndex: -1 }}>
-                        <defs>
-                            <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="rgba(255,107,0,0.7)" />
-                                <stop offset="100%" stopColor="rgba(0,212,255,0.7)" />
-                            </linearGradient>
-                             <linearGradient id="line-gradient-dep" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#00D4FF" />
-                                <stop offset="100%" stopColor="#FF6B00" />
-                            </linearGradient>
-                            <linearGradient id="line-gradient-child" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#FF6B00" />
-                                <stop offset="100%" stopColor="#a855f7" />
-                            </linearGradient>
-                        </defs>
                         <AnimatePresence>
                             {lines.map((line) => {
                                 const isDependency = selectedTaskId === line.targetId && relatedTaskIds.dependencies.includes(line.sourceId);
                                 const isDependent = selectedTaskId === line.sourceId && relatedTaskIds.dependents.includes(line.targetId);
                                 const isDimmed = selectedTaskId && !isDependency && !isDependent;
-                                
-                                let strokeUrl = "url(#line-gradient)";
-                                if(isDependency) strokeUrl = "url(#line-gradient-dep)";
-                                if(isDependent) strokeUrl = "url(#line-gradient-child)";
+
+                                let strokeColor = "var(--color-accent)";
+                                if(isDependency) strokeColor = "var(--echo-cyan)";
+                                if(isDependent) strokeColor = "var(--color-primary)";
 
                                 return (
                                 <motion.path
@@ -229,7 +199,7 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                                     animate={{ pathLength: 1, opacity: isDimmed ? 0.3 : 1 }}
                                     transition={{ duration: 0.8, delay: 0.2 }}
                                     d={`M ${line.x1} ${line.y1} C ${line.x1 + 40} ${line.y1}, ${line.x2 - 40} ${line.y2}, ${line.x2} ${line.y2}`}
-                                    stroke={strokeUrl}
+                                    stroke={strokeColor}
                                     strokeWidth={isDependency || isDependent ? "3" : "2"}
                                     fill="none"
                                     strokeLinecap="round"
@@ -249,7 +219,7 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                         return (
                             <TaskItem
                                 key={task.id}
-                                ref={el => { taskRefs.current[task.id] = el }}
+                                ref={(el: HTMLDivElement | null) => { if (taskRefs.current) taskRefs.current[task.id] = el }}
                                 task={task}
                                 highlight={highlight}
                                 isDimmed={isDimmed}
@@ -265,14 +235,14 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                      <motion.div
                         layoutId={`task-container-${selectedTask.id}`}
                         className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                        initial={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
-                        animate={{ backdropFilter: 'blur(16px)', backgroundColor: 'rgba(0,0,0,0.6)' }}
-                        exit={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
+                        initial={{ backgroundColor: 'rgba(0,0,0,0)' }}
+                        animate={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+                        exit={{ backgroundColor: 'rgba(0,0,0,0)' }}
                         onClick={() => setSelectedTaskId(null)}
                      >
-                        <motion.div 
-                            className="w-full max-w-2xl bg-white dark:bg-[#0F0F0F] border-2 border-[#FF6B00] rounded-xl shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
-                            onClick={(e) => e.stopPropagation()}
+                        <motion.div
+                            className="w-full max-w-2xl bg-echo-surface border border-echo-border rounded-lg flex flex-col max-h-[90vh]"
+                            onClick={(e: { stopPropagation: () => void }) => e.stopPropagation()}
                         >
                             <div className="flex-shrink-0 p-6 pb-4 border-b border-black/10 dark:border-white/10">
                                 <div className="flex justify-between items-center mb-4">
@@ -314,13 +284,13 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                                         <div className="space-y-4">
                                             {selectedTask.subSteps.map((step, index) => (
                                                 <div key={index} className="border-l-2 border-dashed border-gray-300 dark:border-gray-700 pl-4">
-                                                    <div className="flex items-center gap-2 text-[#8B5CF6]">
+                                                    <div className="flex items-center gap-2 text-[var(--color-primary)]">
                                                         <BrainIcon className="w-5 h-5" />
                                                         <h5 className="font-bold">Thought</h5>
                                                     </div>
                                                     <p className="text-sm italic text-gray-600 dark:text-gray-300 pl-7 pb-2">"{step.thought}"</p>
                                                     
-                                                    <div className="flex items-center gap-2 text-cyan-600 dark:text-[#00D4FF]">
+                                                    <div className="flex items-center gap-2 text-cyan-600 dark:text-echo-cyan">
                                                         <PlugIcon className="w-5 h-5" />
                                                         <h5 className="font-bold">Action</h5>
                                                     </div>
@@ -378,10 +348,16 @@ export const ExecutionDashboard: React.FC<ExecutionDashboardProps> = ({ tasks, l
                     </motion.div>
                 )}
             </AnimatePresence>
-             
-             <div>
-                <h2 className="text-lg font-bold text-cyan-600 dark:text-[#00D4FF] tracking-widest uppercase mb-2">Live Terminal</h2>
-                <LiveTerminal logs={liveLogs} />
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div>
+                    <h2 className="text-sm font-medium text-gray-300 mb-2">Live Terminal</h2>
+                    <LiveTerminal logs={liveLogs} />
+                </div>
+                <div>
+                    <h2 className="text-sm font-medium text-gray-300 mb-2">Reference</h2>
+                    <TerminalDisplay />
+                </div>
             </div>
         </div>
     );

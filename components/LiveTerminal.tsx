@@ -23,25 +23,25 @@ export const LiveTerminal: React.FC<LiveTerminalProps> = ({ logs }) => {
     }, [logs]);
 
     return (
-        <div className="bg-[#121212] border border-white/10 rounded-lg h-80 flex flex-col font-mono text-sm shadow-2xl shadow-black/50">
-            <header className="flex-shrink-0 flex items-center justify-between bg-zinc-800/50 border-b border-white/10 px-4 py-2">
+        <div className="bg-echo-surface border border-echo-border rounded-lg h-80 flex flex-col font-mono text-sm">
+            <header className="flex-shrink-0 flex items-center justify-between bg-echo-surface-elevated border-b border-echo-border px-3 py-2">
                 <div className="flex items-center gap-2">
                     <WindowControlsIcon />
-                    <h3 className="text-gray-300 font-semibold">/bin/bash - ECHO Execution Environment</h3>
+                    <h3 className="text-gray-300 text-xs">Terminal</h3>
                 </div>
             </header>
-            <div ref={terminalRef} className="flex-grow p-4 overflow-y-auto">
+            <div ref={terminalRef} className="flex-grow p-3 overflow-y-auto text-xs">
                 {logs.map((log, index) => (
-                    <div key={index} className="flex items-start gap-2">
-                        <span className="text-gray-500 flex-shrink-0">{new Date(log.timestamp).toLocaleTimeString()}</span>
-                        <p className="text-gray-200">
+                    <div key={index} className="flex items-start gap-2 mb-1">
+                        <span className="text-gray-600 flex-shrink-0">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                        <p className="text-gray-300">
                             <span className={`${logStatusColors[log.status]}`}>[{log.status}]</span> {log.message}
                         </p>
                     </div>
                 ))}
-                <div className="flex items-center gap-2 text-gray-200">
-                    <span>&gt;</span>
-                    <span className="inline-block w-2 h-4 bg-green-400 animate-pulse"></span>
+                <div className="flex items-center gap-2 text-gray-500 mt-1">
+                    <span>$</span>
+                    <span className="inline-block w-2 h-3 bg-gray-500 rounded-sm"></span>
                 </div>
             </div>
         </div>

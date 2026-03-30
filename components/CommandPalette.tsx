@@ -74,12 +74,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
             {isOpen && (
                 <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4">
                     {/* Backdrop */}
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/60"
                     />
 
                     {/* Palette */}
@@ -94,7 +94,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
                             <input 
                                 autoFocus
                                 value={query}
-                                onChange={(e) => setQuery(e.target.value)}
+                                onChange={(e: any) => setQuery(e.target.value)}
                                 placeholder="Execute a command or search brain..."
                                 className="w-full bg-transparent text-white placeholder-gray-600 focus:outline-none text-lg"
                             />
@@ -107,10 +107,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
                                     key={action.id}
                                     onMouseEnter={() => setSelectedIndex(idx)}
                                     onClick={() => { action.handler(); onClose(); }}
-                                    className={`flex items-center justify-between px-4 py-3 rounded-xl cursor-pointer transition-all ${idx === selectedIndex ? 'bg-[#00D4FF]/10 border border-[#00D4FF]/20' : 'border border-transparent hover:bg-white/5'}`}
+                                    className={`flex items-center justify-between px-4 py-3 rounded-xl cursor-pointer transition-all ${idx === selectedIndex ? 'bg-echo-cyan/10 border border-echo-cyan/20' : 'border border-transparent hover:bg-white/5'}`}
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className={`p-2 rounded-lg ${idx === selectedIndex ? 'text-[#00D4FF]' : 'text-gray-500'}`}>
+                                        <div className={`p-2 rounded-lg ${idx === selectedIndex ? 'text-echo-cyan' : 'text-gray-500'}`}>
                                             {action.icon}
                                         </div>
                                         <div>

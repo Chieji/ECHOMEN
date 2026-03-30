@@ -8,17 +8,41 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
-        allowedHosts: ['3000-i94v33d7l5k93u0lnb9h2-0cac99db.manus-asia.computer'],
+        allowedHosts: ['.ws', '.local', 'localhost', '127.0.0.1'],
       },
       plugins: [react()],
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-      },
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
-        }
+          '@shared': path.resolve(__dirname, './shared'),
+        },
+        mainFields: ['module', 'main'],
+      },
+      build: {
+        // Enable manual chunk splitting for better caching
+        splitManualChunks: true,
+        rollupOptions: {
+          external: [
+            '@tiptap/react', '@tiptap/starter-kit', '@tiptap/extension-mention',
+            'flexsearch', 'jszip',
+            '@google/genai', 'openai', '@anthropic-ai/sdk', 'cohere-ai',
+            'firebase/app', 'firebase/firestore'
+          ],
+          output: {
+            manualChunks: {
+              // React core - stable, rarely changes
+              'react-vendor': ['react', 'react-dom'],
+              // Framer Motion - animation library
+              'motion-vendor': ['framer-motion'],
+            },
+            // Content-hash based naming for long-term caching
+            entryFileNames: 'assets/[name]-[hash].js',
+            chunkFileNames: 'assets/[name]-[hash].js',
+            assetFileNames: 'assets/[name]-[hash].[ext]',
+          }
+        },
+        // Optimize chunk size warnings (default is 500KB)
+        chunkSizeWarningLimit: 1000,
       }
     };
 });

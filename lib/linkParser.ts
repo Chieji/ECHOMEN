@@ -21,11 +21,9 @@ export const extractLinks = (sourceId: string, content: string): Connection[] =>
 
     while ((match = linkRegex.exec(content)) !== null) {
         const targetTitle = match[1];
-        // Get a bit of context around the link (approx 50 chars before and after)
         const start = Math.max(0, match.index - 50);
         const end = Math.min(content.length, match.index + match[0].length + 50);
-        const context = content.substring(start, end).replace(/
-/g, ' ');
+        const context = content.substring(start, end).replace(/\n/g, ' ');
 
         connections.push({
             sourceId,

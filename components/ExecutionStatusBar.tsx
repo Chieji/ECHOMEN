@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
 import { Task, AgentStatus } from '../types';
 import { StopIcon } from './icons/StopIcon';
 import { SpinnerIcon } from './icons/SpinnerIcon';
@@ -14,62 +13,92 @@ interface ExecutionStatusBarProps {
 
 export const ExecutionStatusBar: React.FC<ExecutionStatusBarProps> = ({ tasks, agentStatus, onStopExecution }) => {
     const { statusText, Icon } = useMemo(() => {
+        const executingTask = tasks.find(t => t.status === 'Executing');
+        const taskTitle = executingTask ? ` - ${executingTask.title}` : '';
+
         switch (agentStatus) {
-            case AgentStatus.RUNNING:
-                const executingTask = tasks.find(t => t.status === 'Executing');
+            case AgentStatus.PERCEIVE:
                 return {
-                    statusText: executingTask ? `Executing: ${executingTask.title}` : 'Agent is running...',
-                    Icon: <SpinnerIcon className="w-5 h-5 animate-spin text-cyan-600 dark:text-[#00D4FF]" />,
+                    statusText: `PERCEIVE: Gathering context${taskTitle}`,
+                    Icon: <SpinnerIcon className="w-4 h-4 animate-spin text-blue-400" />,
+                };
+            case AgentStatus.REASON:
+                return {
+                    statusText: `REASON: Planning next steps${taskTitle}`,
+                    Icon: <BrainIcon className="w-4 h-4 text-purple-400 animate-pulse" />,
+                };
+            case AgentStatus.ACT:
+                return {
+                    statusText: `ACT: Executing tool${taskTitle}`,
+                    Icon: <SpinnerIcon className="w-4 h-4 animate-spin text-echo-cyan" />,
+                };
+            case AgentStatus.OBSERVE:
+                return {
+                    statusText: `OBSERVE: Recording outcome${taskTitle}`,
+                    Icon: <SpinnerIcon className="w-4 h-4 animate-spin text-green-400" />,
+                };
+            case AgentStatus.REFLECT:
+                return {
+                    statusText: `REFLECT: Learning from result${taskTitle}`,
+                    Icon: <BrainIcon className="w-4 h-4 text-yellow-400" />,
+                };
+            case AgentStatus.RUNNING:
+                return {
+                    statusText: executingTask ? `Running: ${executingTask.title}` : 'Agent is running...',
+                    Icon: <SpinnerIcon className="w-4 h-4 animate-spin text-echo-cyan" />,
                 };
             case AgentStatus.SYNTHESIZING:
                 return {
-                    statusText: 'Synthesizing Playbook...',
-                    Icon: <BrainIcon className="w-5 h-5 text-[#8B5CF6]" />,
+                    statusText: 'Synthesizing...',
+                    Icon: <BrainIcon className="w-4 h-4 text-purple-400" />,
                 }
             case AgentStatus.FINISHED:
                  return {
-                    statusText: 'All tasks completed successfully.',
-                    Icon: <ClipboardCheckIcon className="w-5 h-5 text-green-500" />,
+                    statusText: 'Completed',
+                    Icon: <ClipboardCheckIcon className="w-4 h-4 text-green-500" />,
                 };
             case AgentStatus.ERROR:
                  return {
-                    statusText: 'Execution Halted: An error occurred.',
-                    Icon: <StopIcon className="w-5 h-5 text-red-500" />,
+                    statusText: 'Error occurred',
+                    Icon: <StopIcon className="w-4 h-4 text-red-500" />,
                 };
             case AgentStatus.IDLE:
             default:
                  return {
-                    statusText: 'ECHO is idle. Awaiting command.',
+                    statusText: 'Ready',
                     Icon: null,
                 };
         }
     }, [tasks, agentStatus]);
 
-    const isExecuting = agentStatus === AgentStatus.RUNNING;
+    const isExecuting = [
+        AgentStatus.RUNNING,
+        AgentStatus.PERCEIVE,
+        AgentStatus.REASON,
+        AgentStatus.ACT,
+        AgentStatus.OBSERVE,
+        AgentStatus.REFLECT
+    ].includes(agentStatus);
+
+    if (agentStatus === AgentStatus.IDLE) {
+        return null;
+    }
 
     return (
-        <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed bottom-28 md:bottom-24 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-3xl z-30"
-        >
-            <div className="bg-white/80 dark:bg-[#121212]/80 backdrop-blur-xl border border-cyan-600/50 dark:border-[#00D4FF]/50 rounded-lg shadow-2xl shadow-black/50 p-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    {Icon}
-                    <p className="text-sm font-semibold text-zinc-800 dark:text-gray-200">{statusText}</p>
-                </div>
-                {isExecuting && (
-                    <button 
-                        onClick={onStopExecution}
-                        className="flex items-center gap-2 bg-red-500/80 hover:bg-red-500 text-white font-bold text-sm py-1.5 px-3 rounded-md transition-colors"
-                    >
-                        <StopIcon className="w-4 h-4" />
-                        <span>Stop</span>
-                    </button>
-                )}
+        <div className="flex-none h-10 bg-echo-surface border-t border-echo-border px-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+                {Icon}
+                <p className="text-sm text-gray-300">{statusText}</p>
             </div>
-        </motion.div>
+            {isExecuting && (
+                <button
+                    onClick={onStopExecution}
+                    className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white text-xs px-3 py-1 rounded transition-colors"
+                >
+                    <StopIcon className="w-3 h-3" />
+                    <span>Stop</span>
+                </button>
+            )}
+        </div>
     );
 };

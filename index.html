@@ -6,39 +6,130 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ECHO - Autonomous AI Agent</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Elite Typography: Geist & Geist Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet">
+    
     <style>
-      body {
-        font-family: 'Inter', sans-serif;
+      :root {
+        /* Clean, professional palette - inspired by Claude/VS Code */
+        --echo-cyan: #00D4FF;
+        --echo-void: #0D0D0D;
+        --echo-surface: #1A1A1A;
+        --echo-surface-elevated: #242424;
+        --echo-border: #333333;
+        --echo-text: #E5E5E5;
+        --echo-text-muted: #888888;
+
+        /* Semantic colors - more muted */
+        --echo-accent: #00D4FF;
+        --echo-success: #22C55E;
+        --echo-warning: #F59E0B;
+        --echo-error: #EF4444;
       }
+
+      body {
+        font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+        background-color: var(--echo-void);
+        color: var(--echo-text);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
       .font-mono {
-        font-family: 'JetBrains Mono', monospace;
+        font-family: 'Geist Mono', 'SF Mono', Consolas, monospace;
+      }
+
+      /* Clean scrollbar - subtle, not neon */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #404040;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #555555;
+      }
+
+      /* Subtle glass - not glassmorphism overload */
+      .echo-surface {
+        background: var(--echo-surface);
+        border: 1px solid var(--echo-border);
+      }
+
+      .echo-surface-elevated {
+        background: var(--echo-surface-elevated);
+        border: 1px solid var(--echo-border);
+      }
+
+      /* Clean focus states */
+      *:focus-visible {
+        outline: 2px solid var(--echo-accent);
+        outline-offset: 2px;
+      }
+
+      /* Remove heavy animations - keep subtle only */
+      @keyframes pulse-subtle {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "framer-motion": "https://aistudiocdn.com/framer-motion@^11.3.1",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^0.14.0"
-  }
-}
-</script>
-<script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {},
-      },
-      plugins: [],
+
+    <script type="importmap">
+    {
+      "imports": {
+        "react/": "https://aistudiocdn.com/react@^19.2.0/",
+        "react": "https://aistudiocdn.com/react@^19.2.0",
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+        "framer-motion": "https://aistudiocdn.com/framer-motion@^11.3.1",
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^0.14.0"
+      }
     }
-  </script>
-</head>
-  <body class="bg-zinc-100 dark:bg-[#0A0A0A]">
+    </script>
+
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              echo: {
+                cyan: '#00D4FF',
+                void: '#0D0D0D',
+                surface: '#1A1A1A',
+                elevated: '#242424',
+                border: '#333333',
+                zinc: '#18181B',
+                orange: '#FF6B00',
+              }
+            },
+            boxShadow: {
+              // Clean, subtle shadows - no neon
+              'subtle': '0 1px 2px rgba(0, 0, 0, 0.3)',
+              'elevated': '0 4px 12px rgba(0, 0, 0, 0.4)',
+            },
+            fontSize: {
+              'xs': ['12px', { lineHeight: '1.5' }],
+              'sm': ['14px', { lineHeight: '1.5' }],
+              'base': ['15px', { lineHeight: '1.6' }],
+              'lg': ['18px', { lineHeight: '1.6' }],
+              'xl': ['20px', { lineHeight: '1.4' }],
+            }
+          },
+        },
+        plugins: [],
+      }
+    </script>
+  </head>
+  <body class="dark:bg-echo-void overflow-hidden">
     <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>
