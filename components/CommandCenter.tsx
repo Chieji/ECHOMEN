@@ -74,6 +74,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
             <div className={`bg-echo-surface-elevated border border-echo-border rounded-lg overflow-hidden`}>
                 <div className="p-3 flex items-end gap-2">
                     <textarea
+                        aria-label="Command input"
                         value={value}
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
@@ -84,10 +85,10 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                     <button
                         onClick={handleSend}
                         disabled={!value.trim()}
-                        className={`${buttonColor} text-black rounded-md w-8 h-8 flex-shrink-0 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
-                        aria-label="Send"
+                        className={`${buttonColor} text-black rounded-md w-11 h-11 min-w-[44px] min-h-[44px] flex-shrink-0 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary`}
+                        aria-label="Send message"
                     >
-                        <SendIcon className="w-4 h-4" />
+                        <SendIcon className="w-5 h-5" />
                     </button>
                 </div>
                 {setAgentMode && onClearChat && (

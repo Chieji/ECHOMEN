@@ -3,13 +3,12 @@
  * Tests complete workflows from user input to result
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 /**
  * Mock API Server for testing
  */
 class MockECHOMENServer {
-  private tools: Map<string, any> = new Map();
   private sessions: Map<string, any> = new Map();
   private approvals: Map<string, any> = new Map();
 
@@ -243,18 +242,18 @@ describe('ECHOMEN End-to-End Workflows', () => {
       const sessionId = await server.createSession('user-123');
 
       // GitHub plugin
-      const githubResult = await server.executeTool(sessionId, 'github:listRepos', {
+      const _githubResult = await server.executeTool(sessionId, 'github:listRepos', {
         owner: 'Chieji',
       });
 
       // Slack plugin
-      const slackResult = await server.executeTool(sessionId, 'slack:sendMessage', {
+      const _slackResult = await server.executeTool(sessionId, 'slack:sendMessage', {
         channel: '#notifications',
         text: 'Found repositories',
       });
 
       // HTTP plugin
-      const httpResult = await server.executeTool(sessionId, 'http:get', {
+      const _httpResult = await server.executeTool(sessionId, 'http:get', {
         url: 'https://api.example.com/data',
       });
 

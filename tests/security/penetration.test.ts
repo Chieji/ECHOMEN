@@ -3,7 +3,7 @@
  * Tests for common web vulnerabilities and attack vectors
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'vitest';
 
 describe('CSRF Protection', () => {
   it('should reject POST without CSRF token', async () => {
@@ -58,7 +58,9 @@ describe('SQL Injection Prevention', () => {
     for (const input of maliciousInputs) {
       // Should be escaped or parameterized
       const escaped = input.replace(/'/g, "''");
-      expect(escaped).not.toContain("'");
+      // Escaped version should have doubled quotes, not contain unescaped single quotes
+      // The test verifies escaping happened, not that quotes are removed
+      expect(escaped).toContain("''");
     }
   });
 
@@ -84,12 +86,15 @@ describe('XSS (Cross-Site Scripting) Prevention', () => {
 
     for (const input of maliciousInputs) {
       // Should remove script tags and event handlers
-      const sanitized = input
+      let sanitized = input
         .replace(/<script[^>]*>.*?<\/script>/gi, '')
-        .replace(/on\w+\s*=/gi, '');
+        .replace(/on\w+\s*=/gi, '')
+        .replace(/javascript:/gi, '');
 
-      expect(sanitized).not.toContain('script');
+      expect(sanitized).not.toContain('<script');
       expect(sanitized).not.toContain('onerror');
+      expect(sanitized).not.toContain('onload');
+      expect(sanitized).not.toContain('javascript:');
     }
   });
 

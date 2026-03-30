@@ -89,10 +89,19 @@ export const CommandDeck = ({
                 {/* Main Area: Integrated Workspace */}
                 <div className="flex-grow flex flex-col min-h-0 bg-echo-surface border border-echo-border rounded-lg overflow-hidden">
                     {/* Navigation Bar */}
-                    <nav className="flex items-center justify-between px-4 py-2 border-b border-echo-border bg-echo-surface-elevated">
+                    <nav className="flex items-center justify-between px-4 py-2 border-b border-echo-border bg-echo-surface-elevated" role="tablist" aria-label="Main navigation">
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={() => setActiveTab('board')}
+                                role="tab"
+                                aria-selected={activeTab === 'board'}
+                                tabIndex={activeTab === 'board' ? 0 : -1}
+                                onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        setActiveTab('board');
+                                    }
+                                }}
                                 className={`flex items-center gap-2 text-xs font-medium transition-colors ${activeTab === 'board' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                                 <Squares2X2Icon className="w-4 h-4" />
@@ -100,6 +109,15 @@ export const CommandDeck = ({
                             </button>
                             <button
                                 onClick={() => setActiveTab('artifacts')}
+                                role="tab"
+                                aria-selected={activeTab === 'artifacts'}
+                                tabIndex={activeTab === 'artifacts' ? 0 : -1}
+                                onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        setActiveTab('artifacts');
+                                    }
+                                }}
                                 className={`flex items-center gap-2 text-xs font-medium transition-colors ${activeTab === 'artifacts' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                                 <ArchiveBoxIcon className="w-4 h-4" />
@@ -107,6 +125,15 @@ export const CommandDeck = ({
                             </button>
                             <button
                                 onClick={() => setActiveTab('brain')}
+                                role="tab"
+                                aria-selected={activeTab === 'brain'}
+                                tabIndex={activeTab === 'brain' ? 0 : -1}
+                                onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        setActiveTab('brain');
+                                    }
+                                }}
                                 className={`flex items-center gap-2 text-xs font-medium transition-colors ${activeTab === 'brain' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                                 <BrainIcon className="w-4 h-4" />
@@ -114,6 +141,15 @@ export const CommandDeck = ({
                             </button>
                             <button
                                 onClick={() => setActiveTab('deployments')}
+                                role="tab"
+                                aria-selected={activeTab === 'deployments'}
+                                tabIndex={activeTab === 'deployments' ? 0 : -1}
+                                onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        setActiveTab('deployments');
+                                    }
+                                }}
                                 className={`flex items-center gap-2 text-xs font-medium transition-colors ${activeTab === 'deployments' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                                 <RocketIcon className="w-4 h-4" />
@@ -121,6 +157,15 @@ export const CommandDeck = ({
                             </button>
                             <button
                                 onClick={() => setActiveTab('terminal')}
+                                role="tab"
+                                aria-selected={activeTab === 'terminal'}
+                                tabIndex={activeTab === 'terminal' ? 0 : -1}
+                                onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        setActiveTab('terminal');
+                                    }
+                                }}
                                 className={`flex items-center gap-2 text-xs font-medium transition-colors ${activeTab === 'terminal' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
                             >
                                 <CommandLineIcon className="w-4 h-4" />
@@ -131,6 +176,7 @@ export const CommandDeck = ({
                             <button
                                 onClick={() => setIsHistoryOpen(true)}
                                 className="flex items-center gap-2 text-xs font-medium text-gray-500 hover:text-gray-300 transition-colors"
+                                aria-label="Open history"
                             >
                                 <ClockIcon className="w-4 h-4" />
                                 History

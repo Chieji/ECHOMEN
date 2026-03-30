@@ -13,10 +13,12 @@ import { SupabaseIcon } from './icons/SupabaseIcon';
 import { GenericApiIcon } from './icons/GenericApiIcon';
 import { AgentCreationModal } from './AgentCreationModal';
 import { PlaybookCreationModal } from './PlaybookCreationModal';
+import { getSensitiveItem, setSensitiveItem, migrateSensitiveData } from '../lib/secureStorage';
 import { CustomAgent, Playbook, AgentPreferences, AgentRole, TodoItem, Service, ModelProviderConfig, MemoryMode, PersistenceSettings } from '../types';
 import { PencilIcon } from './icons/PencilIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { PlusIcon } from './icons/PlusIcon';
+import { getSecureItem, getSensitiveItem, setSensitiveItem, migrateSensitiveData } from '../lib/secureStorage';
 import { BrainIcon } from './icons/BrainIcon';
 import { AppDeployments } from './AppDeployments';
 import { RocketIcon } from './icons/RocketIcon';
@@ -237,25 +239,18 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
     // Async data loading for secure credentials
     useEffect(() => {
         const loadSecureData = async () => {
+            // Run migration on first load
+            await migrateSensitiveData();
+            
             try {
-                // First try secure storage for credentials
-                const secureServicesStr = await getSecureItem('echo-services');
-                if (secureServicesStr) {
-                    const savedServices = JSON.parse(secureServicesStr);
+                // Load services from secure storage
+                const servicesData = await getSensitiveItem('echo-services');
+                if (servicesData) {
+                    const savedServices = JSON.parse(servicesData);
                     setServices(prev => prev.map(is => {
                         const saved = savedServices.find((ss: Service) => ss.id === is.id);
                         return saved ? { ...is, status: saved.status, inputs: saved.inputs || is.inputs } : is;
                     }));
-                } else {
-                    // Fallback to localStorage for legacy data
-                    const savedServicesJSON = localStorage.getItem('echo-services');
-                    if (savedServicesJSON) {
-                        const savedServices = JSON.parse(savedServicesJSON);
-                        setServices(prev => prev.map(is => {
-                            const saved = savedServices.find((ss: Service) => ss.id === is.id);
-                            return saved ? { ...is, status: saved.status } : is;
-                        }));
-                    }
                 }
             } catch (error) {
                 console.error("Failed to load secure services:", error);
@@ -358,9 +353,9 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
     useEffect(() => {
         try {
             const servicesToSave = services.map(({ id, status }) => ({ id, status }));
-            localStorage.setItem('echo-services', JSON.stringify(servicesToSave));
+            setSensitiveItem('echo-services', JSON.stringify(servicesToSave));
         } catch(error) {
-            console.error("Failed to save services to localStorage", error);
+            console.error("Failed to save services to secure storage", error);
         }
     }, [services]);
 
@@ -781,7 +776,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                                 )}
                                                 <label className="relative inline-flex items-center cursor-pointer">
                                                     <input type="checkbox" checked={agent.enabled} onChange={() => handleToggleAgent(agent.id)} className="sr-only peer" />
-                                                    <div className="w-11 h-6 bg-gray-400 dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-cyan-600/50 dark:peer-focus:ring-echo-cyan/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600 dark:peer-checked:bg-[#00D4FF]"></div>
+                                                    <div className="w-11 h-6 bg-gray-400 dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-cyan-600/50 dark:peer-focus:ring-echo-cyan/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600 dark:peer-checked:bg-[var(--echo-cyan)]"></div>
                                                 </label>
                                             </div>
                                         </div>
@@ -842,7 +837,7 @@ export const MasterConfigurationPanel: React.FC<MasterConfigurationPanelProps> =
                                                 </button>
                                                 <label className="relative inline-flex items-center cursor-pointer">
                                                     <input type="checkbox" checked={provider.enabled} onChange={() => handleToggleModel(provider.id)} className="sr-only peer" />
-                                                    <div className="w-11 h-6 bg-gray-400 dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-cyan-600/50 dark:peer-focus:ring-echo-cyan/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600 dark:peer-checked:bg-[#00D4FF]"></div>
+                                                    <div className="w-11 h-6 bg-gray-400 dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-cyan-600/50 dark:peer-focus:ring-echo-cyan/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600 dark:peer-checked:bg-[var(--echo-cyan)]"></div>
                                                 </label>
                                             </div>
                                         </div>

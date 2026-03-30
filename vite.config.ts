@@ -11,13 +11,10 @@ export default defineConfig(({ mode }) => {
         allowedHosts: ['.ws', '.local', 'localhost', '127.0.0.1'],
       },
       plugins: [react()],
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-      },
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
+          '@shared': path.resolve(__dirname, './shared'),
         },
         mainFields: ['module', 'main'],
       },
@@ -25,21 +22,18 @@ export default defineConfig(({ mode }) => {
         // Enable manual chunk splitting for better caching
         splitManualChunks: true,
         rollupOptions: {
+          external: [
+            '@tiptap/react', '@tiptap/starter-kit', '@tiptap/extension-mention',
+            'flexsearch', 'jszip',
+            '@google/genai', 'openai', '@anthropic-ai/sdk', 'cohere-ai',
+            'firebase/app', 'firebase/firestore'
+          ],
           output: {
             manualChunks: {
               // React core - stable, rarely changes
               'react-vendor': ['react', 'react-dom'],
               // Framer Motion - animation library
               'motion-vendor': ['framer-motion'],
-              // AI SDKs - large, change independently
-              'ai-vendor': [
-                '@google/genai',
-                'openai',
-                '@anthropic-ai/sdk',
-                'cohere-ai'
-              ],
-              // Firebase - if used, separate for caching
-              'firebase-vendor': ['firebase/app', 'firebase/firestore'],
             },
             // Content-hash based naming for long-term caching
             entryFileNames: 'assets/[name]-[hash].js',

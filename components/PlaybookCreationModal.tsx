@@ -33,13 +33,13 @@ export const PlaybookCreationModal: React.FC<PlaybookCreationModalProps> = ({ is
             {isOpen && (
                 <motion.div
                     className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-                    initial={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
-                    animate={{ backdropFilter: 'blur(16px)', backgroundColor: 'rgba(0,0,0,0.6)' }}
-                    exit={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
+                    initial={{ backgroundColor: 'rgba(0,0,0,0)' }}
+                    animate={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+                    exit={{ backgroundColor: 'rgba(0,0,0,0)' }}
                     onClick={onClose}
                 >
                     <motion.div
-                        className="w-full max-w-lg bg-white/90 dark:bg-[#141414]/90 backdrop-blur-lg border-2 border-[#8B5CF6]/50 rounded-xl shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
+                        className="w-full max-w-lg bg-white dark:bg-[#141414] border-2 border-[#8B5CF6]/50 rounded-xl shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}

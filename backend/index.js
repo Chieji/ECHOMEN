@@ -3,7 +3,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const fs = require('fs').promises;
 const path = require('path');
-const { exec } = require('child_process');
+const { execFile } = require('child_process'); // SECURITY FIX: Use execFile instead of exec
 const { chromium } = require('playwright');
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 const CSRF = require('csrf');
@@ -135,14 +135,29 @@ const validateApiKey = (req, res, next) => {
 // ============================================================================
 
 /**
- * Validates that a path stays within the allowed workspace directory.
+ * SECURITY FIX: Validates that a path stays within the allowed workspace directory.
  * Prevents path traversal vulnerabilities.
+ * 
+ * Security measures:
+ * 1. Reject null bytes and dangerous characters
+ * 2. Resolve to absolute path within WORKSPACE_DIR
+ * 3. Verify path doesn't escape workspace
  */
 const validatePath = (userPath) => {
-    const resolvedPath = path.resolve(userPath);
-    if (!resolvedPath.startsWith(path.resolve(WORKSPACE_DIR))) {
+    // Reject null bytes and other dangerous characters
+    if (/[\x00-\x1F\x7F]/.test(userPath)) {
+        throw new Error("Security Violation: Invalid characters in path");
+    }
+    
+    // Resolve to absolute path within workspace
+    const resolvedPath = path.resolve(WORKSPACE_DIR, userPath);
+    const workspaceResolved = path.resolve(WORKSPACE_DIR);
+    
+    // Verify path is within WORKSPACE_DIR
+    if (!resolvedPath.startsWith(workspaceResolved + path.sep) && resolvedPath !== workspaceResolved) {
         throw new Error(`Security Violation: Access to path outside workspace is denied: ${userPath}`);
     }
+    
     return resolvedPath;
 };
 
@@ -529,55 +544,72 @@ const closeSession = async (sessionId) => {
 };
 
 /**
- * Executes a shell command with hardened sanitization.
- * 
- * SECURITY NOTE: This function uses allowlist-based validation.
- * Only simple, single commands without shell operators are permitted.
- * For production, consider using execFile with explicit arguments
- * or a containerized execution environment.
+ * SECURITY FIX: Executes a shell command with hardened sanitization using execFile.
+ *
+ * Security measures:
+ * 1. Command allowlist - only specific commands permitted
+ * 2. Argument validation - no shell metacharacters  
+ * 3. Path traversal prevention - no .. in paths
+ * 4. Timeout and buffer limits
+ * 5. Uses execFile instead of exec - no shell interpretation
  */
 const executeShellCommand = (command) => {
     // Reject empty or non-string input
     if (typeof command !== 'string' || !command.trim()) {
         return Promise.reject(new Error("Security Violation: Invalid command input"));
     }
-    
-    const sanitizedCommand = command.trim();
-    
-    // Blocklist: reject dangerous characters and patterns
-    // This prevents command injection, chaining, and path traversal
-    const isDangerous = /[\x00-\x1F\x7F]|(;|\&\&|\|\||\||>|<|\!|\$|\(|\)|\{|\}|\[|\]|\*|\?|~|`|\\)/.test(sanitizedCommand);
-    if (isDangerous || sanitizedCommand.includes('..')) {
-        console.warn(`[Security] Blocked dangerous command: ${sanitizedCommand}`);
-        return Promise.reject(new Error("Security Violation: Command contains restricted characters or traversal."));
+
+    // SECURITY FIX: Parse command into binary + args for execFile
+    const parts = command.trim().split(/\s+/);
+    const binary = parts[0];
+    const args = parts.slice(1);
+
+    // Allowlist of permitted binaries
+    const ALLOWED_COMMANDS = new Set([
+        'git', 'npm', 'npx', 'node', 'python3', 'python',
+        'ls', 'cat', 'echo', 'pwd', 'head', 'tail', 'wc',
+        'grep', 'find', 'mkdir', 'touch', 'cp', 'mv'
+    ]);
+
+    if (!ALLOWED_COMMANDS.has(binary)) {
+        console.warn(`[Security] Blocked non-allowed command: ${binary}`);
+        return Promise.reject(new Error(`Security Violation: Command '${binary}' is not in allowlist.`));
     }
-    
-    // Allowlist: only permit simple alphanumeric commands with basic args
-    // Pattern: command followed by optional space-separated arguments
-    const allowedPattern = /^[a-zA-Z0-9_./:-]+(\s+[a-zA-Z0-9_./:@%+-]+)*$/;
-    if (!allowedPattern.test(sanitizedCommand)) {
-        console.warn(`[Security] Blocked non-allowed command: ${sanitizedCommand}`);
-        return Promise.reject(new Error("Security Violation: Command format not allowed."));
+
+    // SECURITY FIX: Validate each argument - no shell metacharacters
+    const dangerousPattern = /[;&|`$(){}[\]<>!\\*?~]/;
+    for (const arg of args) {
+        if (dangerousPattern.test(arg)) {
+            console.warn(`[Security] Blocked dangerous argument: ${arg}`);
+            return Promise.reject(new Error("Security Violation: Argument contains restricted characters."));
+        }
+        // Block path traversal
+        if (arg.includes('..')) {
+            console.warn(`[Security] Blocked path traversal: ${arg}`);
+            return Promise.reject(new Error("Security Violation: Path traversal not allowed."));
+        }
     }
-    
-    // Additional check: block known dangerous commands
-    const dangerousCommands = ['rm', 'sudo', 'su', 'chmod', 'chown', 'curl', 'wget', 'nc', 'netcat'];
-    const baseCommand = sanitizedCommand.split(/\s+/)[0].toLowerCase();
-    if (dangerousCommands.includes(baseCommand)) {
-        console.warn(`[Security] Blocked dangerous command: ${baseCommand}`);
-        return Promise.reject(new Error(`Security Violation: '${baseCommand}' is not permitted.`));
+
+    // Block dangerous command combinations
+    const dangerousCombos = ['rm -rf', 'rm -r /', 'chmod -R', 'dd if='];
+    for (const combo of dangerousCombos) {
+        if (command.toLowerCase().includes(combo)) {
+            console.warn(`[Security] Blocked dangerous command combination: ${combo}`);
+            return Promise.reject(new Error(`Security Violation: Dangerous command combination.`));
+        }
     }
-    
+
+    // SECURITY FIX: Use execFile instead of exec - no shell interpretation
     return new Promise((resolve, reject) => {
-        exec(sanitizedCommand, { 
-            timeout: 60000, 
+        execFile(binary, args, {
+            timeout: 60000,
             maxBuffer: 1024 * 1024,
-            shell: '/bin/sh' // Use minimal shell
+            cwd: WORKSPACE_DIR, // Restrict to workspace
         }, (error, stdout, stderr) => {
-            if (error) { 
-                console.error(`[Command Error] ${sanitizedCommand}: ${stderr || error.message}`);
-                reject(new Error(stderr || error.message)); 
-                return; 
+            if (error) {
+                console.error(`[Command Error] ${command}: ${stderr || error.message}`);
+                reject(new Error(stderr || error.message));
+                return;
             }
             resolve(stdout);
         });
@@ -589,6 +621,50 @@ const executeShellCommand = (command) => {
 // SECURITY: All outputs containing web content are sanitized through the ContentFilter
 // to prevent indirect prompt injection attacks.
 
+/**
+ * Validates and normalizes a URL for browsing.
+ * Only allows HTTP/HTTPS URLs and blocks potentially dangerous protocols.
+ */
+const validateUrl = (urlString) => {
+    try {
+        const parsedUrl = new URL(urlString);
+        
+        // Only allow http and https protocols
+        if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+            return null;
+        }
+        
+        // Ensure the URL is well-formed
+        return parsedUrl.href;
+    } catch (e) {
+        // Invalid URL format
+        return null;
+    }
+};
+
+/**
+ * Validates and normalizes a file path to prevent directory traversal.
+ * Ensures the resolved path stays within the allowed base directory.
+ */
+const BASE_DIR = path.resolve(process.cwd());
+
+const validatePath = (inputPath) => {
+    // Reject absolute paths that start with / or Windows drive letters
+    if (path.isAbsolute(inputPath) && !inputPath.startsWith(BASE_DIR)) {
+        return null;
+    }
+    
+    // Resolve and normalize the path
+    const resolvedPath = path.resolve(BASE_DIR, inputPath);
+    
+    // Ensure the resolved path starts with the base directory
+    if (!resolvedPath.startsWith(BASE_DIR + path.sep) && resolvedPath !== BASE_DIR) {
+        return null;
+    }
+    
+    return resolvedPath;
+};
+
 const browserActions = {
     /**
      * Navigate to a URL within the task's isolated browser context.
@@ -597,9 +673,15 @@ const browserActions = {
      * @param {string} url - URL to navigate to
      */
     navigate: async (taskId, url) => {
+        // SECURITY: Validate URL before navigation
+        const validatedUrl = validateUrl(url);
+        if (!validatedUrl) {
+            throw new Error('Invalid URL: Only HTTP and HTTPS URLs are allowed');
+        }
+        
         const page = await getTaskPage(taskId);
-        console.log(`[WebHawk] [Task: ${taskId}] Navigating to: ${url}`);
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        console.log(`[WebHawk] [Task: ${taskId}] Navigating to: ${validatedUrl}`);
+        await page.goto(validatedUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
         
         // SECURITY: Sanitize page title which could contain injection attempts
         const rawTitle = await page.title();
@@ -1043,6 +1125,35 @@ app.post('/execute-tool', validateCsrfToken, validateApiKey, async (req, res) =>
                 // Explicit task cleanup (ephemeral mode)
                 await closeTaskContext(effectiveTaskId);
                 result = { status: 'success', message: `Task ${effectiveTaskId} cleaned up` };
+                break;
+
+            // File Tools with Path Validation
+            case 'readFile':
+                const readPath = validatePath(args.path);
+                if (!readPath) {
+                    throw new Error('Security Violation: Invalid path - directory traversal detected');
+                }
+                result = await fs.readFile(readPath, 'utf8');
+                break;
+            case 'writeFile':
+                const writePath = validatePath(args.path);
+                if (!writePath) {
+                    throw new Error('Security Violation: Invalid path - directory traversal detected');
+                }
+                const dir = path.dirname(writePath);
+                await fs.mkdir(dir, { recursive: true });
+                await fs.writeFile(writePath, args.content, 'utf8');
+                result = `File written successfully: ${args.path}`;
+                break;
+            case 'listFiles':
+                const listPath = validatePath(args.path);
+                if (!listPath) {
+                    throw new Error('Security Violation: Invalid path - directory traversal detected');
+                }
+                result = await fs.readdir(listPath);
+                break;
+            case 'executeShellCommand':
+                result = await executeShellCommand(args.command);
                 break;
 
             // GitHub Tools

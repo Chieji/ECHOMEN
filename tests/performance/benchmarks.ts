@@ -123,13 +123,13 @@ async function benchmarkCache() {
   cacheData[testKey] = { data: 'test', timestamp: Date.now() };
 
   await benchmark.run('Cache Read (Hit)', async () => {
-    const value = cacheData[testKey];
+    const _value = cacheData[testKey];
     if (!value) throw new Error('Cache miss');
   });
 
   // Benchmark: Cache read (miss)
   await benchmark.run('Cache Read (Miss)', async () => {
-    const value = cacheData['non-existent-key'];
+    const _value = cacheData['non-existent-key'];
     // Miss is expected
   });
 
@@ -160,7 +160,7 @@ async function benchmarkMessageQueue() {
 
   // Benchmark: Enqueue message
   await benchmark.run('Message Enqueue', async () => {
-    const message = {
+    const _message = {
       id: `msg-${Date.now()}-${Math.random()}`,
       type: 'test',
       payload: { data: 'test' },
@@ -178,7 +178,7 @@ async function benchmarkMessageQueue() {
 
   // Benchmark: Process message (with handler)
   await benchmark.run('Message Processing', async () => {
-    const message = {
+    const _message = {
       id: `msg-${Date.now()}`,
       type: 'test',
       payload: { data: 'test' },
@@ -195,7 +195,7 @@ async function benchmarkMessageQueue() {
 
   // Benchmark: Priority queue insertion
   await benchmark.run('Priority Queue Insert', async () => {
-    const message = {
+    const _message = {
       id: `msg-${Date.now()}`,
       priority: Math.random() > 0.5 ? 'high' : 'low',
       payload: { data: 'test' },
@@ -254,7 +254,7 @@ async function benchmarkServiceRegistry() {
   await benchmark.run('Get Service Instance', async () => {
     const instances = services['test-service'].filter((i) => i.healthy);
     if (instances.length > 0) {
-      const instance = instances[Math.floor(Math.random() * instances.length)];
+      const _instance = instances[Math.floor(Math.random() * instances.length)];
       // Use instance
     }
   });

@@ -25,9 +25,9 @@ export const AppLogViewerModal: React.FC<AppLogViewerModalProps> = ({ app, isOpe
             {isOpen && (
                 <motion.div
                     className="fixed inset-0 z-50 flex items-center justify-center"
-                    initial={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
-                    animate={{ backdropFilter: 'blur(16px)', backgroundColor: 'rgba(0,0,0,0.6)' }}
-                    exit={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
+                    initial={{ backgroundColor: 'rgba(0,0,0,0)' }}
+                    animate={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+                    exit={{ backgroundColor: 'rgba(0,0,0,0)' }}
                     onClick={onClose}
                 >
                     <motion.div

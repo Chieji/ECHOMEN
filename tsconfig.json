@@ -11,7 +11,8 @@
     ],
     "skipLibCheck": true,
     "types": [
-      "node"
+      "node",
+      "react"
     ],
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "moduleResolution": "bundler",
@@ -24,6 +25,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@shared/*": [
+        "./shared/*"
       ]
     },
     "allowImportingTsExtensions": true,

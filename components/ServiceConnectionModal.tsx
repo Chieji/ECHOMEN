@@ -109,13 +109,16 @@ export const ServiceConnectionModal: React.FC<ServiceConnectionModalProps> = ({ 
             {isOpen && (
                 <motion.div
                     className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                    initial={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
-                    animate={{ backdropFilter: 'blur(16px)', backgroundColor: 'rgba(0,0,0,0.6)' }}
-                    exit={{ backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
+                    initial={{ backgroundColor: 'rgba(0,0,0,0)' }}
+                    animate={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+                    exit={{ backgroundColor: 'rgba(0,0,0,0)' }}
                     onClick={onClose}
                 >
                     <motion.div
-                        className="w-full max-w-lg bg-[#141414] border-2 border-[#8B5CF6]/50 rounded-xl p-6 shadow-2xl shadow-black/50 flex flex-col"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="service-modal-title"
+                        className="w-full max-w-lg bg-surface border-2 border-[var(--color-primary)]/50 rounded-xl p-6 shadow-2xl shadow-black/50 flex flex-col"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
@@ -124,10 +127,10 @@ export const ServiceConnectionModal: React.FC<ServiceConnectionModalProps> = ({ 
                     >
                         <header className="flex justify-between items-center mb-6">
                             <div className="flex items-center gap-3">
-                                <div className="text-[#8B5CF6]">{service.icon}</div>
-                                <h3 className="text-xl font-bold text-white">Connect to {service.name}</h3>
+                                <div className="text-[var(--color-primary)]">{service.icon}</div>
+                                <h3 id="service-modal-title" className="text-xl font-bold text-white">Connect to {service.name}</h3>
                             </div>
-                            <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+                            <button onClick={onClose} aria-label="Close modal" className="text-gray-500 hover:text-white transition-colors">
                                 <CloseIcon className="w-6 h-6" />
                             </button>
                         </header>
@@ -138,12 +141,12 @@ export const ServiceConnectionModal: React.FC<ServiceConnectionModalProps> = ({ 
                                     <label htmlFor={input.id} className="block text-sm font-medium text-gray-400 mb-1">{input.label}</label>
                                     <div className="relative">
                                         <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
-                                            <span 
+                                            <span
                                                 className={`w-2 h-2 rounded-full transition-colors ${
                                                     errors[input.id] && touched[input.id]
-                                                        ? 'bg-red-500' 
-                                                        : formState[input.id] && !errors[input.id] 
-                                                        ? 'bg-green-500' 
+                                                        ? 'bg-red-500'
+                                                        : formState[input.id] && !errors[input.id]
+                                                        ? 'bg-green-500'
                                                         : 'bg-gray-500'
                                                 }`}
                                             />
@@ -151,19 +154,21 @@ export const ServiceConnectionModal: React.FC<ServiceConnectionModalProps> = ({ 
                                         <input
                                             type={input.type}
                                             id={input.id}
+                                            aria-label={input.label}
+                                            aria-required="true"
                                             value={formState[input.id] || ''}
                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(input.id, e.target.value)}
                                             onBlur={() => handleBlur(input.id)}
                                             placeholder={input.placeholder}
                                             className={`w-full bg-black/40 border rounded-lg px-3 py-2 pl-8 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 transition-colors ${
-                                                errors[input.id] && touched[input.id] 
-                                                ? 'border-red-500/50 focus:ring-red-500/50' 
-                                                : 'border-white/10 focus:ring-[#8B5CF6]/50'
+                                                errors[input.id] && touched[input.id]
+                                                ? 'border-red-500/50 focus:ring-red-500/50'
+                                                : 'border-white/10 focus:ring-[var(--color-primary)]/50'
                                             }`}
                                         />
                                     </div>
                                     {errors[input.id] && touched[input.id] && (
-                                        <p className="mt-1 text-xs text-red-400">{errors[input.id]}</p>
+                                        <p className="mt-1 text-xs text-red-400" role="alert">{errors[input.id]}</p>
                                     )}
                                 </div>
                             ))}
@@ -181,7 +186,7 @@ export const ServiceConnectionModal: React.FC<ServiceConnectionModalProps> = ({ 
                             <button
                                 onClick={handleSave}
                                 disabled={isSaveDisabled}
-                                className="bg-[#8B5CF6] hover:bg-[#7c4ee3] text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {service.status === 'Connected' ? 'Save Changes' : 'Save Connection'}
                             </button>

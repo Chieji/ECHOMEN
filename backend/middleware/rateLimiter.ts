@@ -81,9 +81,10 @@ class RateLimiter {
 
       // Store original send for response tracking
       const originalSend = res.send;
+      // Extract config to avoid closure issues with `this`
       const skipSuccessfulRequests = this.config.skipSuccessfulRequests;
       const skipFailedRequests = this.config.skipFailedRequests;
-      
+
       res.send = function (data: any) {
         const statusCode = res.statusCode;
 

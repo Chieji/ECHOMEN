@@ -112,3 +112,52 @@ export function isSecureContext(): boolean {
 export async function migrateCredentials() {
     console.log("[Security] Migration initialized...");
 }
+
+/**
+ * Migration helper: Move sensitive data from localStorage to secureStorage
+ * Call this once on app initialization
+ */
+export async function migrateSensitiveData(): Promise<void> {
+    const sensitiveKeys = ['echo-api-key', 'echo-services'];
+    
+    for (const key of sensitiveKeys) {
+        const plainData = localStorage.getItem(key);
+        if (plainData) {
+            // Only migrate if not already in secure storage
+            const secureData = await getSecureItem(key);
+            if (!secureData) {
+                await setSecureItem(key, plainData);
+                console.log(`[SecureStorage] Migrated ${key} to secure storage`);
+            }
+            // Remove from plain localStorage after migration
+            localStorage.removeItem(key);
+        }
+    }
+}
+
+/**
+ * Get sensitive item - tries secure storage first, falls back to localStorage for migration
+ */
+export async function getSensitiveItem(key: string): Promise<string | null> {
+    // Try secure storage first
+    const secure = await getSecureItem(key);
+    if (secure) return secure;
+    
+    // Fallback to localStorage for backward compatibility (will be removed in future)
+    const plain = localStorage.getItem(key);
+    if (plain) {
+        // Migrate it
+        await setSecureItem(key, plain);
+        localStorage.removeItem(key);
+        return plain;
+    }
+    
+    return null;
+}
+
+/**
+ * Set sensitive item - always uses secure storage
+ */
+export async function setSensitiveItem(key: string, value: string): Promise<void> {
+    await setSecureItem(key, value);
+}

@@ -1,0 +1,473 @@
+/**
+ * ECHOMEN Design Token System
+ * 
+ * Comprehensive design tokens for consistent theming across the application.
+ * Supports light and dark modes with semantic color naming.
+ */
+
+:root {
+  /* ==========================================================================
+     BRAND COLORS
+     Primary identity colors used for key actions and branding
+     ========================================================================== */
+  
+  /* Primary - Purple/Indigo (Main brand color) */
+  --color-primary: #8B5CF6;
+  --color-primary-hover: #7c4ee3;
+  --color-primary-active: #6d3fd6;
+  --color-primary-light: #a78bfa;
+  --color-primary-dark: #5b21b6;
+  
+  /* Secondary - Cyan (Accent color) */
+  --color-secondary: #06b6d4;
+  --color-secondary-hover: #0891b2;
+  --color-secondary-active: #0e7490;
+  --color-secondary-light: #22d3ee;
+  --color-secondary-dark: #155e75;
+  
+  /* Accent - Orange (Highlight/warmth) */
+  --color-accent: #FF6B00;
+  --color-accent-hover: #e65c00;
+  --color-accent-active: #cc5200;
+  --color-accent-light: #ff8533;
+  --color-accent-dark: #b35900;
+
+  /* ==========================================================================
+     SEMANTIC COLORS
+     Colors with specific meaning (success, error, warning, info)
+     ========================================================================== */
+  
+  /* Success - Green */
+  --color-success: #22c55e;
+  --color-success-hover: #16a34a;
+  --color-success-light: #4ade80;
+  --color-success-bg: rgba(34, 197, 94, 0.1);
+  --color-success-border: rgba(34, 197, 94, 0.2);
+  
+  /* Warning - Amber/Yellow */
+  --color-warning: #f59e0b;
+  --color-warning-hover: #d97706;
+  --color-warning-light: #fbbf24;
+  --color-warning-bg: rgba(245, 158, 11, 0.1);
+  --color-warning-border: rgba(245, 158, 11, 0.2);
+  
+  /* Error - Red */
+  --color-error: #ef4444;
+  --color-error-hover: #dc2626;
+  --color-error-light: #f87171;
+  --color-error-bg: rgba(239, 68, 68, 0.1);
+  --color-error-border: rgba(239, 68, 68, 0.2);
+  
+  /* Info - Blue */
+  --color-info: #3b82f6;
+  --color-info-hover: #2563eb;
+  --color-info-light: #60a5fa;
+  --color-info-bg: rgba(59, 130, 246, 0.1);
+  --color-info-border: rgba(59, 130, 246, 0.2);
+
+  /* ==========================================================================
+     BACKGROUND COLORS
+     Surface and background colors for different UI layers
+     ========================================================================== */
+  
+  /* Primary backgrounds */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  
+  /* Surface colors (cards, modals, panels) */
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #ffffff;
+  --bg-surface-overlay: rgba(255, 255, 255, 0.95);
+  
+  /* Void/Dark backgrounds */
+  --bg-void: #0a0a0a;
+  --bg-void-secondary: #141414;
+  --bg-void-tertiary: #1a1a1a;
+  
+  /* Utility backgrounds */
+  --bg-black: #000000;
+  --bg-black-muted: rgba(0, 0, 0, 0.4);
+  --bg-black-subtle: rgba(0, 0, 0, 0.05);
+  
+  /* Backdrop */
+  --backdrop-color: rgba(0, 0, 0, 0.6);
+  --backdrop-blur: blur(16px);
+
+  /* ==========================================================================
+     TEXT COLORS
+     Typography colors for different content hierarchy levels
+     ========================================================================== */
+  
+  /* Primary text */
+  --text-primary: #0f172a;
+  --text-primary-inverse: #ffffff;
+  
+  /* Secondary text (less important) */
+  --text-secondary: #475569;
+  --text-secondary-inverse: #e2e8f0;
+  
+  /* Tertiary text (muted, captions) */
+  --text-tertiary: #94a3b8;
+  --text-tertiary-inverse: #cbd5e1;
+  
+  /* Dark mode specific */
+  --text-dark-primary: #f8fafc;
+  --text-dark-secondary: #cbd5e1;
+  --text-dark-tertiary: #64748b;
+  
+  /* Special text */
+  --text-link: var(--color-primary);
+  --text-success: var(--color-success);
+  --text-warning: var(--color-warning);
+  --text-error: var(--color-error);
+  --text-info: var(--color-info);
+
+  /* ==========================================================================
+     BORDER COLORS
+     Divider and border colors for UI separation
+     ========================================================================== */
+  
+  /* Light borders (subtle separation) */
+  --border-light: #e2e8f0;
+  --border-light-dark: #334155;
+  
+  /* Medium borders (standard separation) */
+  --border-medium: #cbd5e1;
+  --border-medium-dark: #475569;
+  
+  /* Strong borders (emphasis) */
+  --border-strong: #94a3b8;
+  --border-strong-dark: #64748b;
+  
+  /* Echo-specific borders */
+  --border-echo: #334155;
+  --border-echo-light: rgba(255, 255, 255, 0.1);
+  --border-echo-strong: rgba(255, 255, 255, 0.2);
+
+  /* ==========================================================================
+     SPACING SCALE
+     Consistent spacing values based on 4px grid
+     ========================================================================== */
+  
+  --space-0: 0;
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+  --space-20: 5rem;     /* 80px */
+  --space-24: 6rem;     /* 96px */
+
+  /* ==========================================================================
+     TYPOGRAPHY
+     Font families, sizes, and line heights
+     ========================================================================== */
+  
+  /* Font families */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+  
+  /* Font sizes */
+  --text-xs: 0.75rem;    /* 12px */
+  --text-sm: 0.875rem;   /* 14px */
+  --text-base: 1rem;     /* 16px */
+  --text-lg: 1.125rem;   /* 18px */
+  --text-xl: 1.25rem;    /* 20px */
+  --text-2xl: 1.5rem;    /* 24px */
+  --text-3xl: 1.875rem;  /* 30px */
+  --text-4xl: 2.25rem;   /* 36px */
+  
+  /* Font weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  
+  /* Line heights */
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --leading-loose: 2;
+  
+  /* Letter spacing */
+  --tracking-tighter: -0.05em;
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+  --tracking-wider: 0.05em;
+
+  /* ==========================================================================
+     BORDER RADIUS
+     Corner rounding values
+     ========================================================================== */
+  
+  --radius-none: 0;
+  --radius-sm: 0.25rem;   /* 4px */
+  --radius-md: 0.5rem;    /* 8px */
+  --radius-lg: 0.75rem;   /* 12px */
+  --radius-xl: 1rem;      /* 16px */
+  --radius-2xl: 1.5rem;   /* 24px */
+  --radius-3xl: 2rem;     /* 32px */
+  --radius-full: 9999px;
+
+  /* ==========================================================================
+     SHADOWS
+     Elevation and depth shadows
+     ========================================================================== */
+  
+  /* Light mode shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  
+  /* Colored shadows */
+  --shadow-primary: 0 4px 14px 0 rgba(139, 92, 246, 0.39);
+  --shadow-secondary: 0 4px 14px 0 rgba(6, 182, 212, 0.39);
+  --shadow-error: 0 4px 14px 0 rgba(239, 68, 68, 0.39);
+  
+  /* Dark mode shadows */
+  --shadow-dark-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-dark-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-dark-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+  --shadow-dark-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.4);
+
+  /* ==========================================================================
+     Z-INDEX SCALE
+     Layering order for overlapping elements
+     ========================================================================== */
+  
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  --z-toast: 800;
+
+  /* ==========================================================================
+     TRANSITIONS
+     Animation timing and easing
+     ========================================================================== */
+  
+  --transition-fast: 150ms;
+  --transition-normal: 300ms;
+  --transition-slow: 500ms;
+  
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* ==========================================================================
+     ECHOMEN SPECIFIC TOKENS
+     Application-specific design tokens
+     ========================================================================== */
+  
+  /* Echo-specific colors */
+  --echo-cyan: #00D4FF;
+  --echo-cyan-hover: #00b8e6;
+  --echo-purple: #8B5CF6;
+  --echo-orange: #FF6B00;
+  
+  /* Echo backgrounds */
+  --echo-surface: #141414;
+  --echo-void: #0a0a0a;
+  
+  /* Echo borders */
+  --echo-border: #334155;
+  
+  /* Echo gradients */
+  --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  --gradient-warm: linear-gradient(135deg, var(--color-accent) 0%, var(--color-primary) 100%);
+  --gradient-cool: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-primary) 100%);
+}
+
+/* ==========================================================================
+   DARK MODE OVERRIDES
+   Dark theme color palette
+   ========================================================================== */
+
+.dark {
+  /* Backgrounds */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --bg-surface: #141414;
+  --bg-surface-elevated: #1a1a1a;
+  --bg-surface-overlay: rgba(20, 20, 20, 0.95);
+  
+  /* Text */
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #64748b;
+  
+  /* Borders */
+  --border-light: #334155;
+  --border-medium: #475569;
+  --border-strong: #64748b;
+  
+  /* Shadows - darker for dark mode */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.4);
+}
+
+/* ==========================================================================
+   UTILITY CLASSES
+   Pre-built utility classes for common patterns
+   ========================================================================== */
+
+/* Focus ring for accessibility - WCAG 2.4.7 Focus Visible */
+.focus-ring {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-primary);
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+.focus-ring-secondary {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-secondary);
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+.focus-ring-accent {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-accent);
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+/* Focus ring for dark mode */
+.dark .focus-ring {
+  box-shadow: 0 0 0 2px var(--bg-void), 0 0 0 4px var(--color-primary);
+}
+
+/* Keyboard focus only (using :focus-visible) */
+.focus-visible-ring:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Button focus ring */
+button.focus-ring,
+.btn-focus-ring {
+  outline: none;
+}
+
+button.focus-ring:focus-visible,
+.btn-focus-ring:focus-visible {
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--color-primary);
+}
+
+/* Input focus ring */
+input.focus-ring:focus,
+textarea.focus-ring:focus,
+select.focus-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3), 0 0 0 1px var(--color-primary);
+}
+
+/* Text truncation */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Scrollbar styling */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-medium) var(--bg-tertiary);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: var(--radius-md);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* Glass effect (use sparingly) */
+.glass {
+  background: var(--bg-surface-overlay);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Gradient text */
+.gradient-text-primary {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.gradient-text-warm {
+  background: var(--gradient-warm);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Animation utilities */
+.fade-in {
+  animation: fadeIn var(--transition-normal) var(--ease-out);
+}
+
+.slide-up {
+  animation: slideUp var(--transition-normal) var(--ease-out);
+}
+
+.scale-in {
+  animation: scaleIn var(--transition-fast) var(--ease-bounce);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

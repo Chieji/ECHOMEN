@@ -1,310 +1,336 @@
 <div align="center">
-
-<img src="https://files.manuscdn.com/user_upload_by_module/session_file/310419663029321070/NVvajgOUYjfhzUHU.png" alt="ECHO - Autonomous AI Agent Logo" width="600"/>
-
-**Your thoughts. My echo. Infinite possibility.**
-
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
-![Security](https://img.shields.io/badge/security-hardened-green.svg)
-![TypeScript](https://img.shields.io/badge/types-0%20errors-success.svg)
-[![React](https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![Gemini API](https://img.shields.io/badge/Gemini_API-Google-4285F4?style=for-the-badge&logo=google-gemini)](https://ai.google.dev/)
-[![Framer Motion](https://img.shields.io/badge/Framer_Motion-11-black?style=for-the-badge&logo=framer)](https://www.framer.com/motion/)
-[![Security](https://img.shields.io/badge/Security-Fortress--Grade-red?style=for-the-badge)](./AGENTS.md)
-
+  <img src="./public/echo-logo.svg" alt="ECHO Logo" width="400" />
+  
+  <h3>Your Multi-Ecosystem AI Workstation</h3>
+  
+  <p>
+    <a href="https://github.com/chieji/ECHOMEN"><img src="https://img.shields.io/badge/status-production--ready-green" alt="Status" /></a>
+    <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-%3E%3D18-blue" alt="Node.js" /></a>
+    <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.0-blue" alt="TypeScript" /></a>
+    <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-61dafb" alt="React" /></a>
+    <a href="https://github.com/chieji/ECHOMEN/blob/main/LICENSE"><img src="https://img.shields.io/github/license/chieji/ECHOMEN" alt="License" /></a>
+  </p>
+  
+  <p>
+    <a href="https://github.com/chieji/echoctl"><strong>CLI Repo »</strong></a> •
+    <a href="#features">Features</a> •
+    <a href="#installation">Installation</a> •
+    <a href="#usage">Usage</a> •
+    <a href="#security">Security</a>
+  </p>
 </div>
 
 ---
 
-**ECHO** is an Elite AI Workstation designed for **Action over Conversation.** It transforms your machine into a self-orchestrating multi-agent powerhouse, fusing a high-fidelity execution engine with a persistent "Second Brain."
+## 🚀 What is ECHOMEN?
 
-## 🆕 What's New in V1.1.0
+**ECHOMEN** is a full-stack AI orchestration platform that brings together 14+ AI providers into a single, secure workstation. Think of it as your AI command center — where you can manage multiple AI models, execute complex tasks, and build extensions that work across ecosystems.
 
-### Security Hardening (Latest)
-- ✅ **CSRF Protection** - Token-based CSRF validation on all state-changing operations
-- ✅ **Security Headers** - OWASP-recommended headers (CSP, X-Frame-Options, HSTS, etc.)
-- ✅ **Rate Limiting** - 100 requests/minute per IP to prevent DoS
-- ✅ **VM2 Sandboxed Execution** - Replaced unsafe eval() with secure VM for code execution
-- ✅ **Prompt Injection Guardrails** - Multi-layer defense against indirect prompt injection
+### Why ECHOMEN Exists
 
-### Performance Optimizations
-- ✅ **Code Splitting** - Vendor libraries split into separate chunks (react, motion, ai)
-- ✅ **Lazy Loading** - All 5 modals lazy-loaded with Suspense boundaries
-- ✅ **Better Caching** - Content-hash based chunk naming for long-term caching
-
-### Quality Improvements
-- ✅ **Zero TypeScript Errors** - 100% type-safe codebase
-- ✅ **Test Infrastructure** - Vitest setup with 15+ security tests
-- ✅ **Updated Dependencies** - Express 5, latest security patches
-
-## 🧠 The Second Brain (Knowledge & Memory)
-ECHO doesn't just execute; it *remembers* and *connects*.
--   **[[Wiki-Linking]]:** Use standard wiki syntax to link notes, artifacts, and tasks.
--   **Bidirectional Echoes:** Automatic backlink detection in the Intelligence Sidebar.
--   **FlexSearch Recall:** Sub-millisecond global search across all logs and artifacts.
--   **Neural Vault:** Export your entire knowledge base as a portable, structured ZIP archive.
-
-## ⚡ WebHawk 2.0 (Agentic Browser)
-ECHO sees the web like a human.
--   **Vision Protocol:** Uses Playwright to navigate, screenshot, and reason visually.
--   **AXTree Navigation:** Reads the browser's Accessibility Tree for 100% reliable element interaction.
--   **Persistent Session:** Maintain logins and state across complex multi-step web tasks.
-
-## 🛡️ The ECHO Fortress (Security)
-Built with "Principal Architect" rigor.
--   **The Trio (SOUL/AGENTS/TOOLS):** Modular behavior injection via root-level Markdown files.
--   **Human-in-the-Loop (HITL):** Mandatory approval gate for privileged tools (Shell, Write, Delete).
--   **Zero-Config Discovery:** Backend automatically scans and proxies local MCP services.
-
-## 🖥️ Elite Workstation UI
-
-### Elite Workstation UI
-- **CommandDeck** - Unified dashboard with 5 tabs (Execution, Artifacts, Notes, Deployments, Terminal)
-- **ChatInterface** - Chat mode with Action/Chat toggle
-- **Header** - Mode selection, status indicators, token usage
-- **5 Configuration Modals** - ServiceConnection, AgentCreation, PlaybookCreation, ModelProvider, AppLogViewer
-- **HistoryPanel** - Session history and context management
-- **TerminalDisplay** - Command reference and execution logs
-
-### Additional UI Features
-- **ECHO-P (Command Palette):** Trigger global actions instantly with `Ctrl + P` or `Cmd + K`.
-- **EchoBrain Pulse:** Real-time visualization of agent thoughts and system health.
-
-## 🚀 Quick Start (V1 Miracle Build)
-
-### Option A: Native Node.js (Development)
-
-#### 1. The Engine (Backend)
-```bash
-cd backend
-npm install
-npm start
-```
-*Runs on port 3001. Handles Shell, Files, and WebHawk.*
-
-#### 2. The Cockpit (Frontend)
-```bash
-npm install
-npm run dev
-```
-*Configure your keys in the Master Configuration Panel (Settings).*
-
-#### Development Commands
-```bash
-# Production build
-npm run build
-
-# Type check
-npx tsc --noEmit
-
-# Run tests
-npx vitest run
-```
+Most AI tools lock you into a single provider. ECHOMEN breaks those walls:
+- ✅ **Multi-Provider**: Switch between Gemini, Claude, GPT-4, Qwen, and 10+ others instantly
+- ✅ **Extension System**: Import skills from Claude, Gemini, Qwen, or build your own
+- ✅ **Safe Execution**: 3-tier sandbox prevents AI from running dangerous code
+- ✅ **Zero-Config APIs**: Free web search, Wikipedia, weather — no API keys needed
+- ✅ **MCP Support**: Compatible with Model Context Protocol servers
 
 ---
 
-### Option B: Docker (Production-Ready)
+## ✨ Features
 
-#### Prerequisites
-- Docker Engine 20.10+
-- Docker Compose v2.0+
+### 🧠 AI Orchestration
+- **14+ AI Providers**: Google Gemini, OpenAI, Anthropic, Alibaba Qwen, DeepSeek, Kimi, Groq, Ollama, OpenRouter, Together AI, ModelScope, Mistral, Hugging Face, GitHub Models
+- **Smart Routing**: Automatically selects the best AI for each task
+- **Failover Chain**: If one provider fails, automatically tries the next
+- **Token Tracking**: Monitor usage across all providers
 
-#### Quick Start Commands
+### 🔌 Extension Registry
+- **Unified System**: MCP servers, plugins, and skills in one place
+- **Cross-Ecosystem**: Import Claude skills, Gemini extensions, Qwen plugins
+- **Persistence**: Extensions saved and synced across sessions
+- **Auth Management**: Secure API key storage for each extension
+
+### 🛡️ 3-Tier Code Sandbox
+```
+Tier 1 (Pure)  → Web Worker      → Auto-execute ✅
+Tier 2 (DOM)   → iframe sandbox  → Auto-execute ✅
+Tier 3 (Full)  → Backend         → User approval required 🛑
+```
+
+### 🌐 Zero-Config Web APIs
+No API keys needed for these tools:
+- **Web Search**: DuckDuckGo integration
+- **Wikipedia**: Article search and summaries
+- **Reddit**: Posts and comments from any subreddit
+- **Hacker News**: Top and new stories
+- **Weather**: Current conditions via Open-Meteo
+- **Archive.org**: Check if URLs are archived
+- **Web Scraping**: Extract content from any website
+
+### 🔒 Security Hardening
+- ✅ API keys never touch the frontend
+- ✅ CSRF protection with fail-loud design
+- ✅ Path traversal prevention
+- ✅ SSRF protection for web tools
+- ✅ Command allowlisting for shell execution
+- ✅ XSS prevention in markdown rendering
+- ✅ Zod validation for all LLM responses
+
+---
+
+## 📦 Installation
+
+### Option 1: Docker (Recommended for Production)
+
+**Prerequisites:**
+- Docker 20+
+- Docker Compose 2+
+
+**Quick Start:**
 
 ```bash
-# Clone and navigate to project
+# Clone the repository
+git clone https://github.com/chieji/ECHOMEN.git
 cd ECHOMEN
 
-# Copy environment template
+# Copy environment file
 cp .env.example .env
 
 # Edit .env with your API keys
-# API_KEY=your_google_api_key_here
-# GEMINI_API_KEY=your_google_api_key_here
+nano .env  # or use your favorite editor
 
-# Build and start all services
-docker compose up --build -d
+# Start all services
+docker compose up -d
 
 # View logs
 docker compose logs -f
 
-# Stop all services
+# Stop services
 docker compose down
 ```
 
-#### Individual Service Commands
+**Access:** Navigate to `http://localhost:3000`
+
+**Volumes:**
+- `echomen-logs` - Application logs
+- `echomen-browser-cache` - Playwright browser cache
+
+---
+
+### Option 2: Manual Installation
+
+- **Node.js** 18+ ([Download](https://nodejs.org/))
+- **pnpm** or **npm**
+- **Git**
+
+### Step 1: Clone the Repository
 
 ```bash
-# Start backend only
-docker compose up echomen-backend -d
-
-# Start frontend only
-docker compose up echomen-frontend -d
-
-# Rebuild backend after changes
-docker compose build echomen-backend
-docker compose up echomen-backend -d
-
-# View backend logs
-docker compose logs echomen-backend
-
-# Access backend shell (debugging)
-docker compose exec echomen-backend sh
+git clone https://github.com/chieji/ECHOMEN.git
+cd ECHOMEN
 ```
 
-#### Health Check
+### Step 2: Install Dependencies
 
 ```bash
-# Check service health
-docker compose ps
+# Using pnpm (recommended)
+pnpm install
 
-# Test backend endpoint
-curl http://localhost:3001/health
+# Or using npm
+npm install
 ```
 
-#### Resource Limits
-
-The Docker configuration includes built-in resource limits:
-| Service | CPU Limit | Memory Limit |
-|---------|-----------|--------------|
-| Backend | 1.0 cores | 512 MB |
-| Frontend | 0.5 cores | 256 MB |
-
-To adjust limits, edit `docker-compose.yml` under `deploy.resources`.
-
-#### Volume Management
+### Step 3: Configure Environment
 
 ```bash
-# View volumes
-docker volume ls
+# Copy the example environment file
+cp .env.example .env
 
-# Inspect logs volume
-docker volume inspect echomen-logs
-
-# Clean up volumes (WARNING: deletes all data)
-docker compose down -v
+# Edit .env with your API keys
+# At minimum, configure one AI provider:
+GEMINI_API_KEY=your_gemini_key_here
 ```
 
-## 🏗️ Technical Architecture
--   **Orchestration:** Recursive ReAct loop (up to Level 3 depth).
--   **AI Bridge:** Unified abstraction for Gemini, OpenAI, and Anthropic.
--   **Secure Storage:** AES-256-GCM encrypted credentials in session memory.
-
-## 🛡️ Security
-
-ECHOMEN implements defense-in-depth security:
-
-### Backend Security
-- CSRF token validation on all POST/PUT/DELETE endpoints
-- Rate limiting (100 req/min per IP)
-- OWASP security headers (CSP, X-Frame-Options, HSTS, X-XSS-Protection)
-- Secure CORS with credentials support
-- Content sanitization for file operations
-
-### Code Execution Security
-- VM2 sandboxed JavaScript execution
-- 5-second timeout limit
-- Blocked dangerous globals (process, require, global, window, document)
-- Isolated scope prevents variable leakage
-
-### AI Security
-- Indirect prompt injection detection (6 pattern categories)
-- Content sanitization with XML delimiters
-- Defense-in-depth (4 layers)
-- Human-in-the-Loop (HITL) for privileged operations
-
-### Dependency Security
-- Regular npm audit
-- Zero known vulnerabilities
-- Automated security updates
-
-The Docker setup addresses the **Command Execution Sandbox Bypass** security recommendation through containerization:
-
-### Security Features Implemented
-
-| Feature | Implementation | Benefit |
-|---------|---------------|---------|
-| **Non-root User** | `echomen` user (UID 1001) | Prevents privilege escalation |
-| **Read-only Root FS** | `read_only: true` + tmpfs | Prevents filesystem tampering |
-| **Resource Limits** | CPU: 1.0, Memory: 512MB | Prevents DoS attacks |
-| **No New Privileges** | `no-new-privileges:true` | Blocks setuid/setgid exploits |
-| **Multi-stage Build** | Slim Node.js base | Minimal attack surface |
-| **Network Isolation** | Dedicated bridge network | Internal service isolation |
-
-### Security Trade-offs
-
-> ⚠️ **Important**: Container isolation provides an additional security boundary but is **not a complete security solution**.
-
-1. **Container Escape Risk**: A determined attacker with kernel exploits could potentially escape the container. Always combine with host-level security.
-
-2. **Shell Command Execution**: The backend still executes shell commands. Container isolation limits blast radius but doesn't eliminate the risk. Consider:
-   - Running with minimal required capabilities
-   - Using seccomp profiles for additional syscall filtering
-   - Implementing allowlists at the application level
-
-3. **Browser Automation**: Playwright runs with `--no-sandbox` in containers (required for containerized Chrome). This is mitigated by:
-   - Running as non-root user
-   - Isolated browser contexts per task
-   - Network isolation
-
-4. **Host Network Access**: If the backend needs to access host network services:
-   ```yaml
-   # Use host networking (reduces isolation)
-   network_mode: "host"
-   
-   # OR use specific port forwarding
-   extra_hosts:
-     - "host.docker.internal:host-gateway"
-   ```
-
-### Production Hardening Recommendations
-
-For production deployments, consider additional measures:
+### Step 4: Build the Application
 
 ```bash
-# Use Docker secrets for sensitive data
-docker secret create api_key api_key.txt
-
-# Apply seccomp profile
-docker run --security-opt seccomp=profile.json ...
-
-# Drop all capabilities, add only required ones
-docker run --cap-drop=ALL --cap-add=NET_BIND_SERVICE ...
-
-# Use rootless Docker
-# https://docs.docker.com/engine/security/rootless/
+# Build frontend and backend
+npm run build
 ```
 
-### Monitoring and Logging
+### Step 5: Start the Server
 
 ```bash
-# View real-time logs
-docker compose logs -f echomen-backend
+# Development mode (with hot reload)
+npm run dev
 
-# Export logs for analysis
-docker compose logs echomen-backend > backend.log
+# Production mode
+npm start
+```
 
-# Monitor resource usage
-docker stats echomen-backend
+### Step 6: Open in Browser
+
+Navigate to `http://localhost:3000`
+
+---
+
+## 🎯 Usage
+
+### Quick Start
+
+1. **Configure AI Providers**: Go to Settings → AI Providers and add your API keys
+2. **Start a Task**: Type a goal like "Build a React component for user profiles"
+3. **Watch Execution**: ECHOMEN breaks it into tasks and executes them
+4. **Review Results**: Check the Artifacts panel for outputs
+
+### Agent Modes
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| **Chat** | Conversational AI | Questions, explanations, debugging help |
+| **Action** | Task execution | Building, coding, file operations |
+| **Plan** | Read-only exploration | Research, codebase analysis |
+
+### Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+P` / `Cmd+K` | Command Palette |
+| `Ctrl+1` | Switch to Action Mode |
+| `Ctrl+2` | Switch to Chat Mode |
+| `Ctrl+C` | Stop execution |
+
+---
+
+## 🔗 Related Repos
+
+### ECHOMEN Ecosystem
+
+- **[Echoctl CLI](https://github.com/chieji/echoctl)** — Command-line interface for ECHOMEN
+  - Terminal-based AI agent
+  - Extension management
+  - Model switching
+  - MCP server integration
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                 ECHOMEN Platform                     │
+├─────────────────────────────────────────────────────┤
+│  Frontend (React 19)    │  Backend (Express/tRPC)  │
+│  - Agent UI             │  - AI Proxy              │
+│  - Task Pipeline        │  - Tool Execution        │
+│  - Artifact Viewer      │  - Database (MySQL)      │
+├─────────────────────────────────────────────────────┤
+│              Extension Registry                     │
+│  MCP Servers │ Plugins │ Skills (Claude/Gemini)   │
+└─────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🚀 V2 Roadmap
+## 🛡️ Security
 
-Planned improvements for V2:
+ECHOMEN implements enterprise-grade security:
 
-- [ ] **Test Coverage** - Target 60%+ component test coverage
-- [ ] **MCP Integration** - Model Context Protocol support
-- [ ] **Google Workspace** - Gmail, Drive, Calendar integrations
-- [ ] **Advanced Memory** - Vector embeddings for semantic search
-- [ ] **Performance** - Bundle size optimization (target <1MB initial load)
-- [ ] **Mobile App** - React Native companion app
-- [ ] **Desktop App** - Tauri-based desktop client
+### Frontend Security
+- API keys stored in encrypted sessionStorage (AES-GCM)
+- No secrets in client bundle
+- CSRF tokens for all state-changing requests
+- Content Security Policy headers
+
+### Backend Security
+- Command allowlisting (no arbitrary shell execution)
+- Path traversal prevention
+- SSRF protection for web requests
+- Rate limiting on all endpoints
+
+### Code Execution
+- **Tier 1**: Pure math in Web Workers (safe)
+- **Tier 2**: DOM manipulation in sandboxed iframes (isolated)
+- **Tier 3**: Full execution requires user approval (audited)
+
+For detailed security information, see [SECURITY_BOUNDARIES.md](./SECURITY_BOUNDARIES.md) and [SECURITY_AUDIT_REPORT.md](./SECURITY_AUDIT_REPORT.md).
+
+---
+
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [AGENTS.md](./AGENTS.md) | AI agent system architecture |
+| [TOOLS.md](./TOOLS.md) | Available tools and capabilities |
+| [SOUL.md](./SOUL.md) | Design philosophy and principles |
+| [SECURITY_BOUNDARIES.md](./SECURITY_BOUNDARIES.md) | Security model overview |
+| [SECURITY_AUDIT_REPORT.md](./SECURITY_AUDIT_REPORT.md) | Security audit findings |
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! See our [Contributing Guide](./CONTRIBUTING.md) for:
+- Development setup
+- Code style guidelines
+- Pull request process
+- Issue reporting
+
+---
+
+## 📊 Tech Stack
+
+### Frontend
+- **React 19** with TypeScript
+- **Vite** for build tooling
+- **Framer Motion** for animations
+- **Tailwind CSS** for styling
+
+### Backend
+- **Express.js** with tRPC
+- **Drizzle ORM** for database
+- **MySQL** for persistence
+- **Supabase Auth** for authentication
+
+### AI Integration
+- Custom multi-provider bridge
+- MCP client for external tools
+- Zod for schema validation
+
+---
+
+## 📈 Roadmap
+
+### Q2 2026
+- [ ] Mobile app (React Native)
+- [ ] Real-time collaboration
+- [ ] Advanced analytics dashboard
+- [ ] More MCP server integrations
+
+### Q3 2026
+- [ ] Plugin marketplace
+- [ ] Team workspaces
+- [ ] Advanced RBAC
+- [ ] Self-hosting improvements
+
+---
+
+## 🙏 Acknowledgments
+
+Built with inspiration from:
+- [Model Context Protocol](https://modelcontextprotocol.io/)
+- [Claude Code](https://claude.ai/code)
+- [Continue.dev](https://continue.dev/)
+
+---
+
+## 📄 License
+
+MIT License — see [LICENSE](./LICENSE) for details.
 
 ---
 
 <div align="center">
-    <b>Built with ruthless precision. ECHO OUT.</b>
+  <p>Built with ❤️ by <a href="https://github.com/chieji">chieji</a></p>
+  <p>⭐ Star this repo if you find it useful!</p>
 </div>

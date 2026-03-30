@@ -1,6 +1,13 @@
 import React from 'react';
 
 export const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => {
+    // SECURITY FIX: Validate href protocols to prevent javascript: XSS
+    const isSafeHref = (href: string): boolean =>
+        href.startsWith('https://') ||
+        href.startsWith('http://') ||
+        href.startsWith('/') ||
+        href.startsWith('#');
+
     const processInline = (text: string) => {
         const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g);
         return parts.map((part, index) => {

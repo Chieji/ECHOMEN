@@ -10,6 +10,9 @@ import { CommandDeck } from './components/CommandDeck';
 import { CommandPalette } from './components/CommandPalette';
 import { ChatInterface } from './components/ChatInterface';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { CodeExecutionApproval } from './components/CodeExecutionApproval';
+import { SandboxTierIndicator, type SandboxTier } from './components/SandboxTierIndicator';
+import { setTier3ApprovalHandler } from './lib/codeSandbox';
 
 /**
  * ECHO Main Application Entry
@@ -34,6 +37,14 @@ const App: React.FC = () => {
     const [services, setServices] = useState<Service[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
 
+    // Sandbox State
+    const [sandboxTier, setSandboxTier] = useState<SandboxTier>('pure');
+    const [pendingCodeApproval, setPendingCodeApproval] = useState<{
+        code: string;
+        operations: string[];
+        resolve: (approved: boolean) => void;
+    } | null>(null);
+
     const executorRef = useRef<AgentExecutor | null>(null);
 
     // --- Lifecycle & Initialization ---
@@ -45,6 +56,21 @@ const App: React.FC = () => {
                 setServices(JSON.parse(savedServicesJSON));
             } catch (e) { console.error("Failed to load services", e); }
         }
+    }, []);
+
+    // Set up sandbox approval handler
+    useEffect(() => {
+        setTier3ApprovalHandler(async (code: string, operations: string[]) => {
+            return new Promise((resolve) => {
+                setPendingCodeApproval({
+                    code,
+                    operations,
+                    resolve: (approved: boolean) => resolve(approved)
+                });
+                // Update tier indicator
+                setSandboxTier('full');
+            });
+        });
     }, []);
 
     useEffect(() => {
@@ -272,6 +298,27 @@ const App: React.FC = () => {
                         />
                     )}
                 </AnimatePresence>
+
+                {/* Sandbox Tier Indicator - Top Right */}
+                <div className="fixed top-20 right-4 z-40">
+                    <SandboxTierIndicator tier={sandboxTier} />
+                </div>
+
+                {/* Code Execution Approval Modal */}
+                {pendingCodeApproval && (
+                    <CodeExecutionApproval
+                        code={pendingCodeApproval.code}
+                        detectedOperations={pendingCodeApproval.operations}
+                        onApprove={() => {
+                            pendingCodeApproval.resolve(true);
+                            setPendingCodeApproval(null);
+                        }}
+                        onReject={() => {
+                            pendingCodeApproval.resolve(false);
+                            setPendingCodeApproval(null);
+                        }}
+                    />
+                )}
             </ErrorBoundary>
         </div>
     );
