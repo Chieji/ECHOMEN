@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CommandCenter } from './CommandCenter';
 import { ExecutionDashboard } from './ExecutionDashboard';
@@ -32,7 +32,7 @@ interface CommandDeckProps {
 
 export const CommandDeck = ({
     tasks, logs, artifacts, services, sessionStats, messages, onCommand, onCancelTask, onClearChat
-}: CommandDeckProps): React.ReactElement => {
+}: CommandDeckProps): ReactNode => {
     const [activeTab, setActiveTab] = useState<'board' | 'artifacts' | 'history' | 'brain' | 'deployments' | 'terminal'>('board');
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [currentNoteContent, setCurrentNoteContent] = useState('');

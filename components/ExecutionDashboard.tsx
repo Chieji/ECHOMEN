@@ -1,4 +1,4 @@
-import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import React, { useState, useRef, useLayoutEffect, useEffect, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloseIcon } from './icons/CloseIcon';
 import { Task, LogEntry } from '../types';
@@ -40,7 +40,7 @@ const TaskItem = React.forwardRef<HTMLDivElement, {
     onClick: () => void;
     highlight: 'selected' | 'dependency' | 'dependent' | 'none';
     isDimmed: boolean;
-}>(({ task, onClick, highlight, isDimmed }, ref): React.ReactElement => {
+}>(({ task, onClick, highlight, isDimmed }, ref): ReactNode => {
     const config = statusConfig[task.status];
 
     let highlightClass = '';

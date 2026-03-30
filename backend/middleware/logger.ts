@@ -256,7 +256,7 @@ export function logApprovalRequest(
     userId,
     'APPROVE_TOOL',
     toolName,
-    approved ? 'approved' : 'rejected',
+    approved ? 'success' : 'failure',
     {
       toolName,
       approved,

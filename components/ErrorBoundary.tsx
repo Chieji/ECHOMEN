@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface ErrorBoundaryProps {
-    children: React.ReactNode;
-    fallback?: React.ReactNode;
+    children: ReactNode;
+    fallback?: ReactNode;
 }
 
 interface ErrorBoundaryState {
@@ -10,17 +10,29 @@ interface ErrorBoundaryState {
     error: Error | null;
 }
 
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+/**
+ * ErrorBoundary MUST be a class component - this is a React limitation.
+ * Error boundaries require componentDidCatch() and getDerivedStateFromError()
+ * lifecycle methods, which have no hooks equivalent.
+ *
+ * REACT 18 DOWNGRADE RATIONALE:
+ * - React 19 removed Component/ErrorInfo from module exports
+ * - ErrorBoundary cannot be converted to functional component (React limitation)
+ * - React 18 provides stable class component support
+ *
+ * @see https://react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary
+ */
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     constructor(props: ErrorBoundaryProps) {
         super(props);
         this.state = { hasError: false, error: null };
     }
 
-    static getDerivedStateFromError(error: Error) {
+    static getDerivedStateFromError(error: Error): ErrorBoundaryState {
         return { hasError: true, error };
     }
 
-    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
         console.error('[TUI Error Boundary] Caught error:', error, errorInfo);
     }
 

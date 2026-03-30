@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { LogoIcon } from './icons/LogoIcon';
 import { DocumentTextIcon } from './icons/DocumentTextIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
@@ -20,7 +20,7 @@ interface HeaderProps {
     onModeChange: (mode: AgentMode) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onSettingsClick, onHistoryClick, onArtifactsClick, tasks, agentStatus, sessionStats, currentMode, onModeChange }) => {
+export const Header = ({ onSettingsClick, onHistoryClick, onArtifactsClick, tasks, agentStatus, sessionStats, currentMode, onModeChange }: HeaderProps): ReactNode => {
     return (
         <header className="flex-none h-14 bg-echo-surface border-b border-echo-border px-4 flex justify-between items-center">
             <div className="flex items-center gap-3">

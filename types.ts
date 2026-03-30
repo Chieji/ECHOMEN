@@ -34,7 +34,7 @@ export interface ToolArguments {
     browser_get_ax_tree: {};
     browser_close_session: {};
     executeCode: { language: 'javascript'; code: string };
-    github_create_repo: { name: string; description: string; is_private: boolean };
+    github_create_repo: { name: string; description?: string; is_private: boolean };
     github_get_pr_details: { pr_url: string };
     github_post_pr_comment: { pr_url: string; comment: string };
     github_merge_pr: { pr_url: string; method: 'merge' | 'squash' | 'rebase' };

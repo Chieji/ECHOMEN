@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloseIcon } from './icons/CloseIcon';
 import { CustomAgent, ModelProviderConfig } from '../types';
@@ -14,7 +14,7 @@ interface AgentCreationModalProps {
     modelProviders: ModelProviderConfig[];
 }
 
-const Accordion = ({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }): React.ReactElement => {
+const Accordion = ({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }): ReactNode => {
     const [isOpen, setIsOpen] = useState(defaultOpen);
     return (
         <div className="border border-black/10 dark:border-white/10 rounded-lg">
@@ -43,7 +43,7 @@ const Accordion = ({ title, children, defaultOpen = false }: { title: string; ch
     );
 };
 
-export const AgentCreationModal = ({ agent, isOpen, onClose, onSave, modelProviders }: AgentCreationModalProps): React.ReactElement => {
+export const AgentCreationModal = ({ agent, isOpen, onClose, onSave, modelProviders }: AgentCreationModalProps): ReactNode => {
     const [formData, setFormData] = useState<Partial<CustomAgent>>({});
     const [childTemplateJson, setChildTemplateJson] = useState('');
     const [jsonError, setJsonError] = useState<string | null>(null);

@@ -15,7 +15,7 @@ interface ValidationOptions {
 /**
  * CSRF Token Validation
  */
-export function validateCsrfToken(req: Request, res: Response, next: NextFunction) {
+export function validateCsrfToken(req: Request, res: Response, next: NextFunction): Response | void {
   // Skip for GET requests (idempotent)
   if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
     return next();
@@ -60,7 +60,7 @@ export function validateCsrfToken(req: Request, res: Response, next: NextFunctio
 /**
  * API Key Validation
  */
-export function validateApiKey(req: Request, res: Response, next: NextFunction) {
+export function validateApiKey(req: Request, res: Response, next: NextFunction): Response | void {
   const apiKey = req.headers['authorization']?.replace('Bearer ', '');
 
   if (!apiKey) {
@@ -100,7 +100,7 @@ export function validateApiKey(req: Request, res: Response, next: NextFunction) 
 /**
  * Session ID Validation
  */
-export function validateSessionId(req: Request, res: Response, next: NextFunction) {
+export function validateSessionId(req: Request, res: Response, next: NextFunction): Response | void {
   const sessionId = req.headers['x-session-id'] as string;
 
   if (!sessionId) {
@@ -136,7 +136,7 @@ export function validateSessionId(req: Request, res: Response, next: NextFunctio
  * Request Body Validation
  */
 export function validateRequestBody(schema: any) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): Response | void => {
     try {
       // Basic validation - check required fields exist
       const body = req.body;
@@ -175,7 +175,7 @@ export function validateRequestBody(schema: any) {
         path: req.path,
       });
 
-      res.status(400).json({
+      return res.status(400).json({
         error: 'Request validation error',
         message: error.message,
       });
@@ -187,8 +187,8 @@ export function validateRequestBody(schema: any) {
  * Composite validation middleware
  */
 export function validateRequest(options: ValidationOptions = {}) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const middlewares: Array<(req: Request, res: Response, next: NextFunction) => void> = [];
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const middlewares: Array<(req: Request, res: Response, next: NextFunction) => Response | void> = [];
 
     if (options.requireCsrfToken !== false) {
       middlewares.push(validateCsrfToken);
@@ -244,7 +244,7 @@ export function sanitizeInput(input: any): any {
 /**
  * Content Security Headers
  */
-export function securityHeaders(req: Request, res: Response, next: NextFunction) {
+export function securityHeaders(_req: Request, res: Response, next: NextFunction): void {
   // Prevent clickjacking
   res.setHeader('X-Frame-Options', 'DENY');
 

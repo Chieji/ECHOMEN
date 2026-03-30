@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, ReactNode } from 'react';
 import { Message } from '../types';
 import { motion } from 'framer-motion';
 import { MessageBubbleIcon } from './icons/MessageBubbleIcon';
@@ -21,7 +21,7 @@ interface WelcomeScreenProps {
     onSuggestionClick: (prompt: string) => void;
 }
 
-const WelcomeScreen = ({ onSuggestionClick }: WelcomeScreenProps): React.ReactElement => {
+const WelcomeScreen = ({ onSuggestionClick }: WelcomeScreenProps): ReactNode => {
     const handleSuggestionKeyPress = (e: React.KeyboardEvent<HTMLDivElement>, prompt: string) => {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -81,7 +81,7 @@ const WelcomeScreen = ({ onSuggestionClick }: WelcomeScreenProps): React.ReactEl
 };
 
 
-export const ChatInterface = ({ messages, onSuggestionClick, onEditMessage, onAcceptAction, onDeclineAction }: ChatInterfaceProps): React.ReactElement => {
+export const ChatInterface = ({ messages, onSuggestionClick, onEditMessage, onAcceptAction, onDeclineAction }: ChatInterfaceProps): ReactNode => {
     const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
     const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
