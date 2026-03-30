@@ -1,4 +1,4 @@
-import { FunctionDeclaration, Type } from "@google/genai";
+import { FunctionDeclaration, SchemaType } from "@google/generative-ai";
 import { z } from 'zod';
 import { ToolArguments } from '../types';
 import { saveMemory, retrieveMemory, deleteMemory } from '../lib/firebase_manager';
@@ -234,9 +234,9 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'readFile',
         description: 'Reads the content of a file from the local filesystem.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                path: { type: Type.STRING, description: 'The absolute or relative path to the file' }
+                path: { type: SchemaType.STRING, description: 'The absolute or relative path to the file' }
             },
             required: ['path']
         }
@@ -245,10 +245,10 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'writeFile',
         description: 'Writes content to a file on the local filesystem. Creates directories if needed.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                path: { type: Type.STRING, description: 'The absolute or relative path to the file' },
-                content: { type: Type.STRING, description: 'The content to write to the file' }
+                path: { type: SchemaType.STRING, description: 'The absolute or relative path to the file' },
+                content: { type: SchemaType.STRING, description: 'The content to write to the file' }
             },
             required: ['path', 'content']
         }
@@ -257,9 +257,9 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'listFiles',
         description: 'Lists all files and directories in a specified path.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                path: { type: Type.STRING, description: 'The directory path to list contents from' }
+                path: { type: SchemaType.STRING, description: 'The directory path to list contents from' }
             },
             required: ['path']
         }
@@ -268,9 +268,9 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'executeShellCommand',
         description: 'Executes a shell command with security sanitization. Restricted from dangerous operations.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                command: { type: Type.STRING, description: 'The shell command to execute' }
+                command: { type: SchemaType.STRING, description: 'The shell command to execute' }
             },
             required: ['command']
         }
@@ -279,10 +279,10 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'browser_navigate',
         description: 'Navigates a browser session to a specified URL. Creates isolated browser context per session.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                url: { type: Type.STRING, description: 'The URL to navigate to' },
-                sessionId: { type: Type.STRING, description: 'Optional session ID for isolated browsing' }
+                url: { type: SchemaType.STRING, description: 'The URL to navigate to' },
+                sessionId: { type: SchemaType.STRING, description: 'Optional session ID for isolated browsing' }
             },
             required: ['url']
         }
@@ -291,9 +291,9 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'browser_screenshot',
         description: 'Captures a screenshot of the current browser page in base64 format.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                sessionId: { type: Type.STRING, description: 'Optional session ID for the browser context' }
+                sessionId: { type: SchemaType.STRING, description: 'Optional session ID for the browser context' }
             },
             required: []
         }
@@ -302,10 +302,10 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'browser_click',
         description: 'Clicks an element on the page using a CSS selector.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                selector: { type: Type.STRING, description: 'CSS selector for the element to click' },
-                sessionId: { type: Type.STRING, description: 'Optional session ID for the browser context' }
+                selector: { type: SchemaType.STRING, description: 'CSS selector for the element to click' },
+                sessionId: { type: SchemaType.STRING, description: 'Optional session ID for the browser context' }
             },
             required: ['selector']
         }
@@ -314,12 +314,12 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'browser_type',
         description: 'Types text into an input field using a CSS selector.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                selector: { type: Type.STRING, description: 'CSS selector for the input element' },
-                text: { type: Type.STRING, description: 'The text to type' },
-                pressEnter: { type: Type.BOOLEAN, description: 'Whether to press Enter after typing' },
-                sessionId: { type: Type.STRING, description: 'Optional session ID for the browser context' }
+                selector: { type: SchemaType.STRING, description: 'CSS selector for the input element' },
+                text: { type: SchemaType.STRING, description: 'The text to type' },
+                pressEnter: { type: SchemaType.BOOLEAN, description: 'Whether to press Enter after typing' },
+                sessionId: { type: SchemaType.STRING, description: 'Optional session ID for the browser context' }
             },
             required: ['selector', 'text']
         }
@@ -328,9 +328,9 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'browser_get_ax_tree',
         description: 'Retrieves the accessibility tree of the current page for analysis.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                sessionId: { type: Type.STRING, description: 'Optional session ID for the browser context' }
+                sessionId: { type: SchemaType.STRING, description: 'Optional session ID for the browser context' }
             },
             required: []
         }
@@ -339,9 +339,9 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'browser_close_session',
         description: 'Closes and cleans up a browser session context.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                sessionId: { type: Type.STRING, description: 'The session ID to close' }
+                sessionId: { type: SchemaType.STRING, description: 'The session ID to close' }
             },
             required: ['sessionId']
         }
@@ -350,10 +350,10 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'executeCode',
         description: 'Executes JavaScript code in a secure backend-sandboxed environment. Captures console output.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                language: { type: Type.STRING, description: 'The programming language (only "javascript" supported)' },
-                code: { type: Type.STRING, description: 'The code to execute' }
+                language: { type: SchemaType.STRING, description: 'The programming language (only "javascript" supported)' },
+                code: { type: SchemaType.STRING, description: 'The code to execute' }
             },
             required: ['language', 'code']
         }
@@ -362,11 +362,11 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'github_create_repo',
         description: 'Creates a new GitHub repository.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                name: { type: Type.STRING, description: 'Repository name' },
-                description: { type: Type.STRING, description: 'Repository description' },
-                is_private: { type: Type.BOOLEAN, description: 'Whether the repository should be private' }
+                name: { type: SchemaType.STRING, description: 'Repository name' },
+                description: { type: SchemaType.STRING, description: 'Repository description' },
+                is_private: { type: SchemaType.BOOLEAN, description: 'Whether the repository should be private' }
             },
             required: ['name']
         }
@@ -375,9 +375,9 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'github_get_pr_details',
         description: 'Gets details about a GitHub pull request.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                pr_url: { type: Type.STRING, description: 'The URL of the pull request' }
+                pr_url: { type: SchemaType.STRING, description: 'The URL of the pull request' }
             },
             required: ['pr_url']
         }
@@ -386,10 +386,10 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'github_post_pr_comment',
         description: 'Posts a comment on a GitHub pull request.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                pr_url: { type: Type.STRING, description: 'The URL of the pull request' },
-                comment: { type: Type.STRING, description: 'The comment text' }
+                pr_url: { type: SchemaType.STRING, description: 'The URL of the pull request' },
+                comment: { type: SchemaType.STRING, description: 'The comment text' }
             },
             required: ['pr_url', 'comment']
         }
@@ -398,10 +398,10 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'github_merge_pr',
         description: 'Merges a GitHub pull request.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                pr_url: { type: Type.STRING, description: 'The URL of the pull request' },
-                method: { type: Type.STRING, description: 'Merge method: merge, squash, or rebase' }
+                pr_url: { type: SchemaType.STRING, description: 'The URL of the pull request' },
+                method: { type: SchemaType.STRING, description: 'Merge method: merge, squash, or rebase' }
             },
             required: ['pr_url']
         }
@@ -410,12 +410,12 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'github_create_file_in_repo',
         description: 'Creates a file in a GitHub repository.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                repo_name: { type: Type.STRING, description: 'Repository name' },
-                path: { type: Type.STRING, description: 'File path in the repository' },
-                content: { type: Type.STRING, description: 'File content' },
-                commit_message: { type: Type.STRING, description: 'Commit message' }
+                repo_name: { type: SchemaType.STRING, description: 'Repository name' },
+                path: { type: SchemaType.STRING, description: 'File path in the repository' },
+                content: { type: SchemaType.STRING, description: 'File content' },
+                commit_message: { type: SchemaType.STRING, description: 'Commit message' }
             },
             required: ['repo_name', 'path', 'content', 'commit_message']
         }
@@ -424,10 +424,10 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'data_analyze',
         description: 'Analyzes data from a file using a provided analysis script.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                input_file_path: { type: Type.STRING, description: 'Path to the data file' },
-                analysis_script: { type: Type.STRING, description: 'JavaScript analysis script' }
+                input_file_path: { type: SchemaType.STRING, description: 'Path to the data file' },
+                analysis_script: { type: SchemaType.STRING, description: 'JavaScript analysis script' }
             },
             required: ['input_file_path']
         }
@@ -436,11 +436,11 @@ export const toolDeclarations: FunctionDeclaration[] = [
         name: 'data_visualize',
         description: 'Creates a visualization from data in a file.',
         parameters: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-                input_file_path: { type: Type.STRING, description: 'Path to the data file' },
-                visualization_script: { type: Type.STRING, description: 'Visualization script' },
-                output_image_path: { type: Type.STRING, description: 'Output image path' }
+                input_file_path: { type: SchemaType.STRING, description: 'Path to the data file' },
+                visualization_script: { type: SchemaType.STRING, description: 'Visualization script' },
+                output_image_path: { type: SchemaType.STRING, description: 'Output image path' }
             },
             required: ['input_file_path']
         }

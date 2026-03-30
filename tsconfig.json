@@ -49,5 +49,15 @@
     "noUnusedParameters": false,
     "noImplicitReturns": false,
     "noFallthroughCasesInSwitch": true
-  }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "src/types/react-global.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tests"
+  ]
 }

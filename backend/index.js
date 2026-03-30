@@ -648,20 +648,20 @@ const validateUrl = (urlString) => {
  */
 const BASE_DIR = path.resolve(process.cwd());
 
-const validatePath = (inputPath) => {
+const validatePathForFileOps = (inputPath) => {
     // Reject absolute paths that start with / or Windows drive letters
     if (path.isAbsolute(inputPath) && !inputPath.startsWith(BASE_DIR)) {
         return null;
     }
-    
+
     // Resolve and normalize the path
     const resolvedPath = path.resolve(BASE_DIR, inputPath);
-    
-    // Ensure the resolved path starts with the base directory
+
+    // Ensure the resolved path stays within the base directory
     if (!resolvedPath.startsWith(BASE_DIR + path.sep) && resolvedPath !== BASE_DIR) {
         return null;
     }
-    
+
     return resolvedPath;
 };
 
@@ -937,7 +937,7 @@ const dataTools = {
         const { input_file_path, analysis_script } = args;
         
         try {
-            const safePath = validatePath(input_file_path);
+            const safePath = validatePathForFileOps(input_file_path);
             const content = await fs.readFile(safePath, 'utf-8');
             const fileExt = path.extname(input_file_path).toLowerCase();
             
@@ -993,7 +993,7 @@ const dataTools = {
         const { input_file_path, chart_type = 'bar' } = args;
         
         try {
-            const safePath = validatePath(input_file_path);
+            const safePath = validatePathForFileOps(input_file_path);
             const content = await fs.readFile(safePath, 'utf-8');
             const fileExt = path.extname(input_file_path).toLowerCase();
             
@@ -1061,7 +1061,7 @@ app.post('/execute-tool', validateCsrfToken, validateApiKey, async (req, res) =>
         switch (tool) {
             case 'readFile':
                 // SECURITY: Validate path and sanitize content
-                const safeReadPath = validatePath(args.path);
+                const safeReadPath = validatePathForFileOps(args.path);
                 const rawFileContent = await fs.readFile(safeReadPath, 'utf8');
                 const sanitizedFile = sanitizeWebContent(rawFileContent, {
                     maxLength: 45000,
@@ -1081,15 +1081,15 @@ app.post('/execute-tool', validateCsrfToken, validateApiKey, async (req, res) =>
                 break;
             case 'writeFile':
                 // SECURITY: Validate path
-                const safeWritePath = validatePath(args.path);
-                const dir = path.dirname(safeWritePath);
-                await fs.mkdir(dir, { recursive: true });
+                const safeWritePath = validatePathForFileOps(args.path);
+                const writeDir = path.dirname(safeWritePath);
+                await fs.mkdir(writeDir, { recursive: true });
                 await fs.writeFile(safeWritePath, args.content, 'utf8');
                 result = `File written successfully: ${args.path}`;
                 break;
             case 'listFiles':
                 // SECURITY: Validate path
-                const safeListPath = validatePath(args.path);
+                const safeListPath = validatePathForFileOps(args.path);
                 result = await fs.readdir(safeListPath);
                 break;
             case 'executeShellCommand':
@@ -1129,24 +1129,24 @@ app.post('/execute-tool', validateCsrfToken, validateApiKey, async (req, res) =>
 
             // File Tools with Path Validation
             case 'readFile':
-                const readPath = validatePath(args.path);
+                const readPath = validatePathForFileOps(args.path);
                 if (!readPath) {
                     throw new Error('Security Violation: Invalid path - directory traversal detected');
                 }
                 result = await fs.readFile(readPath, 'utf8');
                 break;
             case 'writeFile':
-                const writePath = validatePath(args.path);
+                const writePath = validatePathForFileOps(args.path);
                 if (!writePath) {
                     throw new Error('Security Violation: Invalid path - directory traversal detected');
                 }
-                const dir = path.dirname(writePath);
-                await fs.mkdir(dir, { recursive: true });
+                const writeDirectory = path.dirname(writePath);
+                await fs.mkdir(writeDirectory, { recursive: true });
                 await fs.writeFile(writePath, args.content, 'utf8');
                 result = `File written successfully: ${args.path}`;
                 break;
             case 'listFiles':
-                const listPath = validatePath(args.path);
+                const listPath = validatePathForFileOps(args.path);
                 if (!listPath) {
                     throw new Error('Security Violation: Invalid path - directory traversal detected');
                 }
