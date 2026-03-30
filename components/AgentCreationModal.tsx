@@ -78,7 +78,7 @@ export const AgentCreationModal = ({ agent, isOpen, onClose, onSave, modelProvid
     const handleSave = () => {
         if (!formData.name?.trim() || !formData.instructions?.trim()) return;
         
-        let finalData = { ...formData };
+        const finalData = { ...formData };
 
         if (childTemplateJson.trim()) {
             try {
