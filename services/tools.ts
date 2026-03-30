@@ -126,6 +126,19 @@ export const executeCode = async (language: 'javascript', code: string): Promise
         return 'Only JavaScript execution is supported';
     }
     
+    // Security: Define dangerous patterns to block at client level
+    const dangerousPatterns = [
+        /\bconstructor\b/i,
+        /__proto__/i,
+        /prototype\s*\[/i,
+    ];
+
+    for (const pattern of dangerousPatterns) {
+        if (pattern.test(code)) {
+            return Promise.reject(new Error(`Code contains potentially dangerous operation: ${pattern.source}. Prototype pollution and constructor access are not allowed.`));
+        }
+    }
+    
     try {
         // Execute with automatic tier selection
         const result: SandboxResult = await executeInSandbox(code);

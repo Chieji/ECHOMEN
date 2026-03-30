@@ -621,6 +621,50 @@ const executeShellCommand = (command) => {
 // SECURITY: All outputs containing web content are sanitized through the ContentFilter
 // to prevent indirect prompt injection attacks.
 
+/**
+ * Validates and normalizes a URL for browsing.
+ * Only allows HTTP/HTTPS URLs and blocks potentially dangerous protocols.
+ */
+const validateUrl = (urlString) => {
+    try {
+        const parsedUrl = new URL(urlString);
+        
+        // Only allow http and https protocols
+        if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+            return null;
+        }
+        
+        // Ensure the URL is well-formed
+        return parsedUrl.href;
+    } catch (e) {
+        // Invalid URL format
+        return null;
+    }
+};
+
+/**
+ * Validates and normalizes a file path to prevent directory traversal.
+ * Ensures the resolved path stays within the allowed base directory.
+ */
+const BASE_DIR = path.resolve(process.cwd());
+
+const validatePath = (inputPath) => {
+    // Reject absolute paths that start with / or Windows drive letters
+    if (path.isAbsolute(inputPath) && !inputPath.startsWith(BASE_DIR)) {
+        return null;
+    }
+    
+    // Resolve and normalize the path
+    const resolvedPath = path.resolve(BASE_DIR, inputPath);
+    
+    // Ensure the resolved path starts with the base directory
+    if (!resolvedPath.startsWith(BASE_DIR + path.sep) && resolvedPath !== BASE_DIR) {
+        return null;
+    }
+    
+    return resolvedPath;
+};
+
 const browserActions = {
     /**
      * Navigate to a URL within the task's isolated browser context.
@@ -629,9 +673,15 @@ const browserActions = {
      * @param {string} url - URL to navigate to
      */
     navigate: async (taskId, url) => {
+        // SECURITY: Validate URL before navigation
+        const validatedUrl = validateUrl(url);
+        if (!validatedUrl) {
+            throw new Error('Invalid URL: Only HTTP and HTTPS URLs are allowed');
+        }
+        
         const page = await getTaskPage(taskId);
-        console.log(`[WebHawk] [Task: ${taskId}] Navigating to: ${url}`);
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        console.log(`[WebHawk] [Task: ${taskId}] Navigating to: ${validatedUrl}`);
+        await page.goto(validatedUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
         
         // SECURITY: Sanitize page title which could contain injection attempts
         const rawTitle = await page.title();
@@ -1075,6 +1125,35 @@ app.post('/execute-tool', validateCsrfToken, validateApiKey, async (req, res) =>
                 // Explicit task cleanup (ephemeral mode)
                 await closeTaskContext(effectiveTaskId);
                 result = { status: 'success', message: `Task ${effectiveTaskId} cleaned up` };
+                break;
+
+            // File Tools with Path Validation
+            case 'readFile':
+                const readPath = validatePath(args.path);
+                if (!readPath) {
+                    throw new Error('Security Violation: Invalid path - directory traversal detected');
+                }
+                result = await fs.readFile(readPath, 'utf8');
+                break;
+            case 'writeFile':
+                const writePath = validatePath(args.path);
+                if (!writePath) {
+                    throw new Error('Security Violation: Invalid path - directory traversal detected');
+                }
+                const dir = path.dirname(writePath);
+                await fs.mkdir(dir, { recursive: true });
+                await fs.writeFile(writePath, args.content, 'utf8');
+                result = `File written successfully: ${args.path}`;
+                break;
+            case 'listFiles':
+                const listPath = validatePath(args.path);
+                if (!listPath) {
+                    throw new Error('Security Violation: Invalid path - directory traversal detected');
+                }
+                result = await fs.readdir(listPath);
+                break;
+            case 'executeShellCommand':
+                result = await executeShellCommand(args.command);
                 break;
 
             // GitHub Tools
