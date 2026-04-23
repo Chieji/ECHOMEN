@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -24,7 +24,38 @@ import { Menu, X, Moon, Sun, Copy, Check, Github, Zap, Shield, Workflow, Code2, 
  * 
  * Spacing: Generous whitespace, premium feel
  * Animations: Smooth, subtle, professional
+ * 
+ * Performance:
+ * - Lazy loading with Intersection Observer
+ * - Image lazy loading
+ * - Code splitting for sections
  */
+
+/**
+ * Lazy Loading Hook - Triggers animations when elements come into view
+ * Uses Intersection Observer API for optimal performance
+ */
+function useInView(options = {}) {
+  const ref = useRef(null);
+  const [isInView, setIsInView] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsInView(true);
+        observer.unobserve(entry.target);
+      }
+    }, { threshold: 0.1, ...options });
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, [options]);
+
+  return [ref, isInView];
+}
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
@@ -39,28 +70,61 @@ export default function Home() {
     setCliOutput([]);
     
     const demoSteps = [
-      '$ echoctl scan --target api.example.com',
-      '⟳ Initializing threat scanner...',
-      '✓ Connected to threat database',
-      '⟳ Scanning endpoints...',
-      '  → /api/auth (200 OK)',
-      '  → /api/users (200 OK)',
-      '  → /api/admin (403 Forbidden) ⚠️',
-      '⟳ Analyzing vulnerabilities...',
-      '⚠️  Found 3 potential threats:',
-      '  1. SQL Injection risk in /api/search',
-      '  2. Weak API authentication headers',
-      '  3. Outdated dependency: lodash@4.17.15',
-      '✓ Scan completed in 2.3s',
-      '📊 Threat Level: MEDIUM',
-      '💡 Recommendations:',
-      '  - Update dependencies immediately',
-      '  - Implement rate limiting',
-      '  - Add input validation',
+      '$ echoctl scan --target api.example.com --deep',
+      '⟳ Initializing ECHOMEN threat scanner...',
+      '📡 Connecting to threat intelligence database...',
+      '✓ Connected to threat database (v2.8.1)',
+      '',
+      '⟳ Phase 1: Endpoint Discovery',
+      '  ✓ Found 12 endpoints',
+      '  ✓ Analyzing endpoint signatures',
+      '',
+      '⟳ Phase 2: Vulnerability Scanning',
+      '  → GET /api/auth (200 OK)',
+      '  → POST /api/users (201 Created)',
+      '  → GET /api/admin (403 Forbidden)',
+      '  → GET /api/search?q=test (200 OK) ⚠️',
+      '',
+      '⟳ Phase 3: Dependency Analysis',
+      '  ✓ Scanned 127 dependencies',
+      '  ⚠️  Found 3 vulnerabilities:',
+      '    - lodash@4.17.15 (CVE-2021-23337)',
+      '    - express@4.17.1 (Prototype pollution)',
+      '    - axios@0.21.1 (SSRF in redirect handling)',
+      '',
+      '⟳ Phase 4: Security Headers Analysis',
+      '  ✗ Missing: Content-Security-Policy',
+      '  ✗ Missing: X-Frame-Options',
+      '  ✗ Missing: Strict-Transport-Security',
+      '  ✓ Present: X-Content-Type-Options',
+      '',
+      '⟳ Phase 5: Authentication & Authorization',
+      '  ⚠️  JWT tokens lack expiration validation',
+      '  ⚠️  CORS allows all origins (*)',
+      '  ✓ Password hashing: bcrypt (good)',
+      '',
+      '═══════════════════════════════════════',
+      '📊 SCAN RESULTS',
+      '═══════════════════════════════════════',
+      'Threat Level: HIGH 🔴',
+      'Critical Issues: 3',
+      'High Priority: 5',
+      'Medium Priority: 2',
+      'Scan Duration: 3.2s',
+      '',
+      '💡 TOP RECOMMENDATIONS:',
+      '  1. Update lodash to 4.17.21+',
+      '  2. Add security headers middleware',
+      '  3. Implement CORS whitelist',
+      '  4. Add JWT expiration validation',
+      '  5. Enable rate limiting on /api/search',
+      '',
+      '✓ Report saved: .echomen/scan-report-20260423.json',
+      '✓ Scan completed successfully',
     ];
 
     for (let i = 0; i < demoSteps.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise(resolve => setTimeout(resolve, 100));
       setCliOutput(prev => [...prev, demoSteps[i]]);
     }
     
