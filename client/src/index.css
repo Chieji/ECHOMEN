@@ -43,76 +43,76 @@
 }
 
 :root {
-  /* Neon Cyberpunk Color Palette */
-  --primary: #00d9ff; /* Electric Teal */
-  --primary-foreground: #0a0e27; /* Deep Black */
-  --sidebar-primary: #00d9ff;
-  --sidebar-primary-foreground: #0a0e27;
-  --chart-1: #00d9ff;
-  --chart-2: #39ff14;
-  --chart-3: #00d9ff;
-  --chart-4: #39ff14;
-  --chart-5: #00d9ff;
-  --radius: 0.5rem;
-  --background: #0a0e27; /* Deep charcoal black */
-  --foreground: #f0f0f0; /* Off-white */
-  --card: #1a1f3a; /* Slightly lighter black */
-  --card-foreground: #f0f0f0;
-  --popover: #1a1f3a;
-  --popover-foreground: #f0f0f0;
-  --secondary: #39ff14; /* Neon Green */
-  --secondary-foreground: #0a0e27;
-  --muted: #4a5580; /* Muted slate */
-  --muted-foreground: #a0a8c0;
-  --accent: #00d9ff;
-  --accent-foreground: #0a0e27;
-  --destructive: #ff4444;
-  --destructive-foreground: #f0f0f0;
-  --border: #2a3050;
-  --input: #1a1f3a;
-  --ring: #00d9ff;
-  --sidebar: #0a0e27;
-  --sidebar-foreground: #f0f0f0;
-  --sidebar-accent: #00d9ff;
-  --sidebar-accent-foreground: #0a0e27;
-  --sidebar-border: #2a3050;
-  --sidebar-ring: #00d9ff;
+  /* Premium Professional Color Palette - Light Mode */
+  --primary: #3b82f6; /* Professional Blue */
+  --primary-foreground: #ffffff;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #ffffff;
+  --chart-1: #3b82f6;
+  --chart-2: #8b5cf6;
+  --chart-3: #06b6d4;
+  --chart-4: #10b981;
+  --chart-5: #f59e0b;
+  --radius: 0.75rem;
+  --background: #f9fafb; /* Light gray background */
+  --foreground: #1f2937; /* Dark gray text */
+  --card: #ffffff; /* White cards */
+  --card-foreground: #1f2937;
+  --popover: #ffffff;
+  --popover-foreground: #1f2937;
+  --secondary: #8b5cf6; /* Purple accent */
+  --secondary-foreground: #ffffff;
+  --muted: #d1d5db; /* Light gray */
+  --muted-foreground: #6b7280; /* Medium gray */
+  --accent: #06b6d4; /* Cyan accent */
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e5e7eb;
+  --input: #f3f4f6;
+  --ring: #3b82f6;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1f2937;
+  --sidebar-accent: #3b82f6;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #3b82f6;
 }
 
 .dark {
-  /* Same as root for consistent dark theme */
-  --primary: #00d9ff;
-  --primary-foreground: #0a0e27;
-  --sidebar-primary: #00d9ff;
-  --sidebar-primary-foreground: #0a0e27;
-  --background: #0a0e27;
-  --foreground: #f0f0f0;
-  --card: #1a1f3a;
-  --card-foreground: #f0f0f0;
-  --popover: #1a1f3a;
-  --popover-foreground: #f0f0f0;
-  --secondary: #39ff14;
-  --secondary-foreground: #0a0e27;
-  --muted: #4a5580;
-  --muted-foreground: #a0a8c0;
-  --accent: #00d9ff;
-  --accent-foreground: #0a0e27;
-  --destructive: #ff4444;
-  --destructive-foreground: #f0f0f0;
-  --border: #2a3050;
-  --input: #1a1f3a;
-  --ring: #00d9ff;
-  --chart-1: #00d9ff;
-  --chart-2: #39ff14;
-  --chart-3: #00d9ff;
-  --chart-4: #39ff14;
-  --chart-5: #00d9ff;
-  --sidebar: #0a0e27;
-  --sidebar-foreground: #f0f0f0;
-  --sidebar-accent: #00d9ff;
-  --sidebar-accent-foreground: #0a0e27;
-  --sidebar-border: #2a3050;
-  --sidebar-ring: #00d9ff;
+  /* Premium Professional Color Palette - Dark Mode */
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #ffffff;
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  --card: #1e293b;
+  --card-foreground: #f1f5f9;
+  --popover: #1e293b;
+  --popover-foreground: #f1f5f9;
+  --secondary: #8b5cf6;
+  --secondary-foreground: #ffffff;
+  --muted: #334155;
+  --muted-foreground: #cbd5e1;
+  --accent: #06b6d4;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #334155;
+  --input: #1e293b;
+  --ring: #3b82f6;
+  --chart-1: #3b82f6;
+  --chart-2: #8b5cf6;
+  --chart-3: #06b6d4;
+  --chart-4: #10b981;
+  --chart-5: #f59e0b;
+  --sidebar: #1e293b;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-accent: #3b82f6;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #334155;
+  --sidebar-ring: #3b82f6;
 }
 
 @layer base {
@@ -124,7 +124,7 @@
     font-family: 'IBM Plex Sans', sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'IBM Plex Sans', sans-serif;
     font-weight: 700;
     letter-spacing: -0.02em;
   }
