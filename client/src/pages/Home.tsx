@@ -282,10 +282,13 @@ export default function Home() {
               <Button
                 size="lg"
                 className="bg-primary hover:bg-primary/90 text-white font-semibold"
-                onClick={() => copyToClipboard('npm install -g echo-ai-cli', 0)}
+                onClick={() => {
+                  const element = document.getElementById('installation');
+                  element?.scrollIntoView({ behavior: 'smooth' });
+                }}
               >
                 <Terminal className="mr-2 h-5 w-5" />
-                {copiedIndex === 0 ? 'Copied!' : 'Get Started'}
+                Get Started
               </Button>
               <Button
                 size="lg"
@@ -446,7 +449,7 @@ export default function Home() {
       </section>
 
       {/* Installation Section */}
-      <section className="py-20 md:py-32 bg-muted/30">
+      <section id="installation" className="py-20 md:py-32 bg-muted/30">
         <div className="container max-w-3xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
