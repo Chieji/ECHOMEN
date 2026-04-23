@@ -2,7 +2,7 @@
   "name": "echomen-website",
   "version": "1.0.0",
   "type": "module",
-  "homepage": "https://chieji.github.io/echomen-website/",
+  "homepage": "https://echomenweb-fz7raxkq.manus.space",
   "license": "MIT",
   "scripts": {
     "dev": "vite --host",
